@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import os from "os";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { AllFather } from "@plex-agents/allfather";
@@ -499,7 +500,8 @@ export class AlbumConsolidator {
    */
   async writeAudioTags(filePath, tags) {
     const ext = path.extname(filePath);
-    const tmpPath = filePath + ".tagtmp" + ext;
+    // Escreve em /tmp para evitar erros de permissão em pastas owned by root
+    const tmpPath = path.join(os.tmpdir(), `curator_tagtmp_${Date.now()}_${process.pid}${ext}`);
 
     try {
       const args = ["-i", filePath, "-c", "copy", "-map_metadata", "0", "-y"];
@@ -513,7 +515,9 @@ export class AlbumConsolidator {
       args.push(tmpPath);
 
       await execFileAsync("ffmpeg", args, { timeout: 60000 });
-      await fs.rename(tmpPath, filePath);
+      // Copia sobre o original (funciona mesmo em diretórios owned by root)
+      await fs.copyFile(tmpPath, filePath);
+      await fs.unlink(tmpPath);
 
       console.log(`  🏷️  Tags gravadas: ${path.basename(filePath)}`);
       return true;

@@ -14,7 +14,9 @@
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "consolidate": "node src/full-library-consolidation.js",
     "fix-tags": "node src/fix-curated-tags.js",
-    "fix-tags:dry": "node src/fix-curated-tags.js --dry-run"
+    "fix-tags:dry": "node src/fix-curated-tags.js --dry-run",
+    "fix-all-tags": "node src/fix-all-album-tags.js",
+    "fix-all-tags:dry": "node src/fix-all-album-tags.js --dry-run"
   },
   "keywords": [
     "plex",

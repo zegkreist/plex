@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import os from "os";
 import { execFile } from "child_process";
 import { promisify } from "util";
 
@@ -333,8 +334,8 @@ export class SeriesConsolidator {
     }
 
     const ext = path.extname(filePath);
-    const dir = path.dirname(filePath);
-    const tmpPath = filePath + ".tagtmp" + ext.replace(".", "");
+    // Usa /tmp para evitar erros de permissão em pastas owned by root
+    const tmpPath = path.join(os.tmpdir(), `curator_videotmp_${Date.now()}_${process.pid}${ext}`);
 
     const metaArgs = [];
 
@@ -347,8 +348,8 @@ export class SeriesConsolidator {
     if (metaArgs.length === 0) return { filePath, unchanged: true };
 
     await execFileAsync("ffmpeg", ["-y", "-i", filePath, "-c", "copy", ...metaArgs, tmpPath]);
-
-    await fs.rename(tmpPath, filePath);
+    await fs.copyFile(tmpPath, filePath);
+    await fs.unlink(tmpPath);
     return { filePath, updated: true };
   }
 
