@@ -12,6 +12,7 @@ export class AllFather {
     this.temperature = config.temperature ?? 0.7;
     this.timeout = config.timeout || 30000; // 30 segundos
     this.maxRetries = config.maxRetries ?? 3;
+    this.disableReasoning = config.disableReasoning ?? true; // Desabilita reasoning por padrão
     this.templates = new PromptTemplates();
 
     this.axiosInstance = axios.create({
@@ -75,9 +76,18 @@ export class AllFather {
    * Método principal: faz uma pergunta ao LLM
    */
   async ask(question, options = {}) {
+    // Prepara o prompt, adicionando instrução para desabilitar reasoning se necessário
+    let finalPrompt = question;
+    const disableReasoning = options.disableReasoning ?? this.disableReasoning;
+
+    // Se reasoning está desabilitado e é um modelo deepseek, adiciona instrução
+    if (disableReasoning && (this.model.includes("deepseek") || (options.model && options.model.includes("deepseek")))) {
+      finalPrompt = `You must respond directly without showing your thinking process. Do not use <think> tags or show reasoning. Just provide the final answer immediately.\n\n${question}`;
+    }
+
     const params = {
       model: options.model || this.model,
-      prompt: question,
+      prompt: finalPrompt,
       stream: false,
       options: {
         temperature: options.temperature ?? this.temperature,

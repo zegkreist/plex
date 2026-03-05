@@ -42,11 +42,17 @@ const allfather = new AllFather({
   ollamaUrl: "http://localhost:11434",
   model: "deepseek-r1:1.5b",
   temperature: 0.7,
+  disableReasoning: true, // Respostas diretas, sem "thinking"
 });
 
 // Pergunta simples
 const response = await allfather.ask("Qual é a capital de Portugal?");
 console.log(response); // "Lisboa"
+
+// Habilitar reasoning apenas para uma pergunta específica
+const responseWithReasoning = await allfather.ask("Explique física quântica", {
+  disableReasoning: false,
+});
 
 // Pergunta com contexto
 const context = {
@@ -177,8 +183,16 @@ const allfather = new AllFather({
   temperature: 0.7, // Criatividade (0-2)
   timeout: 30000, // Timeout em ms
   maxRetries: 3, // Tentativas em caso de erro
+  disableReasoning: true, // Desabilita reasoning do deepseek (padrão: true)
 });
 ```
+
+**Sobre `disableReasoning`:**
+
+- Para modelos `deepseek-r1`, desabilita o processo de "thinking"
+- Respostas mais rápidas e diretas
+- Padrão: `true` (recomendado para uso em produção)
+- Configure como `false` se quiser ver o raciocínio do modelo
 
 ### Métodos de configuração:
 
