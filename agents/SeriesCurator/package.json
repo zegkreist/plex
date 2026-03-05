@@ -14,8 +14,8 @@
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "fix-tags": "node src/fix-series-tags.js",
     "fix-tags:dry": "node src/fix-series-tags.js --dry-run",
-    "curate": "node index.js",
-    "curate:dry": "node index.js --dry-run"
+    "curate": "sudo node index.js",
+    "curate:dry": "sudo node index.js --dry-run"
   },
   "keywords": [
     "plex",

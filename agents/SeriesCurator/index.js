@@ -13,12 +13,15 @@
 
 import path from "path";
 import { fileURLToPath } from "url";
+import dotenv from "dotenv";
+
+// Load .env from the plex_server root
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 export { SeriesConsolidator } from "./src/series-consolidator.js";
 export { SeriesCurator } from "./src/series-curator.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // ESM main-module guard
 if (process.argv[1] === __filename) {
@@ -27,7 +30,7 @@ if (process.argv[1] === __filename) {
   const skipCurated = args.includes("--skip-curated");
   const verbose = args.includes("--verbose");
 
-  const tvPath = process.env.SERIES_PATH || path.resolve(__dirname, "../../..", "tv");
+  const tvPath = process.env.SERIES_PATH || path.resolve(__dirname, "../..", "tv");
 
   let allFather = null;
   try {
