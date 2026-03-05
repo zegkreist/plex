@@ -1,0 +1,24 @@
+{
+  "name": "@plex-agents/allfather",
+  "version": "1.0.0",
+  "description": "Camada de comunicação com Ollama para todos os Plex Agents - O AllFather que conecta todos",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/**/*.test.js",
+    "test:watch": "node --test --watch test/**/*.test.js"
+  },
+  "keywords": [
+    "ollama",
+    "llm",
+    "ai",
+    "plex",
+    "agents"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {}
+}

@@ -1,0 +1,32 @@
+# Variáveis de ambiente (contém informações sensíveis)
+.env
+
+# Diretórios de configuração e mídia
+config/
+tv/
+movies/
+music/
+ollama/
+
+# Backups
+*.tar.gz
+*.zip
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node.js (Agents)
+agents/*/node_modules/
+agents/*/.env
+agents/*/package-lock.json

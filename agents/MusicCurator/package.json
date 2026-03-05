@@ -1,0 +1,23 @@
+{
+  "name": "music-curator",
+  "version": "1.0.0",
+  "description": "Agent responsável por organizar e curar a biblioteca de música do Plex",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "keywords": [
+    "plex",
+    "music",
+    "curator",
+    "agent"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^16.4.0"
+  }
+}
