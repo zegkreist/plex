@@ -12,7 +12,9 @@
     "test:integration": "NODE_OPTIONS=--experimental-vm-modules jest tests/integration",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-    "consolidate": "node src/full-library-consolidation.js"
+    "consolidate": "node src/full-library-consolidation.js",
+    "fix-tags": "node src/fix-curated-tags.js",
+    "fix-tags:dry": "node src/fix-curated-tags.js --dry-run"
   },
   "keywords": [
     "plex",

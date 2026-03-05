@@ -1,6 +1,10 @@
 import fs from "fs/promises";
 import path from "path";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import { AllFather } from "@plex-agents/allfather";
+
+const execFileAsync = promisify(execFile);
 
 // Nomes conhecidos de playlists que devem ser ignorados
 const KNOWN_PLAYLISTS = ["ShroomTrip", "Viagem light", "Hotline Miami Soundtrack", "Balanço Groove Brasil 70's"];
@@ -457,6 +461,13 @@ export class AlbumConsolidator {
         };
       }
 
+      // 4. Atualiza tags embutidas nos arquivos de áudio
+      console.log(`🏷️  Atualizando tags de áudio...`);
+      const tagResult = await this.updateAlbumTags(finalAlbumPath, correctAlbumName, album.artist);
+      if (!tagResult.success) {
+        console.warn(`  ⚠️  Algumas tags não puderam ser atualizadas (${tagResult.failed} falha(s))`);
+      }
+
       console.log(`✅ Álbum completo normalizado: "${correctAlbumName}"`);
 
       return {
@@ -467,6 +478,7 @@ export class AlbumConsolidator {
         correctAlbumName: correctAlbumName,
         metadata: metadata,
         finalAlbumPath: finalAlbumPath,
+        tagsUpdated: tagResult.updated,
       };
     } catch (error) {
       console.error(`❌ Erro na normalização completa: ${error.message}`);
@@ -475,6 +487,107 @@ export class AlbumConsolidator {
         error: error.message,
       };
     }
+  }
+
+  /**
+   * Reescreve as tags de metadados de um arquivo de áudio via ffmpeg sem re-encodar.
+   * Funciona com FLAC, MP3, M4A, OGG, etc.
+   *
+   * @param {string} filePath  Caminho absoluto do arquivo
+   * @param {Object} tags      Mapa chave→valor das tags a sobrescrever (ex: { ALBUM: 'Foo', TRACKNUMBER: '1' })
+   * @returns {boolean}        true se sucesso, false se erro
+   */
+  async writeAudioTags(filePath, tags) {
+    const ext = path.extname(filePath);
+    const tmpPath = filePath + ".tagtmp" + ext;
+
+    try {
+      const args = ["-i", filePath, "-c", "copy", "-map_metadata", "0", "-y"];
+
+      for (const [key, value] of Object.entries(tags)) {
+        if (value !== null && value !== undefined && value !== "") {
+          args.push("-metadata", `${key}=${value}`);
+        }
+      }
+
+      args.push(tmpPath);
+
+      await execFileAsync("ffmpeg", args, { timeout: 60000 });
+      await fs.rename(tmpPath, filePath);
+
+      console.log(`  🏷️  Tags gravadas: ${path.basename(filePath)}`);
+      return true;
+    } catch (error) {
+      // Limpa arquivo temporário se existir
+      try {
+        await fs.unlink(tmpPath);
+      } catch {}
+      console.error(`  ⚠️  Erro ao gravar tags de ${path.basename(filePath)}: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Atualiza as tags ALBUM, ALBUMARTIST, DATE e TRACKNUMBER de todos os arquivos
+   * de música em uma pasta de álbum.
+   *
+   * A tag [CURATED] e demais tags técnicas em colchetes são removidas antes de
+   * gravar, pois são apenas marcadores internos do curator.
+   *
+   * @param {string}  albumPath    Caminho da pasta do álbum
+   * @param {string}  albumName    Nome do álbum (pode conter [CURATED] e ano)
+   * @param {string}  artistName   Nome do artista (para ALBUMARTIST)
+   * @param {Object}  opts
+   * @param {boolean} opts.dryRun  Apenas simula, não altera arquivos
+   */
+  async updateAlbumTags(albumPath, albumName, artistName = null, { dryRun = false } = {}) {
+    const musicFiles = await this.findMusicFiles(albumPath);
+    musicFiles.sort((a, b) => a.name.localeCompare(b.name));
+
+    if (musicFiles.length === 0) {
+      console.log("  ⚠️  Nenhum arquivo de música encontrado para atualizar tags");
+      return { success: true, updated: 0 };
+    }
+
+    // Extrai ano do nome antes de limpar (para usar na tag DATE)
+    const yearMatch = albumName.match(/\((\d{4})\)/);
+    const year = yearMatch ? yearMatch[1] : null;
+
+    // Remove tudo entre [] e () — tags técnicas, ano, remaster, etc.
+    const albumTitle = albumName
+      .replace(/\s*\[[^\]]+\]/g, "") // remove [CURATED], [FLAC], [MP4], etc.
+      .replace(/\s*\([^)]+\)/g, "") // remove (2020), (Remastered), (Deluxe), etc.
+      .replace(/\s+/g, " ")
+      .trim();
+
+    console.log(`  🏷️  Atualizando tags de ${musicFiles.length} faixas em "${albumTitle}"...`);
+    if (dryRun) {
+      musicFiles.forEach((f, i) => {
+        const num = String(i + 1);
+        console.log(`    [dry-run] ${f.name} → ALBUM="${albumTitle}"` + (year ? `, DATE="${year}"` : "") + (artistName ? `, ALBUMARTIST="${artistName}"` : "") + `, TRACKNUMBER="${num}"`);
+      });
+      return { success: true, updated: musicFiles.length, dryRun: true };
+    }
+
+    let updated = 0;
+    let failed = 0;
+
+    for (let i = 0; i < musicFiles.length; i++) {
+      const file = musicFiles[i];
+      const tags = {
+        ALBUM: albumTitle,
+        TRACKNUMBER: String(i + 1),
+      };
+      if (artistName) tags.ALBUMARTIST = artistName;
+      if (year) tags.DATE = year;
+
+      const ok = await this.writeAudioTags(file.path, tags);
+      if (ok) updated++;
+      else failed++;
+    }
+
+    console.log(`  ✅ Tags: ${updated}/${musicFiles.length} atualizadas${failed > 0 ? `, ${failed} falha(s)` : ""}`);
+    return { success: failed === 0, updated, failed };
   }
 
   /**
@@ -690,12 +803,21 @@ export class AlbumConsolidator {
         }
       }
 
+      // 5. Atualiza tags embutidas nos arquivos de áudio do álbum consolidado
+      const artistName = albumGroup[0]?.artist || null;
+      console.log(`🏷️  Atualizando tags de áudio do álbum consolidado...`);
+      const tagResult = await this.updateAlbumTags(consolidatedAlbumPath, correctAlbumName, artistName);
+      if (!tagResult.success) {
+        console.warn(`  ⚠️  Algumas tags não puderam ser atualizadas (${tagResult.failed} falha(s))`);
+      }
+
       console.log(`✅ Consolidação concluída: ${movedTracks.length} faixas organizadas`);
 
       return {
         success: true,
         consolidatedAlbumPath,
         movedTracks,
+        tagsUpdated: tagResult.updated,
         message: `${movedTracks.length} faixas consolidadas em "${correctAlbumName}"`,
       };
     } catch (error) {
