@@ -38,13 +38,13 @@ describe("SeriesCurator – entry point (index.js)", () => {
     it("fallback padrão aponta para <repo-root>/tv (dois níveis acima do index.js)", () => {
       // index.js está em agents/SeriesCurator/
       // ../.. a partir daí = plex_server/
-      const agentsDir = path.resolve(rootPath, "..");       // agents/
-      const repoRoot = path.resolve(agentsDir, "..");       // plex_server/
+      const agentsDir = path.resolve(rootPath, ".."); // agents/
+      const repoRoot = path.resolve(agentsDir, ".."); // plex_server/
       const expectedFallback = path.join(repoRoot, "tv");
 
       // A lógica real em index.js: path.resolve(__dirname, "../..", "tv")
       // onde __dirname = agents/SeriesCurator
-      const indexDir = path.resolve(__dirname, "../..");    // agents/SeriesCurator
+      const indexDir = path.resolve(__dirname, "../.."); // agents/SeriesCurator
       const actualFallback = path.resolve(indexDir, "../..", "tv");
 
       expect(actualFallback).toBe(expectedFallback);
@@ -52,7 +52,7 @@ describe("SeriesCurator – entry point (index.js)", () => {
 
     it("fallback correto resolve para o diretório /tv real da biblioteca", () => {
       // Garante que o fallback não aponte para /Pessoal/tv (bug anterior: ../../../tv)
-      const indexDir = path.resolve(__dirname, "../..");    // agents/SeriesCurator
+      const indexDir = path.resolve(__dirname, "../.."); // agents/SeriesCurator
       const fallback = path.resolve(indexDir, "../..", "tv");
 
       // Deve conter "plex_server/tv", não "Pessoal/tv"

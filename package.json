@@ -1,0 +1,27 @@
+{
+  "name": "plex-server",
+  "version": "1.0.0",
+  "description": "Controlador central do Plex Server + agentes de curadoria",
+  "type": "module",
+  "scripts": {
+    "cli": "node plex-cli.js",
+    "help": "node plex-cli.js --help",
+    "music:consolidate": "node plex-cli.js music:consolidate",
+    "music:fix-all-tags": "node plex-cli.js music:fix-all-tags",
+    "music:fix-all-tags:dry": "node plex-cli.js music:fix-all-tags:dry",
+    "music:fix-tags": "node plex-cli.js music:fix-tags",
+    "music:fix-tags:dry": "node plex-cli.js music:fix-tags:dry",
+    "music:test": "node plex-cli.js music:test",
+    "series:curate": "node plex-cli.js series:curate",
+    "series:curate:dry": "node plex-cli.js series:curate:dry",
+    "series:fix-tags": "node plex-cli.js series:fix-tags",
+    "series:fix-tags:dry": "node plex-cli.js series:fix-tags:dry",
+    "series:test": "node plex-cli.js series:test",
+    "test:all": "node plex-cli.js test:all",
+    "plex:status": "node plex-cli.js plex:status",
+    "plex:restart": "node plex-cli.js plex:restart",
+    "plex:start": "node plex-cli.js plex:start",
+    "plex:stop": "node plex-cli.js plex:stop",
+    "plex:scan": "node plex-cli.js plex:scan"
+  }
+}
