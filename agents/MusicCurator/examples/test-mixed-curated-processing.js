@@ -38,7 +38,7 @@ async function testMixedCuratedProcessing() {
     console.log(`🔍 Diretório a escanear: ${musicDirectory}`);
 
     const artists = await consolidator.scanMusicDirectory(musicDirectory);
-    
+
     console.log(`✅ Encontrados ${artists.length} artistas:`);
     for (const artist of artists) {
       console.log(`   🎵 ${artist.name} (${artist.albums.length} álbuns)`);
