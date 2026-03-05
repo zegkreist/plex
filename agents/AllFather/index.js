@@ -212,7 +212,7 @@ export class AllFather {
    * @returns {Promise<string>} Resposta (com ou sem contexto web)
    */
   async askWithAutoWebSearch(question, options = {}) {
-    const { language = 'en', ...askOptions } = options;
+    const { language = "en", ...askOptions } = options;
 
     try {
       // Primeira tentativa: pede ao modelo para avaliar se precisa de mais informações
@@ -255,10 +255,10 @@ Respond NOW:`;
 
         // Busca na Wikipedia
         const wikiResult = await this.webSearch.searchWikipedia(searchQuery, language);
-        
+
         if (wikiResult) {
           console.log(`✅ Informação encontrada na Wikipedia: ${wikiResult.title}`);
-          
+
           const enrichedPrompt = `Based on this Wikipedia information:
 
 Title: ${wikiResult.title}
@@ -333,12 +333,339 @@ ${question}`;
    * @param {string} language - Idioma (padrão: 'en')
    * @returns {Promise<Object|null>} Objeto com {title, summary, url, source, language}
    */
-  async searchWikipedia(query, language = 'en') {
+  async searchWikipedia(query, language = "en") {
     return this.webSearch.searchWikipedia(query, language);
   }
 
+  /**   * Busca no IMDB (retorna resultado bruto para uso por agentes)
+   * @param {string} title - Título do filme ou série
+   * @returns {Promise<Object|null>} Objeto com {title, year, type, url, source}
+   */
+  async searchIMDB(title) {
+    return this.webSearch.searchIMDB(title);
+  }
+
   /**
-   * Formata resultados de busca para texto legível
+   * Busca informações de filme/série usando apenas IMDB
+   * @param {string} title - Título do filme ou série
+   * @returns {Promise<Object>} Objeto com {query, imdb, timestamp}
+   */
+  async searchMovieOrSeries(title) {
+    return this.webSearch.searchMovieOrSeries(title);
+  }
+
+  /**
+   * Busca metadados de música via MusicBrainz
+   * @param {string} songTitle - Título da música
+   * @param {string} artist - Nome do artista (opcional)
+   * @returns {Promise<Object|null>} Metadados da música
+   */
+  async searchMusicMetadata(songTitle, artist = null) {
+    return this.webSearch.searchMusicMetadata(songTitle, artist);
+  }
+
+  /**
+   * Busca candidatos de música para desambiguação por LLM
+   * @param {string} songTitle - Título da música
+   * @param {string} artist - Nome do artista
+   * @param {number} limit - Quantidade máxima de candidatos
+   * @returns {Promise<Array>} Lista de candidatos
+   */
+  async searchMusicCandidates(songTitle, artist = null, limit = 8) {
+    return this.webSearch.searchMusicCandidates(songTitle, artist, limit);
+  }
+
+  /**
+   * Obtém metadata completo de uma música (LLM + MusicBrainz quando houver dúvida)
+   * Pode usar imagem de capa como sinal adicional de desambiguação.
+   * @param {string} songTitle - Título da música
+   * @param {string} artist - Nome do artista
+   * @param {Object} options - Opções extras
+   * @param {string} options.coverImageUrl - URL da capa do arquivo local/plex
+   * @returns {Promise<Object>} Metadata da música
+   */
+  async getMusicMetadata(songTitle, artist, options = {}) {
+    const { coverImageUrl = null } = options;
+    const draft = await this.askForJSON(
+      `You are cleaning messy music metadata.
+    Input song title: "${songTitle || ""}"
+    Input artist: "${artist || ""}"
+    Has cover image URL: ${Boolean(coverImageUrl)}
+
+Return JSON with exactly this shape:
+{
+  "needsExternalData": true|false,
+  "confidence": 0.0,
+  "searchQuery": "best query for MusicBrainz",
+  "metadata": {
+    "title": "clean title or null",
+    "artist": "clean artist or null",
+    "album": "album or null",
+    "year": "year or null",
+    "genre": "genre or null",
+    "duration": "m:ss or null"
+  }
+}
+
+Set needsExternalData=true when confidence < 0.8 or if any key field is uncertain.`,
+      { temperature: 0.1 },
+    ).catch(() => null);
+
+    const metadataDraft = draft?.metadata || {
+      title: songTitle || null,
+      artist: artist || null,
+      album: null,
+      year: null,
+      genre: null,
+      duration: null,
+    };
+
+    const sparseMusicDraft = !metadataDraft.album || !metadataDraft.year || !metadataDraft.genre;
+    const shouldSearch = !draft || draft.needsExternalData === true || Number(draft.confidence || 0) < 0.8 || sparseMusicDraft;
+
+    if (!shouldSearch) {
+      return {
+        ...metadataDraft,
+        musicBrainzId: null,
+        releaseId: null,
+        score: null,
+        source: "LLM",
+      };
+    }
+
+    const query = draft?.searchQuery || metadataDraft.title || songTitle;
+    let candidates = await this.searchMusicCandidates(query, metadataDraft.artist || artist || null, 8);
+
+    if ((!candidates || candidates.length === 0) && (songTitle || artist)) {
+      candidates = await this.searchMusicCandidates(songTitle || query, artist || metadataDraft.artist || null, 8);
+    }
+
+    if (coverImageUrl && candidates.length > 0) {
+      candidates = await this.webSearch.rankCandidatesByCoverImage(coverImageUrl, candidates);
+    }
+
+    if (!candidates || candidates.length === 0) {
+      const fallbackMusicData = await this.searchMusicMetadata(query, metadataDraft.artist || artist || null);
+      if (fallbackMusicData) {
+        return {
+          ...metadataDraft,
+          ...fallbackMusicData,
+          source: "LLM+MusicBrainz",
+        };
+      }
+
+      return {
+        ...metadataDraft,
+        musicBrainzId: null,
+        releaseId: null,
+        score: null,
+        source: "LLM (no web match)",
+      };
+    }
+
+    const merged = await this.askForJSON(
+      `You are resolving ambiguous music metadata.
+
+Original messy input:
+- title: ${songTitle || ""}
+- artist: ${artist || ""}
+
+LLM cleaned draft:
+${JSON.stringify(metadataDraft)}
+
+MusicBrainz candidates:
+${JSON.stringify(candidates)}
+
+  Input cover image URL:
+  ${coverImageUrl || "none"}
+
+Task:
+1) Analyze output + context.
+2) Choose the best candidate OR decide none is reliable.
+3) Return final normalized metadata.
+
+Return ONLY JSON with this exact shape:
+{
+  "title": "...",
+  "artist": "...",
+  "album": "...",
+  "year": "...",
+  "genre": "...",
+  "duration": "...",
+  "musicBrainzId": "...",
+  "releaseId": "...",
+        "coverArtUrl": "...",
+  "score": 0,
+  "source": "LLM+MusicBrainz"
+}
+
+If candidates are unreliable, keep draft values and set musicBrainzId/releaseId null.
+Never invent artist/title unrelated to input context.`,
+      { temperature: 0.1 },
+    ).catch(() => null);
+
+    return (
+      merged || {
+        ...metadataDraft,
+        ...candidates[0],
+        source: "LLM+MusicBrainz",
+      }
+    );
+  }
+
+  /**
+   * Obtém metadata completo de um filme com IA
+   * @param {string} movieTitle - Título do filme
+   * @returns {Promise<Object>} Metadata do filme
+   */
+  async getMovieMetadata(movieTitle) {
+    const draft = await this.askForJSON(
+      `Provide movie metadata for "${movieTitle}" using your current knowledge.
+Return JSON exactly as:
+{
+  "needsExternalData": true|false,
+  "confidence": 0.0,
+  "searchQuery": "best imdb search query",
+  "metadata": {
+    "title": "exact movie title",
+    "year": "release year",
+    "director": "director name",
+    "genre": "genre(s)",
+    "rating": "imdb rating if known",
+    "plot": "brief plot summary",
+    "cast": ["main actors"]
+  }
+}
+Set needsExternalData=true when confidence < 0.8 or factual uncertainty exists.
+If you are not certain about year/director/rating/cast, set needsExternalData=true.
+For movie metadata tasks, prefer needsExternalData=true unless you are extremely certain.`,
+      { temperature: 0.1 },
+    ).catch(() => null);
+
+    const metadataDraft = draft?.metadata || {
+      title: movieTitle || null,
+      year: null,
+      director: null,
+      genre: null,
+      rating: null,
+      plot: null,
+      cast: [],
+    };
+
+    const sparseMovieDraft = !metadataDraft.year || !metadataDraft.director || !metadataDraft.rating;
+    const shouldSearch = !draft || draft.needsExternalData === true || Number(draft.confidence || 0) < 0.9 || sparseMovieDraft;
+    if (!shouldSearch) {
+      return metadataDraft;
+    }
+
+    const searchTitle = draft?.searchQuery || movieTitle;
+    const movieData = await this.searchMovieOrSeries(searchTitle);
+
+    if (!movieData?.imdb) {
+      return metadataDraft;
+    }
+
+    return this.askForJSON(
+      `Merge LLM draft metadata with IMDb data and return final JSON.
+
+LLM draft:
+${JSON.stringify(metadataDraft)}
+
+IMDb data:
+${JSON.stringify(movieData.imdb)}
+
+Return only:
+{
+  "title": "exact movie title",
+  "year": "release year",
+  "director": "director name",
+  "genre": "genre(s)",
+  "rating": "imdb or best available",
+  "plot": "brief plot summary (max 200 chars)",
+  "cast": ["main actors if mentioned"]
+}`,
+      { temperature: 0.1 },
+    ).catch(() => metadataDraft);
+  }
+
+  /**
+   * Obtém metadata completo de uma série com IA
+   * @param {string} seriesTitle - Título da série
+   * @returns {Promise<Object>} Metadata da série
+   */
+  async getSeriesMetadata(seriesTitle) {
+    const draft = await this.askForJSON(
+      `Provide TV series metadata for "${seriesTitle}" using your current knowledge.
+Return JSON exactly as:
+{
+  "needsExternalData": true|false,
+  "confidence": 0.0,
+  "searchQuery": "best imdb search query",
+  "metadata": {
+    "title": "exact series title",
+    "year": "start year or range",
+    "seasons": "number of seasons",
+    "genre": "genre(s)",
+    "creator": "creator(s)",
+    "rating": "rating if known",
+    "plot": "brief plot",
+    "cast": ["main actors"]
+  }
+}
+Set needsExternalData=true when confidence < 0.8 or factual uncertainty exists.
+If you are not certain about year/seasons/creator/rating/cast, set needsExternalData=true.
+For TV metadata tasks, prefer needsExternalData=true unless you are extremely certain.`,
+      { temperature: 0.1 },
+    ).catch(() => null);
+
+    const metadataDraft = draft?.metadata || {
+      title: seriesTitle || null,
+      year: null,
+      seasons: null,
+      genre: null,
+      creator: null,
+      rating: null,
+      plot: null,
+      cast: [],
+    };
+
+    const sparseSeriesDraft = !metadataDraft.year || !metadataDraft.seasons || !metadataDraft.creator;
+    const shouldSearch = !draft || draft.needsExternalData === true || Number(draft.confidence || 0) < 0.9 || sparseSeriesDraft;
+    if (!shouldSearch) {
+      return metadataDraft;
+    }
+
+    const searchTitle = draft?.searchQuery || seriesTitle;
+    const seriesData = await this.searchMovieOrSeries(searchTitle);
+    if (!seriesData?.imdb) {
+      return metadataDraft;
+    }
+
+    return this.askForJSON(
+      `Merge LLM draft metadata with IMDb data and return final JSON.
+
+LLM draft:
+${JSON.stringify(metadataDraft)}
+
+IMDb data:
+${JSON.stringify(seriesData.imdb)}
+
+Return only:
+{
+  "title": "exact series title",
+  "year": "start year or year range",
+  "seasons": "number of seasons if mentioned",
+  "genre": "genre(s)",
+  "creator": "creator name(s)",
+  "rating": "rating if mentioned",
+  "plot": "brief plot summary (max 200 chars)",
+  "cast": ["main actors if mentioned"]
+}`,
+      { temperature: 0.1 },
+    ).catch(() => metadataDraft);
+  }
+
+  /**   * Formata resultados de busca para texto legível
    * @param {Object|Array} searchResults - Resultados da busca (de searchWeb, searchGoogle ou searchWikipedia)
    * @returns {string} Texto formatado
    */

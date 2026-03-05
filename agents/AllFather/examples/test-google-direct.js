@@ -1,4 +1,4 @@
-import { WebSearch } from '../src/web-search.js';
+import { WebSearch } from "../src/web-search.js";
 
 /**
  * Teste simples do Google Search
@@ -6,22 +6,17 @@ import { WebSearch } from '../src/web-search.js';
 async function testGoogleSearch() {
   const webSearch = new WebSearch();
 
-  console.log('🔍 Testando Google Search diretamente\n');
+  console.log("🔍 Testando Google Search diretamente\n");
 
-  const queries = [
-    'Radiohead',
-    'OK Computer album',
-    'Inception movie',
-    'David Bowie'
-  ];
+  const queries = ["Radiohead", "OK Computer album", "Inception movie", "David Bowie"];
 
   for (const query of queries) {
     console.log(`\nBuscando: "${query}"`);
-    console.log('-'.repeat(50));
-    
+    console.log("-".repeat(50));
+
     try {
       const results = await webSearch.searchGoogle(query, 3);
-      
+
       if (results && results.length > 0) {
         console.log(`✅ ${results.length} resultados encontrados:\n`);
         results.forEach((result, index) => {
@@ -30,14 +25,14 @@ async function testGoogleSearch() {
           console.log(`   ${result.url}\n`);
         });
       } else {
-        console.log('❌ Nenhum resultado encontrado');
+        console.log("❌ Nenhum resultado encontrado");
       }
     } catch (error) {
-      console.error('❌ Erro:', error.message);
+      console.error("❌ Erro:", error.message);
     }
-    
+
     // Aguarda um pouco entre as buscas
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 }
 
