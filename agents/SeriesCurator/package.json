@@ -1,0 +1,37 @@
+{
+  "name": "series-curator",
+  "version": "1.0.0",
+  "description": "Agent responsável por organizar e curar a biblioteca de séries do Plex",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:unit": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit",
+    "test:integration": "NODE_OPTIONS=--experimental-vm-modules jest tests/integration",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
+    "fix-tags": "node src/fix-series-tags.js",
+    "fix-tags:dry": "node src/fix-series-tags.js --dry-run",
+    "curate": "node index.js",
+    "curate:dry": "node index.js --dry-run"
+  },
+  "keywords": [
+    "plex",
+    "series",
+    "tv",
+    "curator",
+    "agent"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@plex-agents/allfather": "file:../AllFather",
+    "axios": "^1.6.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  }
+}
