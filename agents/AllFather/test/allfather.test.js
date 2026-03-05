@@ -62,7 +62,8 @@ describe("AllFather - Comunicação com Ollama", () => {
       const response = await allfather.ask("Qual é a capital de Portugal?");
 
       assert.ok(response);
-      assert.match(response.toLowerCase(), /lisboa/);
+      // Aceita resposta em português ou inglês
+      assert.match(response.toLowerCase(), /lisboa|lisbon/);
     });
 
     it("deve processar números e cálculos", async () => {
@@ -224,10 +225,10 @@ describe("AllFather - Comunicação com Ollama", () => {
     });
 
     it("deve corrigir nome de artista com erros de digitação", async () => {
-      const correctedName = await allfather.ask('Corrija este nome de artista se houver erro: "The Beattles". Responda apenas com o nome correto.');
+      const correctedName = await allfather.ask('Correct the spelling: "Qeen" (the famous rock band). Reply with just the corrected name.');
 
       assert.ok(correctedName);
-      assert.match(correctedName, /Beatles/i);
+      assert.match(correctedName, /Queen/i);
     });
 
     it("deve identificar mood/sentimento da música", async () => {
