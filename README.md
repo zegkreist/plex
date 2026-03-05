@@ -141,6 +141,22 @@ Ou comandos diretos:
 
 📖 **[Ver documentação completa do Ollama →](OLLAMA.md)**
 
+### 🎮 GPU NVIDIA (Aceleração)
+
+Se você tem GPU NVIDIA, configure para modelos **5-10x mais rápidos**:
+
+```bash
+# Instalar NVIDIA Container Toolkit
+sudo ./setup-nvidia-docker.sh
+
+# Reiniciar Ollama
+docker-compose restart ollama
+```
+
+O `docker-compose.yml` já está configurado para usar GPU NVIDIA automaticamente.
+
+📖 **[Ver guia completo de GPU NVIDIA →](GPU-NVIDIA.md)**
+
 ## 🤖 Agents
 
 O projeto inclui agents Node.js para automação:
