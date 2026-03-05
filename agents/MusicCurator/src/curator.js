@@ -14,7 +14,7 @@ export class MusicCurator {
     // Inicializa AllFather para inteligência artificial
     this.allfather = new AllFather({
       ollamaUrl: process.env.OLLAMA_URL || "http://localhost:11434",
-      model: process.env.OLLAMA_DEFAULT_MODEL || "deepseek-r1:1.5b",
+      model: process.env.OLLAMA_DEFAULT_MODEL || "deepseek-r1:7b",
       temperature: 0.5, // Mais preciso para metadados
     });
   }
