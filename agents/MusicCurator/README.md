@@ -99,6 +99,32 @@ Após processar um álbum, o sistema cria um arquivo `.curated` dentro da pasta:
 
 Álbuns com `.curated` são automaticamente pulados nas próximas execuções (se `skipCurated: true`).
 
+### Playlists conhecidas (ignoradas):
+
+O consolidador ignora automaticamente pastas que são sabidamente playlists e não álbuns:
+
+- **ShroomTrip**
+- **Viagem light**
+- **Hotline Miami Soundtrack**
+- **Balanço Groove Brasil 70's**
+
+Para adicionar mais playlists à lista de exclusão, edite:
+
+```javascript
+// agents/MusicCurator/src/album-consolidator.js
+const KNOWN_PLAYLISTS = [
+  "ShroomTrip",
+  "Sua Playlist Aqui", // Adicione aqui
+];
+```
+
+Ou gerencie temporariamente via script:
+
+```bash
+node examples/manage-playlists.js list
+node examples/manage-playlists.js add "Minha Playlist"
+```
+
 ## 🚀 Instalação
 
 ### 1. Instalar dependências

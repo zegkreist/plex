@@ -1,0 +1,5543 @@
+{
+  "timestamp": "2026-03-05T10:55:00.175Z",
+  "durationMinutes": 304.01,
+  "statistics": {
+    "totalArtists": 550,
+    "processedArtists": 550,
+    "skippedArtists": 0,
+    "totalConsolidations": 5,
+    "totalNormalizations": 781,
+    "totalErrors": 0,
+    "startTime": "2026-03-05T05:50:59.555Z",
+    "endTime": "2026-03-05T10:55:00.175Z"
+  },
+  "results": [
+    {
+      "artist": "“Weird Al” Yankovic",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 31.7
+      }
+    },
+    {
+      "artist": "3",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 16.1
+      }
+    },
+    {
+      "artist": "4 Non Blondes",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 32.2
+      }
+    },
+    {
+      "artist": "A Forest of Stars",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.3
+      }
+    },
+    {
+      "artist": "a‐ha",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 5.1
+      }
+    },
+    {
+      "artist": "ABBA",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 46.5
+      }
+    },
+    {
+      "artist": "Accept",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 7.3
+      }
+    },
+    {
+      "artist": "Acid Bath",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 36.8
+      }
+    },
+    {
+      "artist": "Acolyte",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.2
+      }
+    },
+    {
+      "artist": "Acrassicauda",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.5
+      }
+    },
+    {
+      "artist": "Afroman",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 25.8
+      }
+    },
+    {
+      "artist": "After the Burial",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.5
+      }
+    },
+    {
+      "artist": "Air",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22.1
+      }
+    },
+    {
+      "artist": "Alabama Shakes",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 27.1
+      }
+    },
+    {
+      "artist": "Alain Johannes",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 35.3
+      }
+    },
+    {
+      "artist": "Alceu Valença",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 36.6
+      }
+    },
+    {
+      "artist": "Alice in Chains",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 43.6
+      }
+    },
+    {
+      "artist": "Alice In Chains",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 9.5
+      }
+    },
+    {
+      "artist": "All Them Witches",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 30.3
+      }
+    },
+    {
+      "artist": "Almunia",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 23.1
+      }
+    },
+    {
+      "artist": "Alogte Oho & His Sounds of Joy",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.5
+      }
+    },
+    {
+      "artist": "ALTA Early Music Ensemble",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.9
+      }
+    },
+    {
+      "artist": "Alunah",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.7
+      }
+    },
+    {
+      "artist": "Amy Winehouse",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.2
+      }
+    },
+    {
+      "artist": "Ana Mazzotti",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 60
+      }
+    },
+    {
+      "artist": "Analepsy",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 12.9
+      }
+    },
+    {
+      "artist": "Anathema",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 37.7
+      }
+    },
+    {
+      "artist": "Anciients",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.1
+      }
+    },
+    {
+      "artist": "André Rio e Trio Sotaque",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.2
+      }
+    },
+    {
+      "artist": "Animal Alpha",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 26.2
+      }
+    },
+    {
+      "artist": "Animals as Leaders",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.5
+      }
+    },
+    {
+      "artist": "Ankor",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.2
+      }
+    },
+    {
+      "artist": "Antemasque",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 24.4
+      }
+    },
+    {
+      "artist": "Antibalas",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 33.2
+      }
+    },
+    {
+      "artist": "Antônio Adolfo",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 45.5
+      }
+    },
+    {
+      "artist": "Arawak",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15.7
+      }
+    },
+    {
+      "artist": "Arcturus",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 29.5
+      }
+    },
+    {
+      "artist": "Arthur Verocai",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.7
+      }
+    },
+    {
+      "artist": "Asteroid",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.2
+      }
+    },
+    {
+      "artist": "Audioslave",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 64.7
+      }
+    },
+    {
+      "artist": "Avatarium",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 34.7
+      }
+    },
+    {
+      "artist": "Avralize",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.5
+      }
+    },
+    {
+      "artist": "Ayreon",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 24
+      }
+    },
+    {
+      "artist": "AZIMUTH",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 5.9
+      }
+    },
+    {
+      "artist": "Azymuth",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 48.3
+      }
+    },
+    {
+      "artist": "Baby Huey & The Babysitters",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 50.6
+      }
+    },
+    {
+      "artist": "Baden Powell",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.8
+      }
+    },
+    {
+      "artist": "BAEST, Trevor Strnad, The Black Dahlia Murder",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.7
+      }
+    },
+    {
+      "artist": "BaianaSystem, BNegão",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22.8
+      }
+    },
+    {
+      "artist": "BaianaSystem, Tropkillaz, Claudia Manzo",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.2
+      }
+    },
+    {
+      "artist": "Banda Black Rio",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 28.1
+      }
+    },
+    {
+      "artist": "Bangz cmxviii, Viddiex fyah, Kal-El",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.6
+      }
+    },
+    {
+      "artist": "Barbatuques",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 63.6
+      }
+    },
+    {
+      "artist": "Bathory",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 22.9
+      }
+    },
+    {
+      "artist": "Battleroar",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 29.9
+      }
+    },
+    {
+      "artist": "Bembeya Jazz National",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 28.2
+      }
+    },
+    {
+      "artist": "Benny Smiles",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.7
+      }
+    },
+    {
+      "artist": "Big Brave",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.6
+      }
+    },
+    {
+      "artist": "Bill Withers",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 38.5
+      }
+    },
+    {
+      "artist": "Black Alien",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 49.5
+      }
+    },
+    {
+      "artist": "Black Alien, Edi Rock",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 17.4
+      }
+    },
+    {
+      "artist": "Black Label Society",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 4,
+        "errors": 0,
+        "duration": 134.6
+      }
+    },
+    {
+      "artist": "Black Mountain",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.1
+      }
+    },
+    {
+      "artist": "Black Pumas",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 35.3
+      }
+    },
+    {
+      "artist": "Black Rebel Motorcycle Club",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 35.5
+      }
+    },
+    {
+      "artist": "Black Sabbath",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 4,
+        "errors": 0,
+        "duration": 97.3
+      }
+    },
+    {
+      "artist": "Blade The Soundtrack, New Order",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 26.4
+      }
+    },
+    {
+      "artist": "Blockhead",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 40.2
+      }
+    },
+    {
+      "artist": "Blue Öyster Cult",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 42.4
+      }
+    },
+    {
+      "artist": "Blues Pills",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 98.2
+      }
+    },
+    {
+      "artist": "Bob In Space",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15
+      }
+    },
+    {
+      "artist": "Bobaflex",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.3
+      }
+    },
+    {
+      "artist": "Bohren & der Club of Gore",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.9
+      }
+    },
+    {
+      "artist": "Bonnie Tyler",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 37.7
+      }
+    },
+    {
+      "artist": "Borislav Slavov",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 25.7
+      }
+    },
+    {
+      "artist": "Brass Against",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 39.9
+      }
+    },
+    {
+      "artist": "Brick",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 39.8
+      }
+    },
+    {
+      "artist": "Bronski Beat",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.6
+      }
+    },
+    {
+      "artist": "Brownout",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 8.7
+      }
+    },
+    {
+      "artist": "Bruno Sutter",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.1
+      }
+    },
+    {
+      "artist": "C.G. Keyz",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.4
+      }
+    },
+    {
+      "artist": "Caetano Veloso",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 50.5
+      }
+    },
+    {
+      "artist": "CAKE",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15.4
+      }
+    },
+    {
+      "artist": "Calum Graham",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22.3
+      }
+    },
+    {
+      "artist": "Cameo",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 32.5
+      }
+    },
+    {
+      "artist": "Candlemass",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 35.2
+      }
+    },
+    {
+      "artist": "Canned Heat",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 40.7
+      }
+    },
+    {
+      "artist": "Canto Cego",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.5
+      }
+    },
+    {
+      "artist": "Capital Cities",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 35.9
+      }
+    },
+    {
+      "artist": "Cari Cari",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15.7
+      }
+    },
+    {
+      "artist": "Carpenter Brut",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 30.5
+      }
+    },
+    {
+      "artist": "Cartola",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 35.6
+      }
+    },
+    {
+      "artist": "Cassiano",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 26.6
+      }
+    },
+    {
+      "artist": "Castanets",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 25.5
+      }
+    },
+    {
+      "artist": "Célia",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20.7
+      }
+    },
+    {
+      "artist": "César Camargo Mariano",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.7
+      }
+    },
+    {
+      "artist": "Chainwind Ritual",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.9
+      }
+    },
+    {
+      "artist": "Chaka Khan",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 36.2
+      }
+    },
+    {
+      "artist": "Chelsea Wolfe, King Dude",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.8
+      }
+    },
+    {
+      "artist": "Chevelle",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 26.9
+      }
+    },
+    {
+      "artist": "Chic",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 67.2
+      }
+    },
+    {
+      "artist": "Chico César",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 46.2
+      }
+    },
+    {
+      "artist": "Chico Science, Nacão Zumbi",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.5
+      }
+    },
+    {
+      "artist": "Chris Squire",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 31.8
+      }
+    },
+    {
+      "artist": "Circles Around The Sun, Neal Casal",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 9.7
+      }
+    },
+    {
+      "artist": "CoConuts",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.8
+      }
+    },
+    {
+      "artist": "Colonel Bagshot",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.3
+      }
+    },
+    {
+      "artist": "Colour Haze",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 17,
+        "errors": 0,
+        "duration": 351
+      }
+    },
+    {
+      "artist": "Corpo-Mente",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15.3
+      }
+    },
+    {
+      "artist": "Cortex",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 12.9
+      }
+    },
+    {
+      "artist": "Cream",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 37.2
+      }
+    },
+    {
+      "artist": "Criolo",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 28.5
+      }
+    },
+    {
+      "artist": "Curved Air",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 27.6
+      }
+    },
+    {
+      "artist": "DakhaBrakha",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.4
+      }
+    },
+    {
+      "artist": "Dark Moon",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.4
+      }
+    },
+    {
+      "artist": "Dave Brubeck",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 32.6
+      }
+    },
+    {
+      "artist": "David Bowie",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22.7
+      }
+    },
+    {
+      "artist": "Death",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.7
+      }
+    },
+    {
+      "artist": "Deep Purple",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 66.2
+      }
+    },
+    {
+      "artist": "Deftones",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 8.4
+      }
+    },
+    {
+      "artist": "Delinquent Habits",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 26
+      }
+    },
+    {
+      "artist": "Demônios da Garoa",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 27.4
+      }
+    },
+    {
+      "artist": "Dengue Fever",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22.6
+      }
+    },
+    {
+      "artist": "Devin Townsend",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 21.1
+      }
+    },
+    {
+      "artist": "Diablo Swing Orchestra",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 48.3
+      }
+    },
+    {
+      "artist": "Dio",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 7,
+        "errors": 0,
+        "duration": 201.7
+      }
+    },
+    {
+      "artist": "Dismyth",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.8
+      }
+    },
+    {
+      "artist": "DISSECTION",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 16.4
+      }
+    },
+    {
+      "artist": "Disturbed",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 4,
+        "errors": 0,
+        "duration": 156.9
+      }
+    },
+    {
+      "artist": "Dom Salvador, Abolição",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.1
+      }
+    },
+    {
+      "artist": "Domkraft",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.7
+      }
+    },
+    {
+      "artist": "Donald Byrd",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 36
+      }
+    },
+    {
+      "artist": "Dr. Dre, Snoop Dogg",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 17.4
+      }
+    },
+    {
+      "artist": "Dream Theater",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 43.8
+      }
+    },
+    {
+      "artist": "Dropkick Murphys",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 29.5
+      }
+    },
+    {
+      "artist": "Dubmood",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.3
+      }
+    },
+    {
+      "artist": "Eagles of Death Metal",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.5
+      }
+    },
+    {
+      "artist": "Earth",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.1
+      }
+    },
+    {
+      "artist": "Earth, Wind & Fire, The Emotions",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 16.1
+      }
+    },
+    {
+      "artist": "Earthless",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 23.1
+      }
+    },
+    {
+      "artist": "Edu Lobo",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20
+      }
+    },
+    {
+      "artist": "Eklipse",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.3
+      }
+    },
+    {
+      "artist": "El Efecto",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 8.7
+      }
+    },
+    {
+      "artist": "El Huervo",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 4,
+        "errors": 0,
+        "duration": 109.4
+      }
+    },
+    {
+      "artist": "El Tigr3",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.3
+      }
+    },
+    {
+      "artist": "Elbow",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20.7
+      }
+    },
+    {
+      "artist": "Elder",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10
+      }
+    },
+    {
+      "artist": "Elephant Tree",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.9
+      }
+    },
+    {
+      "artist": "Emílio Santiago",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 34.7
+      }
+    },
+    {
+      "artist": "Eminem",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 30.5
+      }
+    },
+    {
+      "artist": "Ennio Morricone",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 34.5
+      }
+    },
+    {
+      "artist": "Ensiferum",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.3
+      }
+    },
+    {
+      "artist": "Enslaved",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.9
+      }
+    },
+    {
+      "artist": "Erasmo Carlos",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 57.9
+      }
+    },
+    {
+      "artist": "Eric Clapton",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 33.3
+      }
+    },
+    {
+      "artist": "Estas Tonne",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 27.3
+      }
+    },
+    {
+      "artist": "Evelyn _Champagne_ King",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.4
+      }
+    },
+    {
+      "artist": "Evinha",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 42.3
+      }
+    },
+    {
+      "artist": "Fafá de Belém",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 24.9
+      }
+    },
+    {
+      "artist": "Fanfare Ciocarlia",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 40.2
+      }
+    },
+    {
+      "artist": "Fanfare Ciocărlia",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 43.2
+      }
+    },
+    {
+      "artist": "Far From Alaska",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 35.9
+      }
+    },
+    {
+      "artist": "Fates Warning",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.3
+      }
+    },
+    {
+      "artist": "Flavio José",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.7
+      }
+    },
+    {
+      "artist": "Fleshgod Apocalypse",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 10,
+        "errors": 0,
+        "duration": 146.9
+      }
+    },
+    {
+      "artist": "Frank Klepacki",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 37
+      }
+    },
+    {
+      "artist": "Frank Zappa",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 4,
+        "errors": 0,
+        "duration": 120.6
+      }
+    },
+    {
+      "artist": "Fribytterdrømme",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.1
+      }
+    },
+    {
+      "artist": "Funky Destination",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 16.9
+      }
+    },
+    {
+      "artist": "Gábor Szabó",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 26.2
+      }
+    },
+    {
+      "artist": "Gal Costa",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 50.7
+      }
+    },
+    {
+      "artist": "Gal Costa, Caetano Veloso",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 33.2
+      }
+    },
+    {
+      "artist": "Gaupa",
+      "result": {
+        "success": true,
+        "consolidations": 1,
+        "normalizations": 0,
+        "errors": 0,
+        "duration": 43.5
+      }
+    },
+    {
+      "artist": "Gazpacho",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 41
+      }
+    },
+    {
+      "artist": "Gene Harris",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 7.9
+      }
+    },
+    {
+      "artist": "Genghis Tron",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 12
+      }
+    },
+    {
+      "artist": "Gentle Giant",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 52.6
+      }
+    },
+    {
+      "artist": "George Thorogood",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 38.7
+      }
+    },
+    {
+      "artist": "Gerry Rafferty",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 42.5
+      }
+    },
+    {
+      "artist": "Gerson King Combo",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 23.6
+      }
+    },
+    {
+      "artist": "Ghost",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22.5
+      }
+    },
+    {
+      "artist": "Ghost Brigade",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.5
+      }
+    },
+    {
+      "artist": "Gilberto Gil",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 36.6
+      }
+    },
+    {
+      "artist": "Giuseppe Verdi & St Petersburg Philharmonic Orchestra & Alxander Timchenko & Carlo Colombara & Carmen Giannattasio & Veronica Simeoni",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 7.6
+      }
+    },
+    {
+      "artist": "Gnome",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 8,
+        "errors": 0,
+        "duration": 111
+      }
+    },
+    {
+      "artist": "Go_A",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.3
+      }
+    },
+    {
+      "artist": "Gorillaz, Del Tha Funkee Homosapien",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.2
+      }
+    },
+    {
+      "artist": "Grand Magus",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 9.9
+      }
+    },
+    {
+      "artist": "Grandmaster Flash, Melle Mel & The Furious Five, Melle Mel, Duke Bootee",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 12.7
+      }
+    },
+    {
+      "artist": "Grave Digger",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22.8
+      }
+    },
+    {
+      "artist": "Guns N’ Roses",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 50.1
+      }
+    },
+    {
+      "artist": "Haken",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 31
+      }
+    },
+    {
+      "artist": "Halestorm",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.9
+      }
+    },
+    {
+      "artist": "Hatthakon Thaothong",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.6
+      }
+    },
+    {
+      "artist": "Heartless Bastards",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15.6
+      }
+    },
+    {
+      "artist": "Heaven & Hell",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 42.4
+      }
+    },
+    {
+      "artist": "Heavy Temple",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11
+      }
+    },
+    {
+      "artist": "Heidevolk",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 9.9
+      }
+    },
+    {
+      "artist": "Helloween",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 2.6
+      }
+    },
+    {
+      "artist": "Heretic Brazil",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 12.3
+      }
+    },
+    {
+      "artist": "Hermeto Pascoal, Doug deVries, James Macauley",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.3
+      }
+    },
+    {
+      "artist": "High on Fire",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15.5
+      }
+    },
+    {
+      "artist": "House of Pain",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 35.1
+      }
+    },
+    {
+      "artist": "Hyper",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.5
+      }
+    },
+    {
+      "artist": "iamthekidyouknowwhatimean",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.2
+      }
+    },
+    {
+      "artist": "Ibrahim Maalouf",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 40.7
+      }
+    },
+    {
+      "artist": "Igorrr",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 23
+      }
+    },
+    {
+      "artist": "In This Moment",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 35.9
+      }
+    },
+    {
+      "artist": "Infected Mushroom",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.3
+      }
+    },
+    {
+      "artist": "Infected Rain",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.4
+      }
+    },
+    {
+      "artist": "Ini Kamoze",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 36
+      }
+    },
+    {
+      "artist": "Instituto",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 35.2
+      }
+    },
+    {
+      "artist": "Instituto, Sabotage",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 28.5
+      }
+    },
+    {
+      "artist": "IQ",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 17.1
+      }
+    },
+    {
+      "artist": "Iron Maiden",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 33.9
+      }
+    },
+    {
+      "artist": "islandman",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 8.1
+      }
+    },
+    {
+      "artist": "Jack Stauber",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.8
+      }
+    },
+    {
+      "artist": "Jack White",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 41.5
+      }
+    },
+    {
+      "artist": "Jack Wilkins",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20.6
+      }
+    },
+    {
+      "artist": "Jain",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 34.5
+      }
+    },
+    {
+      "artist": "James Brown",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 89.5
+      }
+    },
+    {
+      "artist": "James Brown, Fred Wesley, The J.B.'s",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 41.1
+      }
+    },
+    {
+      "artist": "James Brown, The Famous Flames",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 26.1
+      }
+    },
+    {
+      "artist": "Janis Joplin, Big Brother & The Holding Company",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.1
+      }
+    },
+    {
+      "artist": "Jards Macalé",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 34
+      }
+    },
+    {
+      "artist": "Jason Richardson",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 30.4
+      }
+    },
+    {
+      "artist": "Jasper Byrne",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 26.2
+      }
+    },
+    {
+      "artist": "Jefferson Airplane",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 33.6
+      }
+    },
+    {
+      "artist": "Jethro Tull",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 25.8
+      }
+    },
+    {
+      "artist": "Jimi Hendrix",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 33.2
+      }
+    },
+    {
+      "artist": "João Bosco",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 27.4
+      }
+    },
+    {
+      "artist": "João Donato",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 31.7
+      }
+    },
+    {
+      "artist": "Joe Bataan",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 31.1
+      }
+    },
+    {
+      "artist": "John Scofield",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.4
+      }
+    },
+    {
+      "artist": "Jorge Ben Jor",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 7,
+        "errors": 0,
+        "duration": 167.1
+      }
+    },
+    {
+      "artist": "Jorge Ben Jor, Trio Mocotó",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 30.2
+      }
+    },
+    {
+      "artist": "José Larralde",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 28.1
+      }
+    },
+    {
+      "artist": "José Mauro",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 5.8
+      }
+    },
+    {
+      "artist": "JOYce, Gilson Peranzzetta",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.4
+      }
+    },
+    {
+      "artist": "Judas Priest",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 72.8
+      }
+    },
+    {
+      "artist": "Juno Reactor",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15.4
+      }
+    },
+    {
+      "artist": "Justice",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 31.4
+      }
+    },
+    {
+      "artist": "Kadavar",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22.8
+      }
+    },
+    {
+      "artist": "Kal-El",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 24,
+        "errors": 0,
+        "duration": 468.2
+      }
+    },
+    {
+      "artist": "KC & THE SUNSHINE BAND",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 38.3
+      }
+    },
+    {
+      "artist": "Khonsu",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.2
+      }
+    },
+    {
+      "artist": "Kiev",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.8
+      }
+    },
+    {
+      "artist": "Killing Joke",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 40.8
+      }
+    },
+    {
+      "artist": "King Buffalo",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 9,
+        "errors": 0,
+        "duration": 135.7
+      }
+    },
+    {
+      "artist": "King Diamond",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 38.2
+      }
+    },
+    {
+      "artist": "King Gizzard & The Lizard Wizard",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 46.8
+      }
+    },
+    {
+      "artist": "Kool & the Gang",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 58.5
+      }
+    },
+    {
+      "artist": "Korpiklaani",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 7,
+        "errors": 0,
+        "duration": 125.7
+      }
+    },
+    {
+      "artist": "Labi Siffre",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 39.4
+      }
+    },
+    {
+      "artist": "Lamb of God",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 31.6
+      }
+    },
+    {
+      "artist": "Le Tigre",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 38.6
+      }
+    },
+    {
+      "artist": "Lebanon Hanover",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15.6
+      }
+    },
+    {
+      "artist": "Led Zeppelin",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 47.1
+      }
+    },
+    {
+      "artist": "Leon Ware",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22.8
+      }
+    },
+    {
+      "artist": "Leprous",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 38.6
+      }
+    },
+    {
+      "artist": "Lettuce",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 74.6
+      }
+    },
+    {
+      "artist": "Light Club",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.8
+      }
+    },
+    {
+      "artist": "Light Club, Motëm",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 30
+      }
+    },
+    {
+      "artist": "Lipps, Inc.",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 35.8
+      }
+    },
+    {
+      "artist": "Little Barrie",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 7.3
+      }
+    },
+    {
+      "artist": "Little Beaver",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.2
+      }
+    },
+    {
+      "artist": "Living Colour",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 32.3
+      }
+    },
+    {
+      "artist": "Lô Borges",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 4,
+        "errors": 0,
+        "duration": 102.5
+      }
+    },
+    {
+      "artist": "Loituma",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 31.2
+      }
+    },
+    {
+      "artist": "London After Midnight, Sean Brennan",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.2
+      }
+    },
+    {
+      "artist": "Lonnie Liston Smith, The Cosmic Echoes",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 16.8
+      }
+    },
+    {
+      "artist": "Los Natas",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.3
+      }
+    },
+    {
+      "artist": "Lucid Planet",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 25.2
+      }
+    },
+    {
+      "artist": "Lucky Chops",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15.4
+      }
+    },
+    {
+      "artist": "Lula Côrtes, Zé Ramalho",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 28.4
+      }
+    },
+    {
+      "artist": "M.O.O.N.",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 36.3
+      }
+    },
+    {
+      "artist": "Mac DeMarco",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 31.5
+      }
+    },
+    {
+      "artist": "Mack Browne & The Brothers",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 12.4
+      }
+    },
+    {
+      "artist": "Macklemore, Ryan Lewis, Wanz, Macklemore & Ryan Lewis",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 23.5
+      }
+    },
+    {
+      "artist": "Madame Saatan",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 26.9
+      }
+    },
+    {
+      "artist": "Madcon",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.2
+      }
+    },
+    {
+      "artist": "Magic Sword",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 17.5
+      }
+    },
+    {
+      "artist": "Magna",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.1
+      }
+    },
+    {
+      "artist": "MaidaVale",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.4
+      }
+    },
+    {
+      "artist": "Manowar",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 43.8
+      }
+    },
+    {
+      "artist": "Manu Chao",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 27.9
+      }
+    },
+    {
+      "artist": "Marc Moulin",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.8
+      }
+    },
+    {
+      "artist": "Marcos Valle",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 6,
+        "errors": 0,
+        "duration": 159.8
+      }
+    },
+    {
+      "artist": "Maria Bethânia",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 28.3
+      }
+    },
+    {
+      "artist": "Marilyn Manson",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 48.6
+      }
+    },
+    {
+      "artist": "Marina Sena",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.6
+      }
+    },
+    {
+      "artist": "Mars Red Sky",
+      "result": {
+        "success": true,
+        "consolidations": 1,
+        "normalizations": 0,
+        "errors": 0,
+        "duration": 22
+      }
+    },
+    {
+      "artist": "Mars Red Sky, Monkey3",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.3
+      }
+    },
+    {
+      "artist": "Mars Red Sky, Queen Of The Meadow",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 25.5
+      }
+    },
+    {
+      "artist": "Marvin Gaye",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 2.8
+      }
+    },
+    {
+      "artist": "Maserati",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20.5
+      }
+    },
+    {
+      "artist": "Massacration",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 26.5
+      }
+    },
+    {
+      "artist": "Mats_Morgan Band",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.1
+      }
+    },
+    {
+      "artist": "Mega Drive",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 25.1
+      }
+    },
+    {
+      "artist": "Megadeth",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 79.8
+      }
+    },
+    {
+      "artist": "Melechesh",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 9,
+        "errors": 0,
+        "duration": 153.5
+      }
+    },
+    {
+      "artist": "Melvins",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 66.2
+      }
+    },
+    {
+      "artist": "Messa",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 9.4
+      }
+    },
+    {
+      "artist": "Metallica",
+      "result": {
+        "success": true,
+        "consolidations": 1,
+        "normalizations": 0,
+        "errors": 0,
+        "duration": 6.2
+      }
+    },
+    {
+      "artist": "MGMT",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 29.8
+      }
+    },
+    {
+      "artist": "Michael Jackson",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 4,
+        "errors": 0,
+        "duration": 88.9
+      }
+    },
+    {
+      "artist": "MIDIFine Systems",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.6
+      }
+    },
+    {
+      "artist": "Mike Oldfield",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 12.3
+      }
+    },
+    {
+      "artist": "Milton Nascimento, Lô Borges",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.5
+      }
+    },
+    {
+      "artist": "Mitch Murder",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 30.1
+      }
+    },
+    {
+      "artist": "Mizarates",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.5
+      }
+    },
+    {
+      "artist": "Moderator",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15.3
+      }
+    },
+    {
+      "artist": "Modern Ruin",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.4
+      }
+    },
+    {
+      "artist": "Modern Talking",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 26.7
+      }
+    },
+    {
+      "artist": "Modulogeek",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 18.2
+      }
+    },
+    {
+      "artist": "Monkey3",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 21.5
+      }
+    },
+    {
+      "artist": "Monster Bus",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 8.2
+      }
+    },
+    {
+      "artist": "Monster Magnet",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 48.1
+      }
+    },
+    {
+      "artist": "Moon Hooch",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.9
+      }
+    },
+    {
+      "artist": "Moriaty",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.3
+      }
+    },
+    {
+      "artist": "Morphine",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 42.6
+      }
+    },
+    {
+      "artist": "Motörhead",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 16.9
+      }
+    },
+    {
+      "artist": "Mountain",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 44.5
+      }
+    },
+    {
+      "artist": "Mr. Day",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 18.4
+      }
+    },
+    {
+      "artist": "Múr",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.6
+      }
+    },
+    {
+      "artist": "Muse",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 101.2
+      }
+    },
+    {
+      "artist": "Mustasch",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 30.3
+      }
+    },
+    {
+      "artist": "My Dying Bride",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22.6
+      }
+    },
+    {
+      "artist": "My Morning Jacket",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 36.4
+      }
+    },
+    {
+      "artist": "My Sleeping Karma",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 28.1
+      }
+    },
+    {
+      "artist": "N.W.A",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 5.5
+      }
+    },
+    {
+      "artist": "Nação Zumbi",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22.5
+      }
+    },
+    {
+      "artist": "Naxatras",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 18.5
+      }
+    },
+    {
+      "artist": "Ne Obliviscaris",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 12.9
+      }
+    },
+    {
+      "artist": "Ney Matogrosso",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 45
+      }
+    },
+    {
+      "artist": "Nick Johnston",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.6
+      }
+    },
+    {
+      "artist": "Niemaracz",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 8.7
+      }
+    },
+    {
+      "artist": "Nohelani Cypriano",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20.8
+      }
+    },
+    {
+      "artist": "Norma Tanega",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.6
+      }
+    },
+    {
+      "artist": "Novos Baianos",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 50.5
+      }
+    },
+    {
+      "artist": "O'keefe Music Foundation",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.1
+      }
+    },
+    {
+      "artist": "October Grey",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.3
+      }
+    },
+    {
+      "artist": "Ohio Players",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 62.5
+      }
+    },
+    {
+      "artist": "Old Gods of Asgard",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.5
+      }
+    },
+    {
+      "artist": "Om",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.7
+      }
+    },
+    {
+      "artist": "OM",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 75.2
+      }
+    },
+    {
+      "artist": "Omega",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 41.4
+      }
+    },
+    {
+      "artist": "Opeth",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 4,
+        "errors": 0,
+        "duration": 111.1
+      }
+    },
+    {
+      "artist": "Orchid",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 16.2
+      }
+    },
+    {
+      "artist": "Orions Belte",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.2
+      }
+    },
+    {
+      "artist": "Orlandivo",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 18
+      }
+    },
+    {
+      "artist": "Orphaned Land",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 16.6
+      }
+    },
+    {
+      "artist": "Os Incríveis",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 31.6
+      }
+    },
+    {
+      "artist": "Os Mutantes",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 37.4
+      }
+    },
+    {
+      "artist": "Os Originais do Samba",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 31.4
+      }
+    },
+    {
+      "artist": "Os Tincoãs",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 18.5
+      }
+    },
+    {
+      "artist": "Otyken",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.3
+      }
+    },
+    {
+      "artist": "Overfuzz",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 26.7
+      }
+    },
+    {
+      "artist": "Pandora",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20.4
+      }
+    },
+    {
+      "artist": "Panzerfaust",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15.1
+      }
+    },
+    {
+      "artist": "Parliament",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 4,
+        "errors": 0,
+        "duration": 54.8
+      }
+    },
+    {
+      "artist": "Patrice Rushen",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 37.6
+      }
+    },
+    {
+      "artist": "Patrick Carney, Ralph Carney",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 25.9
+      }
+    },
+    {
+      "artist": "Paul Cauthen",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 17.7
+      }
+    },
+    {
+      "artist": "Peanut Butter Goldfish",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 5.9
+      }
+    },
+    {
+      "artist": "Pearl Jam",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.2
+      }
+    },
+    {
+      "artist": "Pelican",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 34.8
+      }
+    },
+    {
+      "artist": "Perturbator",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 4,
+        "errors": 0,
+        "duration": 50.2
+      }
+    },
+    {
+      "artist": "Perturbator, Flash Arnold",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.4
+      }
+    },
+    {
+      "artist": "Perturbator, Noir Deco",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.2
+      }
+    },
+    {
+      "artist": "Phaxe",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 16.4
+      }
+    },
+    {
+      "artist": "Pink Floyd",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 4,
+        "errors": 0,
+        "duration": 113.5
+      }
+    },
+    {
+      "artist": "Planet Hemp, Criolo",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 39.3
+      }
+    },
+    {
+      "artist": "Post Animal",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.2
+      }
+    },
+    {
+      "artist": "Powerwolf",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 46.3
+      }
+    },
+    {
+      "artist": "Pride & Glory",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 8.7
+      }
+    },
+    {
+      "artist": "Priestess",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20.4
+      }
+    },
+    {
+      "artist": "Primus",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 32.5
+      }
+    },
+    {
+      "artist": "Propellerheads, Shirley Bassey",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22.4
+      }
+    },
+    {
+      "artist": "Prophets of Rage",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 8.1
+      }
+    },
+    {
+      "artist": "Psychlona",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.7
+      }
+    },
+    {
+      "artist": "Psychonaut",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.3
+      }
+    },
+    {
+      "artist": "Purson",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20.2
+      }
+    },
+    {
+      "artist": "Quarteto em Cy",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 25.3
+      }
+    },
+    {
+      "artist": "Queen",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 4,
+        "errors": 0,
+        "duration": 75.3
+      }
+    },
+    {
+      "artist": "Queen, David Bowie",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 49.1
+      }
+    },
+    {
+      "artist": "Queens Of The Stone Age",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 31.8
+      }
+    },
+    {
+      "artist": "Quinteto Ternura",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20.8
+      }
+    },
+    {
+      "artist": "Rafferty",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.1
+      }
+    },
+    {
+      "artist": "Rage Against the Machine",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 20.8
+      }
+    },
+    {
+      "artist": "Rage Against The Machine",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 34.5
+      }
+    },
+    {
+      "artist": "Rainbow",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 4,
+        "errors": 0,
+        "duration": 94
+      }
+    },
+    {
+      "artist": "Rammstein",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 57.1
+      }
+    },
+    {
+      "artist": "Ray Parker Jr.",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 32.7
+      }
+    },
+    {
+      "artist": "Really Slow Motion",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20.5
+      }
+    },
+    {
+      "artist": "Reginaldo Rossi",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.5
+      }
+    },
+    {
+      "artist": "Renaissance",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 27.3
+      }
+    },
+    {
+      "artist": "Richie Kotzen",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.1
+      }
+    },
+    {
+      "artist": "Rick and Morty, Jemaine Clement, Ryan Elder",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 7.2
+      }
+    },
+    {
+      "artist": "Rick James",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 36.5
+      }
+    },
+    {
+      "artist": "Rick Wakeman",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 32
+      }
+    },
+    {
+      "artist": "Riddarna",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 16.5
+      }
+    },
+    {
+      "artist": "Rishloo",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.4
+      }
+    },
+    {
+      "artist": "Riverside",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 61.9
+      }
+    },
+    {
+      "artist": "Rob Thomas, Santana",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 8.5
+      }
+    },
+    {
+      "artist": "Robert Johnson",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22
+      }
+    },
+    {
+      "artist": "Rodrigo y Gabriela",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.2
+      }
+    },
+    {
+      "artist": "Rollin' Chamas",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 70.6
+      }
+    },
+    {
+      "artist": "Rondò Veneziano",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 40.8
+      }
+    },
+    {
+      "artist": "Roy Ayers",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 36
+      }
+    },
+    {
+      "artist": "Royal Thunder",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 23.4
+      }
+    },
+    {
+      "artist": "Rush",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 45.2
+      }
+    },
+    {
+      "artist": "Russian Circles",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 43.4
+      }
+    },
+    {
+      "artist": "Russkaja",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 65.5
+      }
+    },
+    {
+      "artist": "Sabaton",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 27.1
+      }
+    },
+    {
+      "artist": "Sam & Dave",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 28.4
+      }
+    },
+    {
+      "artist": "Samsara Blues Experiment",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 33
+      }
+    },
+    {
+      "artist": "Santana",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 9.8
+      }
+    },
+    {
+      "artist": "Savatage",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 28.4
+      }
+    },
+    {
+      "artist": "Scala, Kolacny Brothers",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.1
+      }
+    },
+    {
+      "artist": "Scattle",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.8
+      }
+    },
+    {
+      "artist": "Scorpions",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.9
+      }
+    },
+    {
+      "artist": "Sepultura",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 0,
+        "errors": 0,
+        "duration": 0
+      }
+    },
+    {
+      "artist": "Shawn James",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 18.7
+      }
+    },
+    {
+      "artist": "Sigh",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 24.1
+      }
+    },
+    {
+      "artist": "Simone Simons, Ayreon",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6
+      }
+    },
+    {
+      "artist": "Sjellos",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.1
+      }
+    },
+    {
+      "artist": "slave",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 29.5
+      }
+    },
+    {
+      "artist": "Slomosa",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.5
+      }
+    },
+    {
+      "artist": "Snarky Puppy",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 43.8
+      }
+    },
+    {
+      "artist": "Sodom",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 16.8
+      }
+    },
+    {
+      "artist": "Soen",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.2
+      }
+    },
+    {
+      "artist": "Sofa Surfers",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.8
+      }
+    },
+    {
+      "artist": "Somali Yacht Club",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 2.8
+      }
+    },
+    {
+      "artist": "Soundgarden",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 26.7
+      }
+    },
+    {
+      "artist": "Spacegoat",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.3
+      }
+    },
+    {
+      "artist": "Spinal Tap",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 36.8
+      }
+    },
+    {
+      "artist": "Stephan Bodzin",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 36.3
+      }
+    },
+    {
+      "artist": "Steven Wilson",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 37.1
+      }
+    },
+    {
+      "artist": "Stevie Wonder",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 78.8
+      }
+    },
+    {
+      "artist": "Stoned Jesus",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 4,
+        "errors": 0,
+        "duration": 67.9
+      }
+    },
+    {
+      "artist": "Strapping Young Lad",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 33.6
+      }
+    },
+    {
+      "artist": "Styx",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 26.5
+      }
+    },
+    {
+      "artist": "Sun Araw",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 49.5
+      }
+    },
+    {
+      "artist": "Supertramp",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 29.6
+      }
+    },
+    {
+      "artist": "Surya Kris Peters",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 29.5
+      }
+    },
+    {
+      "artist": "Sven Wunder",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.6
+      }
+    },
+    {
+      "artist": "Symphony X",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.9
+      }
+    },
+    {
+      "artist": "System of a Down",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 59.1
+      }
+    },
+    {
+      "artist": "Takuya Kuroda",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 17.6
+      }
+    },
+    {
+      "artist": "Talking Heads",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 18.3
+      }
+    },
+    {
+      "artist": "Taraf de Haïdouks",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 23.7
+      }
+    },
+    {
+      "artist": "Tarika Blue",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14
+      }
+    },
+    {
+      "artist": "Tenacious D",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 80.9
+      }
+    },
+    {
+      "artist": "Tenório Jr",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 27.9
+      }
+    },
+    {
+      "artist": "Thank You Scientist",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 16.7
+      }
+    },
+    {
+      "artist": "The Animals",
+      "result": {
+        "success": true,
+        "consolidations": 1,
+        "normalizations": 0,
+        "errors": 0,
+        "duration": 38.1
+      }
+    },
+    {
+      "artist": "The Aristocrats",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.9
+      }
+    },
+    {
+      "artist": "The Baggios",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 12.3
+      }
+    },
+    {
+      "artist": "The Baggios, Baiana System",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 12.5
+      }
+    },
+    {
+      "artist": "The Black Angels",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.8
+      }
+    },
+    {
+      "artist": "The Brian Jonestown Massacre",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 25.2
+      }
+    },
+    {
+      "artist": "The Cactus Channel",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 12
+      }
+    },
+    {
+      "artist": "The Darkness",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.9
+      }
+    },
+    {
+      "artist": "The Dead South",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 27.7
+      }
+    },
+    {
+      "artist": "The Devil and the Almighty Blues",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 8.1
+      }
+    },
+    {
+      "artist": "The Doors",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 23.7
+      }
+    },
+    {
+      "artist": "The Evpatoria Report",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15.1
+      }
+    },
+    {
+      "artist": "The Gap Band",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15.8
+      }
+    },
+    {
+      "artist": "The Gaslamp Killer, Amir Yaghmai",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.6
+      }
+    },
+    {
+      "artist": "The Green Kingdom",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 9.1
+      }
+    },
+    {
+      "artist": "The Haggis Horns",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.3
+      }
+    },
+    {
+      "artist": "The Heavy",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 32.5
+      }
+    },
+    {
+      "artist": "The Hot Sardines",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15.3
+      }
+    },
+    {
+      "artist": "The HU",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 18.2
+      }
+    },
+    {
+      "artist": "The HU, Papa Roach, Jacoby Shaddix",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 12.7
+      }
+    },
+    {
+      "artist": "The Irish Rovers",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 38.6
+      }
+    },
+    {
+      "artist": "The Jacksons",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 38.4
+      }
+    },
+    {
+      "artist": "The Kilimanjaro Darkjazz Ensemble",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.6
+      }
+    },
+    {
+      "artist": "The Killers",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 28.3
+      }
+    },
+    {
+      "artist": "The Kings of Frog Island",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.4
+      }
+    },
+    {
+      "artist": "The Main Squeeze",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.5
+      }
+    },
+    {
+      "artist": "The Motet",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 2.6
+      }
+    },
+    {
+      "artist": "The Mystery Lights",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14
+      }
+    },
+    {
+      "artist": "The Physics House Band",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.9
+      }
+    },
+    {
+      "artist": "The Pilgrim",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20.3
+      }
+    },
+    {
+      "artist": "The Proclaimers",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 32
+      }
+    },
+    {
+      "artist": "The Sisters Of Mercy",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 25.7
+      }
+    },
+    {
+      "artist": "The Sugarhill Gang",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15.3
+      }
+    },
+    {
+      "artist": "The Sylvers",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.3
+      }
+    },
+    {
+      "artist": "The Velvet Underground",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 40.7
+      }
+    },
+    {
+      "artist": "The Vision Bleak",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.3
+      }
+    },
+    {
+      "artist": "The White Stripes",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 18.8
+      }
+    },
+    {
+      "artist": "Theatre of Tragedy",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20.4
+      }
+    },
+    {
+      "artist": "Therion",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 22.4
+      }
+    },
+    {
+      "artist": "Thylacine",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 16.1
+      }
+    },
+    {
+      "artist": "Tides From Nebula",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.7
+      }
+    },
+    {
+      "artist": "Tigran Hamasyan",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20.5
+      }
+    },
+    {
+      "artist": "Till Lindemann",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 30.6
+      }
+    },
+    {
+      "artist": "Tim Maia",
+      "result": {
+        "success": true,
+        "consolidations": 1,
+        "normalizations": 0,
+        "errors": 0,
+        "duration": 17.9
+      }
+    },
+    {
+      "artist": "Tindersticks",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 17.7
+      }
+    },
+    {
+      "artist": "Tom Zé",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20.9
+      }
+    },
+    {
+      "artist": "Toni Tornado",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.9
+      }
+    },
+    {
+      "artist": "Too Many Zooz",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.8
+      }
+    },
+    {
+      "artist": "Tool",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 75.2
+      }
+    },
+    {
+      "artist": "Toquinho",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 26
+      }
+    },
+    {
+      "artist": "Toska",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 17.6
+      }
+    },
+    {
+      "artist": "TOTO",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22.2
+      }
+    },
+    {
+      "artist": "Trio Ternura",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 25.9
+      }
+    },
+    {
+      "artist": "Tristania",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 18.2
+      }
+    },
+    {
+      "artist": "Truckfighters",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 30.9
+      }
+    },
+    {
+      "artist": "Trummor & Orgel",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.5
+      }
+    },
+    {
+      "artist": "Tuber",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 12.6
+      }
+    },
+    {
+      "artist": "Turbowolf",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22.4
+      }
+    },
+    {
+      "artist": "Twisted Sister",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 30.9
+      }
+    },
+    {
+      "artist": "Ty Segall",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 38.4
+      }
+    },
+    {
+      "artist": "Type O Negative",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 18.5
+      }
+    },
+    {
+      "artist": "Ulver",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 46.1
+      }
+    },
+    {
+      "artist": "Ummet Ozcan, Otyken",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.3
+      }
+    },
+    {
+      "artist": "Unleash the Archers",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.4
+      }
+    },
+    {
+      "artist": "Uriah Heep",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 68.1
+      }
+    },
+    {
+      "artist": "Van Der Graaf Generator",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.7
+      }
+    },
+    {
+      "artist": "Velvet Revolver",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 2.9
+      }
+    },
+    {
+      "artist": "Vestron Vulture",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 19.4
+      }
+    },
+    {
+      "artist": "Vetiver",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 22.2
+      }
+    },
+    {
+      "artist": "Victor Wooten, Dennis Chambers & Bob Franceschini",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 13.8
+      }
+    },
+    {
+      "artist": "Villagers of Ioannina City",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 14.8
+      }
+    },
+    {
+      "artist": "Vulfpeck",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 36.6
+      }
+    },
+    {
+      "artist": "Walter Murphy",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 12.5
+      }
+    },
+    {
+      "artist": "Wanderlea",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 23
+      }
+    },
+    {
+      "artist": "Warren G",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 27.2
+      }
+    },
+    {
+      "artist": "Weird Al Yankovic",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 29.3
+      }
+    },
+    {
+      "artist": "Weldon Irvine",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 28.7
+      }
+    },
+    {
+      "artist": "Whitechapel",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 20.3
+      }
+    },
+    {
+      "artist": "Wilson Simonal",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 17.8
+      }
+    },
+    {
+      "artist": "Windhand",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 29.6
+      }
+    },
+    {
+      "artist": "Windir",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 10.9
+      }
+    },
+    {
+      "artist": "Wishbone Ash",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 78
+      }
+    },
+    {
+      "artist": "WITCH",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 11.7
+      }
+    },
+    {
+      "artist": "Witchcraft",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 12.9
+      }
+    },
+    {
+      "artist": "Wo Fat",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 9,
+        "errors": 0,
+        "duration": 133.6
+      }
+    },
+    {
+      "artist": "WWE, Motörhead",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 2,
+        "errors": 0,
+        "duration": 33
+      }
+    },
+    {
+      "artist": "Wyatt E.",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 6.5
+      }
+    },
+    {
+      "artist": "Yamasuki",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 44.7
+      }
+    },
+    {
+      "artist": "Yes",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 17.5
+      }
+    },
+    {
+      "artist": "Yob",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 15
+      }
+    },
+    {
+      "artist": "YOB",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 29.1
+      }
+    },
+    {
+      "artist": "Zakk Wylde",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 27.6
+      }
+    },
+    {
+      "artist": "Zeal & Ardor",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 3,
+        "errors": 0,
+        "duration": 55.8
+      }
+    },
+    {
+      "artist": "ZZ Top",
+      "result": {
+        "success": true,
+        "consolidations": 0,
+        "normalizations": 1,
+        "errors": 0,
+        "duration": 7.1
+      }
+    }
+  ],
+  "configuration": {
+    "defaultOptions": {
+      "dryRun": false,
+      "skipCurated": true,
+      "similarityThreshold": 0.85,
+      "normalizeToTitleCase": true,
+      "normalizeAllTracks": true
+    },
+    "genreSpecificOptions": {
+      "metal": {
+        "similarityThreshold": 0.8
+      },
+      "rock": {
+        "similarityThreshold": 0.85
+      },
+      "pop": {
+        "similarityThreshold": 0.9
+      },
+      "classical": {
+        "similarityThreshold": 0.95
+      },
+      "electronic": {
+        "similarityThreshold": 0.75
+      }
+    },
+    "skipArtists": []
+  }
+}

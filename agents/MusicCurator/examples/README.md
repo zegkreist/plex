@@ -89,6 +89,42 @@ node examples/test-cover-comparison.js \
 
 ---
 
+### 4. `manage-playlists.js` - Gerenciar Playlists Conhecidas
+
+Gerencia a lista de nomes que são playlists (não álbuns) e devem ser ignorados durante o escaneamento.
+
+**Uso:**
+
+```bash
+# Listar playlists conhecidas
+node examples/manage-playlists.js list
+
+# Adicionar uma playlist (temporário)
+node examples/manage-playlists.js add "Chill Vibes"
+
+# Remover uma playlist
+node examples/manage-playlists.js remove "ShroomTrip"
+
+# Verificar se um nome é uma playlist conhecida
+node examples/manage-playlists.js check "Viagem light"
+```
+
+**Playlists padrão:**
+
+- ShroomTrip
+- Viagem light
+- Hotline Miami Soundtrack
+- Balanço Groove Brasil 70's
+
+**Nota:** Alterações via `add`/`remove` são temporárias. Para tornar permanente, edite:
+
+```javascript
+// agents/MusicCurator/src/album-consolidator.js
+const KNOWN_PLAYLISTS = ["ShroomTrip", "Viagem light", "Sua Nova Playlist Aqui"];
+```
+
+---
+
 ## 🎯 Fluxo de Trabalho Recomendado
 
 ### Primeira vez:

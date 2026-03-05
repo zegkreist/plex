@@ -72,33 +72,50 @@ async function main() {
 
     // Opções de consolidação
     const options = {
-      dryRun: true, // Modo dry-run: não faz alterações, apenas analisa
+      dryRun: true, // IMPORTANTE: Modo dry-run - mude para false para fazer consolidação física
       skipCurated: true, // Pula álbuns já curados
       similarityThreshold: 0.85, // Threshold de similaridade (0-1)
+      normalizeToTitleCase: true, // Normaliza nomes para Title Case (padrão de CDs)
     };
 
     console.log("\n⚙️  Opções:");
-    console.log(`   - Modo Dry-Run: ${options.dryRun ? "SIM (não faz alterações)" : "NÃO (faz alterações)"}`);
+    console.log(`   - Modo Dry-Run: ${options.dryRun ? "SIM (apenas simulação)" : "NÃO (consolidação física real)"}`);
     console.log(`   - Pular álbuns curados: ${options.skipCurated ? "SIM" : "NÃO"}`);
     console.log(`   - Threshold de similaridade: ${(options.similarityThreshold * 100).toFixed(0)}%`);
+    console.log(`   - Normalização Title Case: ${options.normalizeToTitleCase ? "SIM" : "NÃO"}`);
+
+    if (!options.dryRun) {
+      console.log("\n⚠️  ATENÇÃO: Modo consolidação física ativado!");
+      console.log("   - Arquivos de música serão movidos e renomeados");
+      console.log("   - Pastas de álbuns serão reorganizadas");
+      console.log("   - Faixas serão numeradas sequencialmente");
+      console.log("   - Pastas vazias serão removidas");
+    }
 
     // Processa o artista
     console.log("\n🚀 Iniciando processamento...\n");
-    const { groups, results } = await consolidator.consolidateArtistAlbums(artistPath, artistName, options);
+    const result = await consolidator.consolidateArtistAlbums(artistPath, options);
 
     // Resumo final
     console.log("\n" + "=".repeat(80));
     console.log("📊 RESUMO FINAL");
     console.log("=".repeat(80));
     console.log(`✅ Processamento concluído!`);
-    console.log(`📀 Grupos de álbuns similares encontrados: ${groups.length}`);
-    console.log(`🎯 Resoluções determinadas: ${results.length}`);
+    console.log(`📀 Grupos de álbuns similares encontrados: ${result.groups?.length || 0}`);
+    console.log(`🎯 Resoluções determinadas: ${result.results?.length || 0}`);
 
-    if (options.dryRun && groups.length > 0) {
+    if (result.consolidationResults) {
+      const successful = result.consolidationResults.filter((cr) => cr.result.success).length;
+      const failed = result.consolidationResults.filter((cr) => !cr.result.success).length;
+      console.log(`🔧 Consolidações físicas bem-sucedidas: ${successful}`);
+      console.log(`❌ Consolidações físicas com erro: ${failed}`);
+    }
+
+    if (options.dryRun && result.groups?.length > 0) {
       console.log("\n💡 PRÓXIMOS PASSOS:");
       console.log("   1. Revise o relatório acima");
-      console.log("   2. Execute novamente com dryRun: false para aplicar as correções");
-      console.log("   3. Os álbuns serão marcados como curados após o processamento");
+      console.log("   2. Execute novamente com dryRun: false para aplicar a consolidação física");
+      console.log("   3. Os álbuns serão fisicamente reorganizados e marcados como curados");
     }
 
     console.log("\n✅ Script finalizado!");
