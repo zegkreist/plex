@@ -1,0 +1,29 @@
+# Diretórios criados pelo Docker
+config/
+downloads/
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Ambiente virtual Python
+.venv_tidal/
+
+# Tokens do Tidal
+tidal_tokens.txt
+**/tidal_tokens.txt
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

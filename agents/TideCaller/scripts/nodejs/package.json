@@ -1,0 +1,27 @@
+{
+  "name": "streamrip-tools",
+  "version": "1.0.0",
+  "description": "Scripts Node.js para análise de biblioteca musical do Streamrip",
+  "type": "module",
+  "scripts": {
+    "analyze": "node analyze_library.mjs",
+    "enrich": "node enrich_metadata.mjs",
+    "view": "node view_library.mjs",
+    "organize": "sudo node organize_by_albums.mjs",
+    "download": "node download_discography.mjs",
+    "html": "node generate_html_report.mjs",
+    "tidal": "node tidal.mjs",
+    "install-deps": "npm install"
+  },
+  "keywords": [
+    "music",
+    "metadata",
+    "streamrip",
+    "library"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "music-metadata": "^7.14.0"
+  }
+}

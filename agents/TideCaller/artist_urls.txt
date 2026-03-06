@@ -1,0 +1,30 @@
+# URLs de Artistas para Download - Gerado em 2026-03-04T21:28:55.949Z
+# Para baixar, use: docker-compose exec streamrip rip url <URL>
+
+# Fleshgod Apocalypse (3 álbuns, 13 faixas)
+# URL não encontrada - busque manualmente em: https://tidal.com/search/artists?q=Fleshgod%20Apocalypse
+
+# Gaupa (6 álbuns, 13 faixas)
+# URL não encontrada - busque manualmente em: https://tidal.com/search/artists?q=Gaupa
+
+# King Buffalo (4 álbuns, 8 faixas)
+# URL não encontrada - busque manualmente em: https://tidal.com/search/artists?q=King%20Buffalo
+
+# Colour Haze (1 álbuns, 1 faixas)
+# URL não encontrada - busque manualmente em: https://tidal.com/search/artists?q=Colour%20Haze
+
+# Melechesh (1 álbuns, 1 faixas)
+# URL não encontrada - busque manualmente em: https://tidal.com/search/artists?q=Melechesh
+
+# Mars Red Sky (1 álbuns, 1 faixas)
+# URL não encontrada - busque manualmente em: https://tidal.com/search/artists?q=Mars%20Red%20Sky
+
+# The Green Kingdom (1 álbuns, 11 faixas)
+# URL não encontrada - busque manualmente em: https://tidal.com/search/artists?q=The%20Green%20Kingdom
+
+# Russian Circles (4 álbuns, 4 faixas)
+# URL não encontrada - busque manualmente em: https://tidal.com/search/artists?q=Russian%20Circles
+
+# My Sleeping Karma (3 álbuns, 3 faixas)
+# URL não encontrada - busque manualmente em: https://tidal.com/search/artists?q=My%20Sleeping%20Karma
+

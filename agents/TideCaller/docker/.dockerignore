@@ -1,0 +1,6 @@
+config/
+downloads/
+.git
+.gitignore
+*.md
+install_streamrip.sh
