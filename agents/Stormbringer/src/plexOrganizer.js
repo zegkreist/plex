@@ -2,11 +2,22 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import {
-  sanitizeName, cleanAlbumName, normalizeForComparison, calculateSimilarity,
+  sanitizeName,
+  cleanAlbumName,
+  normalizeForComparison,
+  calculateSimilarity,
   isLiveRecording,
-  AUDIO_EXTENSIONS, isAudioFile, isDiscFolder, hasDirectAudio, isReleaseFolder,
-  findAudioFiles, parseAlbumFolderName,
-  ensureDir, moveFile, removeIfEmpty, saveCoverArt,
+  AUDIO_EXTENSIONS,
+  isAudioFile,
+  isDiscFolder,
+  hasDirectAudio,
+  isReleaseFolder,
+  findAudioFiles,
+  parseAlbumFolderName,
+  ensureDir,
+  moveFile,
+  removeIfEmpty,
+  saveCoverArt,
   findExistingAlbumDir,
 } from "@plex-agents/transporter";
 
@@ -357,34 +368,60 @@ class PlexOrganizer {
   }
 
   /** @see {@link isReleaseFolder} from @plex-agents/transporter */
-  isReleaseFolder(dir) { return isReleaseFolder(dir); }
+  isReleaseFolder(dir) {
+    return isReleaseFolder(dir);
+  }
   /** @see {@link isDiscFolder} from @plex-agents/transporter */
-  isDiscFolder(name) { return isDiscFolder(name); }
+  isDiscFolder(name) {
+    return isDiscFolder(name);
+  }
   /** @see {@link isAudioFile} from @plex-agents/transporter */
-  isAudioFile(filePath) { return isAudioFile(filePath); }
+  isAudioFile(filePath) {
+    return isAudioFile(filePath);
+  }
   /** @see {@link hasDirectAudio} from @plex-agents/transporter */
-  hasDirectAudio(dir) { return hasDirectAudio(dir); }
+  hasDirectAudio(dir) {
+    return hasDirectAudio(dir);
+  }
 
   /** @see {@link parseAlbumFolderName} from @plex-agents/transporter */
-  parseAlbumFolderName(folderName) { return parseAlbumFolderName(folderName); }
+  parseAlbumFolderName(folderName) {
+    return parseAlbumFolderName(folderName);
+  }
   /** @see {@link cleanAlbumName} from @plex-agents/transporter */
-  cleanAlbumName(name) { return cleanAlbumName(name); }
+  cleanAlbumName(name) {
+    return cleanAlbumName(name);
+  }
 
   /** @see {@link isLiveRecording} from @plex-agents/transporter */
-  isLiveRecording(text) { return isLiveRecording(text); }
+  isLiveRecording(text) {
+    return isLiveRecording(text);
+  }
   /** @see {@link normalizeForComparison} from @plex-agents/transporter */
-  normalizeForComparison(str) { return normalizeForComparison(str); }
+  normalizeForComparison(str) {
+    return normalizeForComparison(str);
+  }
   /** @see {@link calculateSimilarity} from @plex-agents/transporter */
-  calculateSimilarity(str1, str2) { return calculateSimilarity(str1, str2); }
+  calculateSimilarity(str1, str2) {
+    return calculateSimilarity(str1, str2);
+  }
   /** @see {@link findExistingAlbumDir} from @plex-agents/transporter */
-  findExistingAlbumDir(artist, album, artistDir, processedAlbums) { return findExistingAlbumDir(artist, album, artistDir, processedAlbums); }
+  findExistingAlbumDir(artist, album, artistDir, processedAlbums) {
+    return findExistingAlbumDir(artist, album, artistDir, processedAlbums);
+  }
   /** @see {@link saveCoverArt} from @plex-agents/transporter */
-  saveCoverArt(albumDir, audioFile) { return saveCoverArt(albumDir, audioFile); }
+  saveCoverArt(albumDir, audioFile) {
+    return saveCoverArt(albumDir, audioFile);
+  }
 
   /** @see {@link findAudioFiles} from @plex-agents/transporter */
-  findAudioFiles(dir, files = []) { return findAudioFiles(dir, files); }
+  findAudioFiles(dir, files = []) {
+    return findAudioFiles(dir, files);
+  }
   /** @see {@link removeIfEmpty} from @plex-agents/transporter */
-  removeIfEmpty(dir) { return removeIfEmpty(dir); }
+  removeIfEmpty(dir) {
+    return removeIfEmpty(dir);
+  }
 
   /**
    * Parseia nome de filme
@@ -512,7 +549,9 @@ class PlexOrganizer {
   }
 
   /** @see {@link moveFile} from @plex-agents/transporter */
-  moveFile(src, dest) { return moveFile(src, dest); }
+  moveFile(src, dest) {
+    return moveFile(src, dest);
+  }
 
   /**
    * Move arquivos extras (poster, nfo, fanart) — específico do Plex/Stormbringer
@@ -535,9 +574,13 @@ class PlexOrganizer {
   }
 
   /** @see {@link sanitizeName} from @plex-agents/transporter */
-  sanitizeName(name) { return sanitizeName(name); }
+  sanitizeName(name) {
+    return sanitizeName(name);
+  }
   /** @see {@link ensureDir} from @plex-agents/transporter */
-  ensureDir(dir) { return ensureDir(dir); }
+  ensureDir(dir) {
+    return ensureDir(dir);
+  }
 
   /**
    * Modo dry-run: retorna o plano de organização sem mover nada.

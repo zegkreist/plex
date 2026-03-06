@@ -7,7 +7,9 @@ import { ensureDir, moveFile, removeIfEmpty } from "../src/filesystem.js";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 let tmp;
-beforeEach(() => { tmp = fs.mkdtempSync(path.join(os.tmpdir(), "transporter-fs-")); });
+beforeEach(() => {
+  tmp = fs.mkdtempSync(path.join(os.tmpdir(), "transporter-fs-"));
+});
 afterEach(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
 function touch(filePath, content = "") {

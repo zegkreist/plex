@@ -18,18 +18,20 @@ export function sanitizeName(name) {
  *     "In Utero (Deluxe Edition)"  → "In Utero"
  */
 export function cleanAlbumName(name) {
-  return name
-    // Remove blocos [...] com palavras de qualidade: [FLAC], [24bit Hi-Res Web], etc.
-    .replace(/\s*\[[^\]]*(?:flac|mp3|aac|opus|lossless|hi[-.]?res|web|remaster|deluxe|24bit|vinyl)[^\]]*\].*$/i, "")
-    // Remove blocos (...) com palavras de qualidade: (Deluxe Edition), (Remastered), etc.
-    .replace(/\s*\([^)]*(?:flac|mp3|aac|opus|lossless|hi[-.]?res|web|remaster|deluxe|edition|24bit|vinyl)[^)]*\).*$/i, "")
-    // Remove ano solto entre parênteses no final: (1997)
-    .replace(/\s*\(\d{4}\)\s*$/, "")
-    // Remove palavras de edição/remaster no final sem parênteses
-    .replace(/\s*\(?(?:remastered?|deluxe\s+edition|expanded\s+edition|special\s+edition|anniversary\s+edition|bonus\s+tracks?)\)?$/i, "")
-    // Remove número de 2-3 dígitos solto no final (artefato de bitrate)
-    .replace(/\s*\d{2,3}\s*$/, "")
-    .trim();
+  return (
+    name
+      // Remove blocos [...] com palavras de qualidade: [FLAC], [24bit Hi-Res Web], etc.
+      .replace(/\s*\[[^\]]*(?:flac|mp3|aac|opus|lossless|hi[-.]?res|web|remaster|deluxe|24bit|vinyl)[^\]]*\].*$/i, "")
+      // Remove blocos (...) com palavras de qualidade: (Deluxe Edition), (Remastered), etc.
+      .replace(/\s*\([^)]*(?:flac|mp3|aac|opus|lossless|hi[-.]?res|web|remaster|deluxe|edition|24bit|vinyl)[^)]*\).*$/i, "")
+      // Remove ano solto entre parênteses no final: (1997)
+      .replace(/\s*\(\d{4}\)\s*$/, "")
+      // Remove palavras de edição/remaster no final sem parênteses
+      .replace(/\s*\(?(?:remastered?|deluxe\s+edition|expanded\s+edition|special\s+edition|anniversary\s+edition|bonus\s+tracks?)\)?$/i, "")
+      // Remove número de 2-3 dígitos solto no final (artefato de bitrate)
+      .replace(/\s*\d{2,3}\s*$/, "")
+      .trim()
+  );
 }
 
 /**

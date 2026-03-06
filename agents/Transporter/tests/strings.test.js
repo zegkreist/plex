@@ -5,7 +5,7 @@ import { sanitizeName, cleanAlbumName, normalizeForComparison, calculateSimilari
 
 describe("sanitizeName", () => {
   test("remove caracteres inválidos em nomes de pasta", () => {
-    expect(sanitizeName('AC/DC: Back in Black? <ok>')).toBe("ACDC Back in Black ok");
+    expect(sanitizeName("AC/DC: Back in Black? <ok>")).toBe("ACDC Back in Black ok");
   });
 
   test("normaliza espaços múltiplos", () => {
@@ -77,12 +77,7 @@ describe("normalizeForComparison", () => {
   });
 
   test("variantes do mesmo álbum normalizam igual", () => {
-    const variants = [
-      "OK Computer",
-      "OK Computer (Remastered)",
-      "OK Computer 1997",
-      "OK Computer (Deluxe Edition)",
-    ];
+    const variants = ["OK Computer", "OK Computer (Remastered)", "OK Computer 1997", "OK Computer (Deluxe Edition)"];
     const normalized = variants.map((v) => normalizeForComparison(v));
     expect(new Set(normalized).size).toBe(1);
   });

@@ -7,7 +7,9 @@ import { findExistingAlbumDir } from "../src/dedup.js";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 let tmp;
-beforeEach(() => { tmp = fs.mkdtempSync(path.join(os.tmpdir(), "transporter-dedup-")); });
+beforeEach(() => {
+  tmp = fs.mkdtempSync(path.join(os.tmpdir(), "transporter-dedup-"));
+});
 afterEach(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
 // ─── findExistingAlbumDir ─────────────────────────────────────────────────────
@@ -32,9 +34,7 @@ describe("findExistingAlbumDir", () => {
 
   test("encontra álbum no processedAlbums da sessão (antes de existir no disco)", () => {
     const albumPath = path.join(tmp, "Radiohead", "OK Computer");
-    const processedAlbums = new Map([
-      ["Radiohead/OK Computer", { artist: "Radiohead", albumName: "OK Computer", path: albumPath }],
-    ]);
+    const processedAlbums = new Map([["Radiohead/OK Computer", { artist: "Radiohead", albumName: "OK Computer", path: albumPath }]]);
 
     const artistDir = path.join(tmp, "Radiohead");
     expect(findExistingAlbumDir("Radiohead", "OK Computer", artistDir, processedAlbums)).toBe(albumPath);
@@ -69,9 +69,7 @@ describe("findExistingAlbumDir", () => {
 
     // Na sessão existe o caminho limpo
     const sessionAlbum = path.join(artistDir, "OK Computer");
-    const processedAlbums = new Map([
-      ["Radiohead/OK Computer", { artist: "Radiohead", albumName: "OK Computer", path: sessionAlbum }],
-    ]);
+    const processedAlbums = new Map([["Radiohead/OK Computer", { artist: "Radiohead", albumName: "OK Computer", path: sessionAlbum }]]);
 
     // Deve retornar o da sessão (encontrado primeiro)
     expect(findExistingAlbumDir("Radiohead", "OK Computer", artistDir, processedAlbums)).toBe(sessionAlbum);

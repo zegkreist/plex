@@ -3,10 +3,10 @@
  */
 
 const LIVE_PATTERNS = [
-  /\blive\b/,      // "live" como palavra completa
-  /\(live\)/,      // "(live)"
-  /ao\s*vivo/,     // "ao vivo", "aovivo"
-  /ao[-_]vivo/,    // "ao-vivo", "ao_vivo"
+  /\blive\b/, // "live" como palavra completa
+  /\(live\)/, // "(live)"
+  /ao\s*vivo/, // "ao vivo", "aovivo"
+  /ao[-_]vivo/, // "ao-vivo", "ao_vivo"
 ];
 
 /**

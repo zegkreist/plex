@@ -424,12 +424,7 @@ describe("normalizeForComparison", () => {
   });
 
   test("variantes do mesmo álbum normalizam igual", () => {
-    const variants = [
-      "OK Computer",
-      "OK Computer (Remastered)",
-      "OK Computer 1997",
-      "OK Computer (Deluxe Edition)",
-    ];
+    const variants = ["OK Computer", "OK Computer (Remastered)", "OK Computer 1997", "OK Computer (Deluxe Edition)"];
     const normalized = variants.map((v) => organizer.normalizeForComparison(v));
     expect(new Set(normalized).size).toBe(1);
   });
@@ -480,9 +475,7 @@ describe("findExistingAlbumDir", () => {
 
   test("encontra álbum já no processedAlbums da sessão", () => {
     const albumPath = path.join(dirs.destMusic, "Radiohead", "OK Computer");
-    const processedAlbums = new Map([
-      ["Radiohead/OK Computer", { artist: "Radiohead", albumName: "OK Computer", path: albumPath }],
-    ]);
+    const processedAlbums = new Map([["Radiohead/OK Computer", { artist: "Radiohead", albumName: "OK Computer", path: albumPath }]]);
 
     const artistDir = path.join(dirs.destMusic, "Radiohead");
     const result = organizer.findExistingAlbumDir("Radiohead", "OK Computer", artistDir, processedAlbums);
@@ -530,9 +523,7 @@ describe("organizeMusic — live e deduplicação", () => {
     await organizer.organize();
 
     const artistDir = path.join(dirs.destMusic, "Radiohead");
-    const subdirs = fs.readdirSync(artistDir).filter((d) =>
-      fs.statSync(path.join(artistDir, d)).isDirectory()
-    );
+    const subdirs = fs.readdirSync(artistDir).filter((d) => fs.statSync(path.join(artistDir, d)).isDirectory());
     // Ambas as faixas devem cair na mesma pasta
     expect(subdirs).toHaveLength(1);
     const albumFiles = fs.readdirSync(path.join(artistDir, subdirs[0]));

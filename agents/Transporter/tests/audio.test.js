@@ -2,20 +2,14 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { afterEach, beforeEach, describe, expect, test } from "@jest/globals";
-import {
-  AUDIO_EXTENSIONS,
-  isAudioFile,
-  isDiscFolder,
-  hasDirectAudio,
-  isReleaseFolder,
-  findAudioFiles,
-  parseAlbumFolderName,
-} from "../src/audio.js";
+import { AUDIO_EXTENSIONS, isAudioFile, isDiscFolder, hasDirectAudio, isReleaseFolder, findAudioFiles, parseAlbumFolderName } from "../src/audio.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 let tmp;
-beforeEach(() => { tmp = fs.mkdtempSync(path.join(os.tmpdir(), "transporter-audio-")); });
+beforeEach(() => {
+  tmp = fs.mkdtempSync(path.join(os.tmpdir(), "transporter-audio-"));
+});
 afterEach(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
 function touch(filePath) {
@@ -42,10 +36,7 @@ describe("AUDIO_EXTENSIONS", () => {
 // ─── isAudioFile ─────────────────────────────────────────────────────────────
 
 describe("isAudioFile", () => {
-  test.each([".flac", ".mp3", ".m4a", ".ogg", ".opus", ".wav", ".flac"])(
-    "reconhece %s como áudio",
-    (ext) => expect(isAudioFile(`track${ext}`)).toBe(true)
-  );
+  test.each([".flac", ".mp3", ".m4a", ".ogg", ".opus", ".wav", ".flac"])("reconhece %s como áudio", (ext) => expect(isAudioFile(`track${ext}`)).toBe(true));
 
   test("rejeita .mkv", () => expect(isAudioFile("movie.mkv")).toBe(false));
   test("rejeita .jpg", () => expect(isAudioFile("cover.jpg")).toBe(false));
