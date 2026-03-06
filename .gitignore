@@ -6,6 +6,7 @@ config/
 tv/
 movies/
 music/
+node_modules/
 ollama/
 
 # Backups

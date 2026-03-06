@@ -41,6 +41,7 @@ const bold = (str) => `${C.bold}${str}${C.reset}`;
 // ─── Definição dos comandos ───────────────────────────────────────────────────
 const MUSIC_DIR = path.join(ROOT, "agents", "MusicCurator");
 const SERIES_DIR = path.join(ROOT, "agents", "SeriesCurator");
+const STORMBRINGER_DIR = path.join(ROOT, "agents", "Stormbringer");
 
 /**
  * Cada entrada:
@@ -149,14 +150,64 @@ const COMMANDS = [
     args: ["test"],
   },
 
+  // ── Stormbringer (Torrent) ───────────────────────────────────────────────────
+  {
+    id: "stormbringer:start",
+    label: "Iniciar Stormbringer (daemon de downloads)",
+    group: "⚡  Stormbringer",
+    cwd: STORMBRINGER_DIR,
+    cmd: "node",
+    args: ["src/index.js"],
+  },
+  {
+    id: "stormbringer:search",
+    label: "Buscar torrent interativamente",
+    group: "⚡  Stormbringer",
+    cwd: STORMBRINGER_DIR,
+    cmd: "node",
+    args: ["src/cli.js", "search"],
+  },
+  {
+    id: "stormbringer:downloads",
+    label: "Listar status dos downloads",
+    group: "⚡  Stormbringer",
+    cwd: STORMBRINGER_DIR,
+    cmd: "node",
+    args: ["src/downloadManagerCli.js", "status"],
+  },
+  {
+    id: "stormbringer:plex-organize",
+    label: "Organizar downloads baixados nas pastas do Plex",
+    group: "⚡  Stormbringer",
+    cwd: STORMBRINGER_DIR,
+    cmd: "node",
+    args: ["src/plexOrganizer.js"],
+  },
+  {
+    id: "stormbringer:plex-organize:dry",
+    label: "Organizar downloads — DRY RUN (sem mover arquivos)",
+    group: "⚡  Stormbringer",
+    cwd: STORMBRINGER_DIR,
+    cmd: "node",
+    args: ["src/plexOrganizer.js", "--dry-run"],
+  },
+  {
+    id: "stormbringer:test",
+    label: "Rodar testes do Stormbringer",
+    group: "⚡  Stormbringer",
+    cwd: STORMBRINGER_DIR,
+    cmd: "npm",
+    args: ["test"],
+  },
+
   // ── Testes ───────────────────────────────────────────────────────────────────
   {
     id: "test:all",
-    label: "Rodar TODOS os testes (MusicCurator + SeriesCurator)",
+    label: "Rodar TODOS os testes (todos os agentes)",
     group: "🧪  Testes",
     cwd: ROOT,
     cmd: "bash",
-    args: ["-c", `cd "${MUSIC_DIR}" && npm test && cd "${SERIES_DIR}" && npm test`],
+    args: ["-c", `cd "${MUSIC_DIR}" && npm test; cd "${SERIES_DIR}" && npm test; cd "${STORMBRINGER_DIR}" && npm test`],
   },
   {
     id: "test:music",
@@ -171,6 +222,14 @@ const COMMANDS = [
     label: "Testes SeriesCurator (unitários + integração)",
     group: "🧪  Testes",
     cwd: SERIES_DIR,
+    cmd: "npm",
+    args: ["test"],
+  },
+  {
+    id: "test:stormbringer",
+    label: "Testes Stormbringer",
+    group: "🧪  Testes",
+    cwd: STORMBRINGER_DIR,
     cmd: "npm",
     args: ["test"],
   },

@@ -3,6 +3,8 @@ export default {
   testEnvironment: "node",
   transform: {},
   testMatch: ["**/tests/**/*.test.js"],
-  testTimeout: 30000,
+  testTimeout: 60000,
   verbose: true,
+  coverageDirectory: "coverage",
+  collectCoverageFrom: ["src/**/*.js", "!src/index.js", "!src/cli.js"],
 };

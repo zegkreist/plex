@@ -3,6 +3,12 @@
   "version": "1.0.0",
   "description": "Controlador central do Plex Server + agentes de curadoria",
   "type": "module",
+  "workspaces": [
+    "agents/AllFather",
+    "agents/MusicCurator",
+    "agents/SeriesCurator",
+    "agents/Stormbringer"
+  ],
   "scripts": {
     "cli": "node plex-cli.js",
     "help": "node plex-cli.js --help",
@@ -17,11 +23,21 @@
     "series:fix-tags": "node plex-cli.js series:fix-tags",
     "series:fix-tags:dry": "node plex-cli.js series:fix-tags:dry",
     "series:test": "node plex-cli.js series:test",
+    "stormbringer:start": "node plex-cli.js stormbringer:start",
+    "stormbringer:search": "node plex-cli.js stormbringer:search",
+    "stormbringer:downloads": "node plex-cli.js stormbringer:downloads",
+    "stormbringer:plex-organize": "node plex-cli.js stormbringer:plex-organize",
+    "stormbringer:plex-organize:dry": "node plex-cli.js stormbringer:plex-organize:dry",
+    "stormbringer:test": "node plex-cli.js stormbringer:test",
     "test:all": "node plex-cli.js test:all",
+    "test:music": "node plex-cli.js test:music",
+    "test:series": "node plex-cli.js test:series",
+    "test:stormbringer": "node plex-cli.js test:stormbringer",
     "plex:status": "node plex-cli.js plex:status",
     "plex:restart": "node plex-cli.js plex:restart",
     "plex:start": "node plex-cli.js plex:start",
     "plex:stop": "node plex-cli.js plex:stop",
-    "plex:scan": "node plex-cli.js plex:scan"
+    "plex:scan": "node plex-cli.js plex:scan",
+    "plex:logs": "node plex-cli.js plex:logs"
   }
 }
