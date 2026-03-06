@@ -118,13 +118,14 @@ Agente de download de alta qualidade via **Tidal** usando [streamrip](https://gi
 
 **Comandos via `plex-cli`:**
 
-| Comando                       | Script interno                | Descrição                                           |
-| ----------------------------- | ----------------------------- | --------------------------------------------------- |
-| `tidecaller:rip`              | `scripts/rip.sh`              | Baixa uma URL do Tidal (álbum, faixa, playlist)     |
-| `tidecaller:download-artists` | `scripts/download_artists.sh` | Baixa todos os artistas em `artist_urls.txt`        |
-| `tidecaller:organize`         | `scripts/organize_albums.sh`  | Organiza os downloads na biblioteca                 |
-| `tidecaller:enrich`           | `scripts/enrich_metadata.sh`  | Enriquece metadados via MusicBrainz                 |
-| `tidecaller:refresh-token`    | `scripts/refresh_token.sh`    | Zera tokens + re-autentica (device auth interativo) |
+| Comando                       | Script interno                | Descrição                                                         |
+| ----------------------------- | ----------------------------- | ----------------------------------------------------------------- |
+| `tidecaller:rip`              | `scripts/rip.sh`              | Baixa uma URL do Tidal (álbum, faixa, playlist)                   |
+| `tidecaller:download-artists` | `scripts/download_artists.sh` | Baixa todos os artistas em `artist_urls.txt`                      |
+| `tidecaller:organize`         | `scripts/organize_albums.sh`  | Organiza os downloads na biblioteca                               |
+| `tidecaller:enrich`           | `scripts/enrich_metadata.sh`  | Enriquece metadados via MusicBrainz                               |
+| `tidecaller:refresh-token`    | `scripts/refresh_token.sh`    | Zera tokens + re-autentica (device auth interativo)               |
+| `tidecaller:download-artist`  | `scripts/download_artist.sh`  | Busca artista no Tidal e baixa discografia ou álbuns selecionados |
 
 📖 [Ver documentação completa →](agents/TideCaller/README.md)
 
@@ -214,13 +215,14 @@ npm run test:all                                  # roda todos os testes
 
 #### 🌊 TideCaller
 
-| Comando                       | Descrição                                                        |
-| ----------------------------- | ---------------------------------------------------------------- |
-| `tidecaller:rip`              | Baixar uma URL do Tidal (álbum, faixa ou playlist) via streamrip |
-| `tidecaller:download-artists` | Baixar discografias dos artistas listados em `artist_urls.txt`   |
-| `tidecaller:organize`         | Organizar downloads do Tidal na biblioteca de música             |
-| `tidecaller:enrich`           | Enriquecer metadados via MusicBrainz                             |
-| `tidecaller:refresh-token`    | Zerar tokens expirados e re-autenticar no Tidal (device auth)    |
+| Comando                       | Descrição                                                         |
+| ----------------------------- | ----------------------------------------------------------------- |
+| `tidecaller:rip`              | Baixar uma URL do Tidal (álbum, faixa ou playlist) via streamrip  |
+| `tidecaller:download-artists` | Baixar discografias dos artistas listados em `artist_urls.txt`    |
+| `tidecaller:organize`         | Organizar downloads do Tidal na biblioteca de música              |
+| `tidecaller:enrich`           | Enriquecer metadados via MusicBrainz                              |
+| `tidecaller:refresh-token`    | Zerar tokens expirados e re-autenticar no Tidal (device auth)     |
+| `tidecaller:download-artist`  | Buscar artista no Tidal e baixar discografia ou álbuns escolhidos |
 
 > **Nota:** `tidecaller:rip` precisa de uma URL como argumento adicional. Use diretamente no terminal: `cd agents/TideCaller && bash scripts/rip.sh url https://tidal.com/browse/album/...`
 

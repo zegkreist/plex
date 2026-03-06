@@ -242,6 +242,14 @@ const COMMANDS = [
     cmd: "bash",
     args: ["scripts/refresh_token.sh"],
   },
+  {
+    id: "tidecaller:download-artist",
+    label: "Buscar artista e baixar discografia ou álbuns selecionados",
+    group: "🌊  TideCaller",
+    cwd: TIDECALLER_DIR,
+    cmd: "bash",
+    args: ["scripts/download_artist.sh"],
+  },
 
   // ── Testes ───────────────────────────────────────────────────────────────────
   {
