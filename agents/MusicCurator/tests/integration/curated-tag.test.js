@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals";
 import { AlbumConsolidator } from "../../src/album-consolidator.js";
 
 /**

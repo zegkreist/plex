@@ -39,5 +39,9 @@
     "plex:stop": "node plex-cli.js plex:stop",
     "plex:scan": "node plex-cli.js plex:scan",
     "plex:logs": "node plex-cli.js plex:logs"
+  },
+  "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "jest": "^29.7.0"
   }
 }
