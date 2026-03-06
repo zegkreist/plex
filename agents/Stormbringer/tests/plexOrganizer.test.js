@@ -334,3 +334,248 @@ describe("organize — move arquivos", () => {
     expect(fs.readFileSync(dest, "utf8")).toBe("original");
   });
 });
+
+// ─── cleanAlbumName ───────────────────────────────────────────────────────────
+
+describe("cleanAlbumName", () => {
+  test("remove tag [FLAC]", () => {
+    expect(organizer.cleanAlbumName("OK Computer [FLAC]")).toBe("OK Computer");
+  });
+
+  test("remove (Year) seguido de [FLAC]", () => {
+    expect(organizer.cleanAlbumName("OK Computer (1997) [FLAC]")).toBe("OK Computer");
+  });
+
+  test("remove [24bit Hi-Res Web]", () => {
+    expect(organizer.cleanAlbumName("Dark Side of the Moon [24bit Hi-Res Web]")).toBe("Dark Side of the Moon");
+  });
+
+  test("remove Remastered no final", () => {
+    expect(organizer.cleanAlbumName("Demolition Remastered")).toBe("Demolition");
+  });
+
+  test("remove (Deluxe Edition) no final", () => {
+    expect(organizer.cleanAlbumName("In Utero (Deluxe Edition)")).toBe("In Utero");
+  });
+
+  test("remove Anniversary Edition no final", () => {
+    expect(organizer.cleanAlbumName("Abbey Road Anniversary Edition")).toBe("Abbey Road");
+  });
+
+  test("preserva nome simples sem tags", () => {
+    expect(organizer.cleanAlbumName("The Wall")).toBe("The Wall");
+  });
+});
+
+// ─── isLiveRecording ──────────────────────────────────────────────────────────
+
+describe("isLiveRecording", () => {
+  test("detecta 'live' como palavra completa", () => {
+    expect(organizer.isLiveRecording("Live at Wembley")).toBe(true);
+  });
+
+  test("detecta '(live)'", () => {
+    expect(organizer.isLiveRecording("OK Computer (live)")).toBe(true);
+  });
+
+  test("detecta 'ao vivo' com espaço", () => {
+    expect(organizer.isLiveRecording("Ao Vivo no Maracanã")).toBe(true);
+  });
+
+  test("detecta 'ao-vivo' com hífen", () => {
+    expect(organizer.isLiveRecording("Show ao-vivo 2001")).toBe(true);
+  });
+
+  test("não detecta álbum de estúdio", () => {
+    expect(organizer.isLiveRecording("OK Computer")).toBe(false);
+  });
+
+  test("não detecta 'alive' (live não é palavra completa)", () => {
+    expect(organizer.isLiveRecording("Alive")).toBe(false);
+  });
+
+  test("retorna false para string vazia ou null", () => {
+    expect(organizer.isLiveRecording("")).toBe(false);
+    expect(organizer.isLiveRecording(null)).toBe(false);
+  });
+});
+
+// ─── normalizeForComparison ───────────────────────────────────────────────────
+
+describe("normalizeForComparison", () => {
+  test("remove (Remastered)", () => {
+    expect(organizer.normalizeForComparison("OK Computer (Remastered)")).toBe("okcomputer");
+  });
+
+  test("remove ano solto", () => {
+    expect(organizer.normalizeForComparison("OK Computer 1997")).toBe("okcomputer");
+  });
+
+  test("remove (Deluxe Edition)", () => {
+    expect(organizer.normalizeForComparison("In Utero (Deluxe Edition)")).toBe("inutero");
+  });
+
+  test("remove (live)", () => {
+    expect(organizer.normalizeForComparison("Nevermind (live)")).toBe("nevermind");
+  });
+
+  test("remove acentos", () => {
+    expect(organizer.normalizeForComparison("Música")).toBe("musica");
+  });
+
+  test("variantes do mesmo álbum normalizam igual", () => {
+    const variants = [
+      "OK Computer",
+      "OK Computer (Remastered)",
+      "OK Computer 1997",
+      "OK Computer (Deluxe Edition)",
+    ];
+    const normalized = variants.map((v) => organizer.normalizeForComparison(v));
+    expect(new Set(normalized).size).toBe(1);
+  });
+});
+
+// ─── calculateSimilarity ─────────────────────────────────────────────────────
+
+describe("calculateSimilarity", () => {
+  test("strings idênticas retornam 1.0", () => {
+    expect(organizer.calculateSimilarity("okcomputer", "okcomputer")).toBe(1.0);
+  });
+
+  test("strings completamente diferentes retornam valor baixo", () => {
+    expect(organizer.calculateSimilarity("abc", "xyz")).toBeLessThan(0.5);
+  });
+
+  test("strings quase iguais retornam valor ≥ 0.85", () => {
+    // "okcomputer" vs "okcomputer2" — diferem por 1 char
+    expect(organizer.calculateSimilarity("okcomputer", "okcomputer2")).toBeGreaterThan(0.85);
+  });
+
+  test("strings vazias retornam 1.0", () => {
+    expect(organizer.calculateSimilarity("", "")).toBe(1.0);
+  });
+});
+
+// ─── findExistingAlbumDir ─────────────────────────────────────────────────────
+
+describe("findExistingAlbumDir", () => {
+  test("encontra pasta com nome exato no filesystem", () => {
+    const artistDir = path.join(dirs.destMusic, "Radiohead");
+    const albumDir = path.join(artistDir, "OK Computer");
+    fs.mkdirSync(albumDir, { recursive: true });
+
+    const result = organizer.findExistingAlbumDir("Radiohead", "OK Computer", artistDir, new Map());
+    expect(result).toBe(albumDir);
+  });
+
+  test("encontra pasta remastered quando procuramos pelo nome limpo", () => {
+    const artistDir = path.join(dirs.destMusic, "Radiohead");
+    const albumDir = path.join(artistDir, "OK Computer Remastered");
+    fs.mkdirSync(albumDir, { recursive: true });
+
+    // "OK Computer" e "OK Computer Remastered" normalizam para "okcomputer"
+    const result = organizer.findExistingAlbumDir("Radiohead", "OK Computer", artistDir, new Map());
+    expect(result).toBe(albumDir);
+  });
+
+  test("encontra álbum já no processedAlbums da sessão", () => {
+    const albumPath = path.join(dirs.destMusic, "Radiohead", "OK Computer");
+    const processedAlbums = new Map([
+      ["Radiohead/OK Computer", { artist: "Radiohead", albumName: "OK Computer", path: albumPath }],
+    ]);
+
+    const artistDir = path.join(dirs.destMusic, "Radiohead");
+    const result = organizer.findExistingAlbumDir("Radiohead", "OK Computer", artistDir, processedAlbums);
+    expect(result).toBe(albumPath);
+  });
+
+  test("retorna null quando não há pasta compatível", () => {
+    const artistDir = path.join(dirs.destMusic, "Radiohead");
+    fs.mkdirSync(artistDir, { recursive: true });
+
+    const result = organizer.findExistingAlbumDir("Radiohead", "The Bends", artistDir, new Map());
+    expect(result).toBeNull();
+  });
+
+  test("não confunde artistas diferentes", () => {
+    const rhDir = path.join(dirs.destMusic, "Radiohead");
+    fs.mkdirSync(path.join(rhDir, "OK Computer"), { recursive: true });
+
+    const artistDir = path.join(dirs.destMusic, "Portishead");
+    const result = organizer.findExistingAlbumDir("Portishead", "OK Computer", artistDir, new Map());
+    // artistDir de Portishead não existe, deve retornar null
+    expect(result).toBeNull();
+  });
+});
+
+// ─── organizeMusic — deduplicação e live ─────────────────────────────────────
+
+describe("organizeMusic — live e deduplicação", () => {
+  test("pasta com nome live ganha sufixo (Live) se o álbum não continha a palavra", async () => {
+    // Pasta "Nirvana - Live at Reading" — a word "live" está no PATH mas não diretamente no album name
+    // parseAlbumFolderName → artist: "Nirvana", album: "Live at Reading" (live já está no album)
+    // isLiveRecording("Live at Reading") = true → albumFolderName = "Live at Reading"
+    touch(path.join(dirs.sourceMusic, "Nirvana - Live at Reading", "01.flac"));
+    await organizer.organize();
+
+    const artistDir = path.join(dirs.destMusic, "Nirvana");
+    const subdirs = fs.readdirSync(artistDir);
+    expect(subdirs.some((d) => d.toLowerCase().includes("live") || d.toLowerCase().includes("reading"))).toBe(true);
+  });
+
+  test("dois downloads do mesmo álbum são mesclados na mesma pasta destino", async () => {
+    touch(path.join(dirs.sourceMusic, "Radiohead - OK Computer", "01.flac"));
+    touch(path.join(dirs.sourceMusic, "Radiohead - OK Computer (Remastered)", "02.flac"));
+
+    await organizer.organize();
+
+    const artistDir = path.join(dirs.destMusic, "Radiohead");
+    const subdirs = fs.readdirSync(artistDir).filter((d) =>
+      fs.statSync(path.join(artistDir, d)).isDirectory()
+    );
+    // Ambas as faixas devem cair na mesma pasta
+    expect(subdirs).toHaveLength(1);
+    const albumFiles = fs.readdirSync(path.join(artistDir, subdirs[0]));
+    expect(albumFiles.filter((f) => f.endsWith(".flac"))).toHaveLength(2);
+  });
+
+  test("álbuns de artistas diferentes não são mesclados", async () => {
+    touch(path.join(dirs.sourceMusic, "Radiohead - OK Computer", "01.flac"));
+    touch(path.join(dirs.sourceMusic, "Portishead - OK Computer", "01.flac"));
+
+    await organizer.organize();
+
+    const rhDir = path.join(dirs.destMusic, "Radiohead");
+    const phDir = path.join(dirs.destMusic, "Portishead");
+    expect(fs.existsSync(rhDir)).toBe(true);
+    expect(fs.existsSync(phDir)).toBe(true);
+  });
+});
+
+// ─── paths relativas — sem config.plex ───────────────────────────────────────
+
+describe("paths relativas — sem config.plex", () => {
+  test("destMovies fallback aponta para REPO_ROOT/movies (não plex_server_movie hardcoded)", () => {
+    const org = new PlexOrganizer({ downloads: { movies: ".", series: ".", music: "." } });
+    // Antes era pasta irmã errada: plex_server_movie — agora deve ser subdir do repo
+    expect(org.destMovies).not.toMatch(/plex_server_movie/);
+    expect(org.destMovies).toMatch(/plex_server\/movies$/);
+  });
+
+  test("destSeries fallback aponta para REPO_ROOT/tv", () => {
+    const org = new PlexOrganizer({ downloads: { movies: ".", series: ".", music: "." } });
+    expect(org.destSeries).toMatch(/plex_server\/tv$/);
+  });
+
+  test("destMusic fallback aponta para REPO_ROOT/music", () => {
+    const org = new PlexOrganizer({ downloads: { movies: ".", series: ".", music: "." } });
+    expect(org.destMusic).toMatch(/plex_server\/music$/);
+  });
+
+  test("MOVIES_PATH env var sobrescreve fallback", () => {
+    process.env.MOVIES_PATH = "/custom/movies";
+    const org = new PlexOrganizer({ downloads: { movies: ".", series: ".", music: "." } });
+    expect(org.destMovies).toBe("/custom/movies");
+    delete process.env.MOVIES_PATH;
+  });
+});

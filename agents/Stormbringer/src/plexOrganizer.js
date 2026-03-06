@@ -1,7 +1,14 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { parseFile } from "music-metadata";
+import {
+  sanitizeName, cleanAlbumName, normalizeForComparison, calculateSimilarity,
+  isLiveRecording,
+  AUDIO_EXTENSIONS, isAudioFile, isDiscFolder, hasDirectAudio, isReleaseFolder,
+  findAudioFiles, parseAlbumFolderName,
+  ensureDir, moveFile, removeIfEmpty, saveCoverArt,
+  findExistingAlbumDir,
+} from "@plex-agents/transporter";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,11 +35,9 @@ class PlexOrganizer {
     this.destSeries = plex.series || process.env.SERIES_PATH || path.join(REPO_ROOT, "tv");
     this.destMusic = plex.music || process.env.MUSIC_PATH || path.join(REPO_ROOT, "music");
 
-    // Extensões de vídeo suportadas
+    // Extensões de vídeo suportadas (Stormbringer-specific)
     this.videoExtensions = [".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".mpg", ".mpeg"];
-
-    // Extensões de áudio suportadas
-    this.audioExtensions = [".flac", ".mp3", ".m4a", ".ogg", ".opus", ".wav", ".aiff", ".wma", ".ape", ".alac"];
+    // Extensões de áudio: importadas do Transporter (AUDIO_EXTENSIONS)
   }
 
   /**
@@ -351,196 +356,35 @@ class PlexOrganizer {
     return count;
   }
 
-  /**
-   * Retorna true se a pasta contém áudio diretamente ou via subpastas de disco (CD/Disc).
-   * Retorna false se contém apenas subpastas não-disco (→ é uma pasta de artista).
-   */
-  isReleaseFolder(dir) {
-    for (const item of fs.readdirSync(dir)) {
-      const full = path.join(dir, item);
-      const stat = fs.statSync(full);
-      if (!stat.isDirectory() && this.isAudioFile(full)) return true;
-      if (stat.isDirectory() && this.isDiscFolder(item)) {
-        if (this.hasDirectAudio(full)) return true;
-      }
-    }
-    return false;
-  }
+  /** @see {@link isReleaseFolder} from @plex-agents/transporter */
+  isReleaseFolder(dir) { return isReleaseFolder(dir); }
+  /** @see {@link isDiscFolder} from @plex-agents/transporter */
+  isDiscFolder(name) { return isDiscFolder(name); }
+  /** @see {@link isAudioFile} from @plex-agents/transporter */
+  isAudioFile(filePath) { return isAudioFile(filePath); }
+  /** @see {@link hasDirectAudio} from @plex-agents/transporter */
+  hasDirectAudio(dir) { return hasDirectAudio(dir); }
 
-  isDiscFolder(name) {
-    return /^(cd|disc|disk)\s*\d/i.test(name);
-  }
+  /** @see {@link parseAlbumFolderName} from @plex-agents/transporter */
+  parseAlbumFolderName(folderName) { return parseAlbumFolderName(folderName); }
+  /** @see {@link cleanAlbumName} from @plex-agents/transporter */
+  cleanAlbumName(name) { return cleanAlbumName(name); }
 
-  isAudioFile(filePath) {
-    return this.audioExtensions.includes(path.extname(filePath).toLowerCase());
-  }
+  /** @see {@link isLiveRecording} from @plex-agents/transporter */
+  isLiveRecording(text) { return isLiveRecording(text); }
+  /** @see {@link normalizeForComparison} from @plex-agents/transporter */
+  normalizeForComparison(str) { return normalizeForComparison(str); }
+  /** @see {@link calculateSimilarity} from @plex-agents/transporter */
+  calculateSimilarity(str1, str2) { return calculateSimilarity(str1, str2); }
+  /** @see {@link findExistingAlbumDir} from @plex-agents/transporter */
+  findExistingAlbumDir(artist, album, artistDir, processedAlbums) { return findExistingAlbumDir(artist, album, artistDir, processedAlbums); }
+  /** @see {@link saveCoverArt} from @plex-agents/transporter */
+  saveCoverArt(albumDir, audioFile) { return saveCoverArt(albumDir, audioFile); }
 
-  hasDirectAudio(dir) {
-    return fs.readdirSync(dir).some((item) => {
-      const full = path.join(dir, item);
-      return !fs.statSync(full).isDirectory() && this.isAudioFile(full);
-    });
-  }
-
-  /**
-   * Parseia nome da pasta de álbum baixada.
-   * Suporta:
-   *   "Artist - Year - Album"          ex: "Judas Priest - 2001 - Demolition"
-   *   "Artist - Album (Year) [quality]" ex: "Radiohead - OK Computer (1997) [FLAC]"
-   *   "Album (Year)"                    ex: quando artista vem do diretório pai
-   *   "Artist - Album"
-   */
-  parseAlbumFolderName(folderName) {
-    // Padrão: Artist - Year - Album
-    let m = folderName.match(/^(.+?)\s+-\s+(\d{4})\s+-\s+(.+)$/);
-    if (m) {
-      return { artist: m[1].trim(), year: m[2], album: this.cleanAlbumName(m[3]) };
-    }
-
-    // Padrão: Artist - Album (Year…) [quality]
-    m = folderName.match(/^(.+?)\s+-\s+(.+?)\s*[\[(](\d{4})[^\])]*/);
-    if (m) {
-      return { artist: m[1].trim(), year: m[3], album: this.cleanAlbumName(m[2]) };
-    }
-
-    // Padrão: Artist - Album (sem ano)
-    m = folderName.match(/^(.+?)\s+-\s+(.+)$/);
-    if (m) {
-      return { artist: m[1].trim(), year: null, album: this.cleanAlbumName(m[2]) };
-    }
-
-    // Sem hífen: pode ser apenas "Album (Year)" quando artista já é o dir pai
-    m = folderName.match(/^(.+?)\s*[\[(](\d{4})[\])]/);
-    if (m) {
-      return { artist: "Unknown Artist", year: m[2], album: this.cleanAlbumName(m[1]) };
-    }
-
-    return { artist: "Unknown Artist", year: null, album: this.cleanAlbumName(folderName) };
-  }
-
-  cleanAlbumName(name) {
-    return name
-      .replace(/\s*[\[(][^\])"]*(?:flac|mp3|aac|opus|lossless|hi-res|web|remaster|deluxe)[^\])*[\])].*$/i, "")
-      .replace(/\s*\(?(?:remastered?|deluxe edition|expanded edition|special edition|anniversary edition|bonus tracks?)\)?$/i, "")
-      .replace(/\s*\d{2,3}\s*$/, "")
-      .trim();
-  }
-
-  /**
-   * Detecta se um texto indica gravação ao vivo (live, ao vivo, etc.)
-   */
-  isLiveRecording(text) {
-    if (!text) return false;
-    const normalized = text
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
-    return [/\blive\b/, /\(live\)/, /ao\s*vivo/, /ao[-_]vivo/].some((p) => p.test(normalized));
-  }
-
-  /**
-   * Normaliza string para comparação fuzzy.
-   * Remove acentos, anos, remaster, deluxe, live, etc.
-   */
-  normalizeForComparison(str) {
-    let s = String(str).toLowerCase();
-    s = s.replace(/\s*\(?re[-\s]?master(?:ed)?\)?/gi, "");
-    s = s.replace(/\s*\(?\d{4}\)?/g, "");
-    s = s.replace(/\s*\(?(?:live|ao[-\s]?vivo)\)?/gi, "");
-    s = s.replace(/\s*\(?(?:deluxe|edition|expanded|special|anniversary|bonus|complete|reissue)\)?/gi, "");
-    return s
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]/g, "")
-      .trim();
-  }
-
-  /**
-   * Similaridade simplificada (caracteres em comum / maior string). Retorna 0-1.
-   */
-  calculateSimilarity(str1, str2) {
-    if (str1 === str2) return 1.0;
-    const longer = str1.length > str2.length ? str1 : str2;
-    const shorter = str1.length > str2.length ? str2 : str1;
-    if (longer.length === 0) return 1.0;
-    let matches = 0;
-    for (let i = 0; i < shorter.length; i++) {
-      if (longer.includes(shorter[i])) matches++;
-    }
-    return matches / longer.length;
-  }
-
-  /**
-   * Procura pasta de álbum compatível já existente no destino (deduplicação).
-   * Verifica álbuns da sessão atual + subpastas físicas do artistDir.
-   */
-  findExistingAlbumDir(artist, album, artistDir, processedAlbums) {
-    const normalizedAlbum = this.normalizeForComparison(album);
-    const normalizedArtist = this.normalizeForComparison(artist);
-
-    // Álbuns processados nesta sessão
-    for (const [, info] of processedAlbums) {
-      if (this.normalizeForComparison(info.artist) !== normalizedArtist) continue;
-      const sim = this.calculateSimilarity(normalizedAlbum, this.normalizeForComparison(info.albumName));
-      if (sim >= 0.85) return info.path;
-    }
-
-    // Pastas físicas já existentes no destino
-    if (!fs.existsSync(artistDir)) return null;
-    for (const sub of fs.readdirSync(artistDir)) {
-      const subPath = path.join(artistDir, sub);
-      if (!fs.statSync(subPath).isDirectory()) continue;
-      const sim = this.calculateSimilarity(normalizedAlbum, this.normalizeForComparison(sub));
-      if (sim >= 0.85) return subPath;
-    }
-
-    return null;
-  }
-
-  /**
-   * Lê cover art do primeiro arquivo de áudio e salva como folder.jpg no álbum.
-   * Silencioso se não houver cover ou ocorrer erro.
-   */
-  async saveCoverArt(albumDir, audioFile) {
-    const coverPath = path.join(albumDir, "folder.jpg");
-    if (fs.existsSync(coverPath)) return;
-    try {
-      const metadata = await parseFile(audioFile, { skipCovers: false });
-      const pictures = metadata.common.picture;
-      if (!pictures || pictures.length === 0) return;
-      fs.writeFileSync(coverPath, pictures[0].data);
-      console.log(`   🖼️  Cover art salvo: folder.jpg`);
-    } catch {
-      // Sem cover ou falha de leitura — ignorar
-    }
-  }
-
-  /**
-   * Encontra todos os arquivos de áudio em um diretório (recursivo)
-   */
-  findAudioFiles(dir, files = []) {
-    for (const item of fs.readdirSync(dir)) {
-      const full = path.join(dir, item);
-      if (fs.statSync(full).isDirectory()) {
-        this.findAudioFiles(full, files);
-      } else if (this.audioExtensions.includes(path.extname(full).toLowerCase())) {
-        files.push(full);
-      }
-    }
-    return files;
-  }
-
-  /**
-   * Remove diretório se estiver vazio (recursivo bottom-up)
-   */
-  removeIfEmpty(dir) {
-    if (!fs.existsSync(dir)) return;
-    for (const item of fs.readdirSync(dir)) {
-      const full = path.join(dir, item);
-      if (fs.statSync(full).isDirectory()) this.removeIfEmpty(full);
-    }
-    if (fs.readdirSync(dir).length === 0) fs.rmdirSync(dir);
-  }
+  /** @see {@link findAudioFiles} from @plex-agents/transporter */
+  findAudioFiles(dir, files = []) { return findAudioFiles(dir, files); }
+  /** @see {@link removeIfEmpty} from @plex-agents/transporter */
+  removeIfEmpty(dir) { return removeIfEmpty(dir); }
 
   /**
    * Parseia nome de filme
@@ -667,24 +511,11 @@ class PlexOrganizer {
     return this.videoExtensions.includes(ext);
   }
 
-  /**
-   * Move um arquivo com fallback para copy+unlink em filesystems diferentes
-   */
-  moveFile(src, dest) {
-    try {
-      fs.renameSync(src, dest);
-    } catch (err) {
-      if (err.code === "EXDEV") {
-        fs.copyFileSync(src, dest);
-        fs.unlinkSync(src);
-      } else {
-        throw err;
-      }
-    }
-  }
+  /** @see {@link moveFile} from @plex-agents/transporter */
+  moveFile(src, dest) { return moveFile(src, dest); }
 
   /**
-   * Move arquivos extras (poster, nfo, fanart)
+   * Move arquivos extras (poster, nfo, fanart) — específico do Plex/Stormbringer
    */
   moveExtraFiles(sourceDir, destDir) {
     const extraFiles = ["poster.jpg", "fanart.jpg", "movie.nfo", "tvshow.nfo"];
@@ -703,25 +534,10 @@ class PlexOrganizer {
     }
   }
 
-  /**
-   * Sanitiza nome de arquivo/pasta
-   */
-  sanitizeName(name) {
-    return name
-      .replace(/[<>:"/\\|?*]/g, "") // Remover caracteres inválidos
-      .replace(/\s+/g, " ") // Normalizar espaços
-      .trim();
-  }
-
-  /**
-   * Garante que um diretório existe
-   */
-  ensureDir(dir) {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-      console.log(`📁 Criado diretório: ${dir}`);
-    }
-  }
+  /** @see {@link sanitizeName} from @plex-agents/transporter */
+  sanitizeName(name) { return sanitizeName(name); }
+  /** @see {@link ensureDir} from @plex-agents/transporter */
+  ensureDir(dir) { return ensureDir(dir); }
 
   /**
    * Modo dry-run: retorna o plano de organização sem mover nada.

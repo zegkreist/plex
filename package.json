@@ -7,7 +7,8 @@
     "agents/AllFather",
     "agents/MusicCurator",
     "agents/SeriesCurator",
-    "agents/Stormbringer"
+    "agents/Stormbringer",
+    "agents/Transporter"
   ],
   "scripts": {
     "cli": "node plex-cli.js",

@@ -1,0 +1,17 @@
+{
+  "name": "@plex-agents/transporter",
+  "version": "1.0.0",
+  "description": "Utilitários compartilhados de organização de mídia para o Plex",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./strings": "./src/strings.js",
+    "./live": "./src/live.js",
+    "./audio": "./src/audio.js",
+    "./filesystem": "./src/filesystem.js",
+    "./dedup": "./src/dedup.js"
+  },
+  "dependencies": {
+    "music-metadata": "^7.14.0"
+  }
+}
