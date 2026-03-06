@@ -1,0 +1,16 @@
+node_modules/
+downloads/
+*.torrent
+.env
+config.local.json
+logs/
+*.log
+.DS_Store
+series_tracker.json
+
+# Test files
+tests/test-downloads/
+tests/test-output/
+tests/test-tracker.json
+coverage/
+.nyc_output/

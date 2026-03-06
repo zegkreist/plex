@@ -1,0 +1,18 @@
+{
+  "torrents": [
+    {
+      "infoHash": "dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c",
+      "name": null,
+      "type": "movie",
+      "status": "downloading",
+      "progress": 0,
+      "downloaded": 0,
+      "total": 0,
+      "downloadSpeed": 0,
+      "uploadSpeed": 0,
+      "peers": 0,
+      "startTime": 1772759517613
+    }
+  ],
+  "lastUpdate": 1772759517613
+}

@@ -1,0 +1,64 @@
+{
+  "downloads": {
+    "baseDir": "./downloads",
+    "movies": "./downloads/filmes",
+    "series": "./downloads/series",
+    "music": "./downloads/musicas"
+  },
+  "torrent": {
+    "maxConnections": 100,
+    "downloadLimit": -1,
+    "uploadLimit": -1
+  },
+  "search": {
+    "providers": ["1337x", "ThePirateBay", "KickassTorrents", "Limetorrents", "Rarbg", "Yts", "Torrentz2", "Eztv", "TorrentProject"],
+    "resultsLimit": 10
+  },
+  "series": {
+    "checkInterval": "0 */6 * * *",
+    "trackerFile": "./series_tracker.json"
+  },
+  "music": {
+    "checkInterval": "0 */12 * * *",
+    "trackerFile": "./music_tracker.json",
+    "feeds": [
+      {
+        "name": "The Pirate Bay - Music",
+        "url": "https://thepiratebay.org/rss/top100/Music",
+        "enabled": true
+      },
+      {
+        "name": "1337x - Music",
+        "url": "https://1337x.to/rss/music/",
+        "enabled": false,
+        "_comment": "Retorna 403 - desabilitado"
+      },
+      {
+        "name": "Nyaa - Audio (Lossless)",
+        "url": "https://nyaa.si/?page=rss&c=2_1",
+        "enabled": true
+      },
+      {
+        "name": "Nyaa - Audio (Lossy)",
+        "url": "https://nyaa.si/?page=rss&c=2_2",
+        "enabled": true
+      },
+      {
+        "name": "The Mixing Bowl (TMB)",
+        "url": "https://themixingbowl.org/rssddl.xml",
+        "username": "",
+        "password": "",
+        "queryParams": {},
+        "enabled": false,
+        "_comment": "Requer conta em themixingbowl.org. Preencha username e password. queryParams aceita: tag, artist, year, codec"
+      }
+    ]
+  },
+  "metadata": {
+    "enabled": true,
+    "downloadPosters": true,
+    "downloadFanart": true,
+    "createNFO": true,
+    "renameFiles": true
+  }
+}

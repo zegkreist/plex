@@ -325,12 +325,6 @@ class FullLibraryConsolidator {
 
       const result = await this.processArtist(artist);
       results.push({ artist: artist.name, result });
-
-      // Pausa entre artistas para não sobrecarregar
-      if (i < artists.length - 1) {
-        console.log("⏸️  Pausa de 3 segundos...");
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-      }
     }
 
     this.stats.endTime = new Date();

@@ -1,0 +1,70 @@
+{
+  "name": "torrent-download-manager",
+  "version": "1.0.0",
+  "description": "Sistema completo de gerenciamento de downloads via torrent para filmes, séries e músicas",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "search": "node src/cli.js search",
+    "download": "node src/cli.js download",
+    "check-series": "node src/cli.js check-series",
+    "track-series": "node src/cli.js track-series",
+    "downloads:list": "node src/downloadManagerCli.js list",
+    "downloads:status": "node src/downloadManagerCli.js status",
+    "downloads:clear": "node src/downloadManagerCli.js clear",
+    "downloads:info": "node src/downloadManagerCli.js info",
+    "downloads:help": "node src/downloadManagerCli.js help",
+    "plex:organize": "node src/plexOrganizer.js",
+    "plex:preview": "node src/plexOrganizer.js --dry-run",
+    "music:feeds": "node src/cli.js music-feeds",
+    "music:browse": "node src/cli.js music-browse",
+    "music:track": "node src/cli.js track-music",
+    "music:check": "node src/cli.js check-music",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --testPathIgnorePatterns=integration",
+    "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --testPathPattern=integration",
+    "test:all": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch --runInBand --testPathIgnorePatterns=integration",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --runInBand --testPathIgnorePatterns=integration"
+  },
+  "keywords": [
+    "torrent",
+    "download",
+    "movies",
+    "series",
+    "music"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "chalk": "^5.3.0",
+    "cheerio": "^1.0.0-rc.12",
+    "commander": "^11.1.0",
+    "inquirer": "^9.2.12",
+    "musicbrainz-api": "^0.9.0",
+    "node-cron": "^3.0.3",
+    "ora": "^7.0.1",
+    "rss-parser": "^3.13.0",
+    "sharp": "^0.33.2",
+    "torrent-search-api": "^2.1.4",
+    "webtorrent": "^2.4.1"
+  },
+  "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 60000,
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/index.js",
+      "!src/cli.js"
+    ],
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
+  }
+}
