@@ -1,9 +1,11 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { parseFile } from "music-metadata";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const REPO_ROOT = path.resolve(__dirname, "../../..");
 
 /**
  * PlexOrganizer - Organiza arquivos de mídia seguindo convenções do Plex
@@ -22,9 +24,9 @@ class PlexOrganizer {
     this.sourceMusic = path.resolve(config.downloads.music);
 
     const plex = config.plex || {};
-    this.destMovies = plex.movies || "/home/zegkreist/Documents/Pessoal/plex_server_movie";
-    this.destSeries = plex.series || "/home/zegkreist/Documents/Pessoal/plex_server/tv";
-    this.destMusic = plex.music || "/home/zegkreist/Documents/Pessoal/plex_server/music";
+    this.destMovies = plex.movies || process.env.MOVIES_PATH || path.join(REPO_ROOT, "movies");
+    this.destSeries = plex.series || process.env.SERIES_PATH || path.join(REPO_ROOT, "tv");
+    this.destMusic = plex.music || process.env.MUSIC_PATH || path.join(REPO_ROOT, "music");
 
     // Extensões de vídeo suportadas
     this.videoExtensions = [".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".mpg", ".mpeg"];
@@ -247,6 +249,7 @@ class PlexOrganizer {
     }
 
     let processed = 0;
+    const processedAlbums = new Map();
 
     for (const item of fs.readdirSync(this.sourceMusic)) {
       const itemPath = path.join(this.sourceMusic, item);
@@ -255,7 +258,7 @@ class PlexOrganizer {
       if (this.isReleaseFolder(itemPath)) {
         // Case A: musicas/Artist - Album/[CD/]tracks
         const info = this.parseAlbumFolderName(item);
-        processed += this.moveRelease(itemPath, info.artist, info.album, info.year);
+        processed += await this.moveRelease(itemPath, info.artist, info.album, info.year, processedAlbums);
       } else {
         // Case B: musicas/Artist/Album/[CD/]tracks  — top-level is artist name
         const artist = item;
@@ -266,7 +269,7 @@ class PlexOrganizer {
             const info = this.parseAlbumFolderName(sub);
             // If the subfolder itself encodes the artist, prefer that; otherwise use parent
             const resolvedArtist = info.artist !== "Unknown Artist" ? info.artist : artist;
-            processed += this.moveRelease(subPath, resolvedArtist, info.album, info.year);
+            processed += await this.moveRelease(subPath, resolvedArtist, info.album, info.year, processedAlbums);
           }
         }
         this.removeIfEmpty(itemPath);
@@ -278,17 +281,40 @@ class PlexOrganizer {
 
   /**
    * Move todas as faixas de uma pasta de release para o destino Plex.
+   * Detecta gravações ao vivo, deduplica álbuns com nomes similares e salva cover art.
    * Retorna o número de faixas movidas.
    */
-  moveRelease(releaseDir, artist, album, year) {
-    const albumFolderName = year ? `${album} (${year})` : album;
+  async moveRelease(releaseDir, artist, album, year, processedAlbums = new Map()) {
+    // Detectar gravação ao vivo pelo nome da pasta ou do álbum
+    const isLive = this.isLiveRecording(path.basename(releaseDir)) || this.isLiveRecording(album);
+    const albumBase = year ? `${album} (${year})` : album;
+    // Adicionar sufixo (Live) apenas se não estiver já no nome
+    const albumFolderName = isLive && !this.isLiveRecording(album) ? `${albumBase} (Live)` : albumBase;
+
     const artistDir = path.join(this.destMusic, this.sanitizeName(artist));
-    const albumDir = path.join(artistDir, this.sanitizeName(albumFolderName));
+
+    // Deduplicação: reusar pasta existente com nome similar
+    let albumDir = this.findExistingAlbumDir(artist, album, artistDir, processedAlbums);
+    const isMerged = !!albumDir;
+
+    if (!albumDir) {
+      albumDir = path.join(artistDir, this.sanitizeName(albumFolderName));
+    }
 
     this.ensureDir(artistDir);
     this.ensureDir(albumDir);
 
-    console.log(`🎵 ${artist} — ${albumFolderName}`);
+    if (isMerged) {
+      console.log(`🔗 ${artist} — ${albumFolderName}  (mesclando com pasta existente)`);
+    } else {
+      console.log(`🎵 ${artist} — ${albumFolderName}${isLive ? "  🎤 LIVE" : ""}`);
+      processedAlbums.set(`${this.sanitizeName(artist)}/${this.sanitizeName(albumFolderName)}`, {
+        artist,
+        albumName: album,
+        albumFolderName,
+        path: albumDir,
+      });
+    }
 
     const audioFiles = this.findAudioFiles(releaseDir);
     let count = 0;
@@ -314,6 +340,11 @@ class PlexOrganizer {
       } catch (err) {
         console.error(`   ✗ ${path.basename(audioFile)}: ${err.message}`);
       }
+    }
+
+    // Salvar cover art do primeiro arquivo de áudio encontrado
+    if (audioFiles.length > 0) {
+      await this.saveCoverArt(albumDir, audioFiles[0]);
     }
 
     this.removeIfEmpty(releaseDir);
@@ -389,9 +420,99 @@ class PlexOrganizer {
 
   cleanAlbumName(name) {
     return name
-      .replace(/\s*[\[(][^\])"]*(flac|mp3|aac|opus|lossless|hi-res|web|remaster|deluxe)[^\])"]*[\])].*$/i, "")
+      .replace(/\s*[\[(][^\])"]*(?:flac|mp3|aac|opus|lossless|hi-res|web|remaster|deluxe)[^\])*[\])].*$/i, "")
+      .replace(/\s*\(?(?:remastered?|deluxe edition|expanded edition|special edition|anniversary edition|bonus tracks?)\)?$/i, "")
       .replace(/\s*\d{2,3}\s*$/, "")
       .trim();
+  }
+
+  /**
+   * Detecta se um texto indica gravação ao vivo (live, ao vivo, etc.)
+   */
+  isLiveRecording(text) {
+    if (!text) return false;
+    const normalized = text
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+    return [/\blive\b/, /\(live\)/, /ao\s*vivo/, /ao[-_]vivo/].some((p) => p.test(normalized));
+  }
+
+  /**
+   * Normaliza string para comparação fuzzy.
+   * Remove acentos, anos, remaster, deluxe, live, etc.
+   */
+  normalizeForComparison(str) {
+    let s = String(str).toLowerCase();
+    s = s.replace(/\s*\(?re[-\s]?master(?:ed)?\)?/gi, "");
+    s = s.replace(/\s*\(?\d{4}\)?/g, "");
+    s = s.replace(/\s*\(?(?:live|ao[-\s]?vivo)\)?/gi, "");
+    s = s.replace(/\s*\(?(?:deluxe|edition|expanded|special|anniversary|bonus|complete|reissue)\)?/gi, "");
+    return s
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "")
+      .trim();
+  }
+
+  /**
+   * Similaridade simplificada (caracteres em comum / maior string). Retorna 0-1.
+   */
+  calculateSimilarity(str1, str2) {
+    if (str1 === str2) return 1.0;
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    if (longer.length === 0) return 1.0;
+    let matches = 0;
+    for (let i = 0; i < shorter.length; i++) {
+      if (longer.includes(shorter[i])) matches++;
+    }
+    return matches / longer.length;
+  }
+
+  /**
+   * Procura pasta de álbum compatível já existente no destino (deduplicação).
+   * Verifica álbuns da sessão atual + subpastas físicas do artistDir.
+   */
+  findExistingAlbumDir(artist, album, artistDir, processedAlbums) {
+    const normalizedAlbum = this.normalizeForComparison(album);
+    const normalizedArtist = this.normalizeForComparison(artist);
+
+    // Álbuns processados nesta sessão
+    for (const [, info] of processedAlbums) {
+      if (this.normalizeForComparison(info.artist) !== normalizedArtist) continue;
+      const sim = this.calculateSimilarity(normalizedAlbum, this.normalizeForComparison(info.albumName));
+      if (sim >= 0.85) return info.path;
+    }
+
+    // Pastas físicas já existentes no destino
+    if (!fs.existsSync(artistDir)) return null;
+    for (const sub of fs.readdirSync(artistDir)) {
+      const subPath = path.join(artistDir, sub);
+      if (!fs.statSync(subPath).isDirectory()) continue;
+      const sim = this.calculateSimilarity(normalizedAlbum, this.normalizeForComparison(sub));
+      if (sim >= 0.85) return subPath;
+    }
+
+    return null;
+  }
+
+  /**
+   * Lê cover art do primeiro arquivo de áudio e salva como folder.jpg no álbum.
+   * Silencioso se não houver cover ou ocorrer erro.
+   */
+  async saveCoverArt(albumDir, audioFile) {
+    const coverPath = path.join(albumDir, "folder.jpg");
+    if (fs.existsSync(coverPath)) return;
+    try {
+      const metadata = await parseFile(audioFile, { skipCovers: false });
+      const pictures = metadata.common.picture;
+      if (!pictures || pictures.length === 0) return;
+      fs.writeFileSync(coverPath, pictures[0].data);
+      console.log(`   🖼️  Cover art salvo: folder.jpg`);
+    } catch {
+      // Sem cover ou falha de leitura — ignorar
+    }
   }
 
   /**
