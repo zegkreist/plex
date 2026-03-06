@@ -27,8 +27,10 @@ dotenv.config();
 
 const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PLEX_SERVER_ROOT = path.resolve(__dirname, "../..");
 
-const MUSIC_PATH = process.env.MUSIC_PATH || "/home/zegkreist/Documents/Pessoal/plex_server/music";
+const MUSIC_PATH = process.env.MUSIC_PATH || path.join(PLEX_SERVER_ROOT, "music");
 const MUSIC_EXTS = new Set([".flac", ".mp3", ".m4a", ".ogg", ".wav", ".aiff", ".opus", ".wma"]);
 
 // ─── Parse de argumentos ──────────────────────────────────────────────────────

@@ -10,3 +10,4 @@ export * from "./live.js";
 export * from "./audio.js";
 export * from "./filesystem.js";
 export * from "./dedup.js";
+export { MusicOrganizer } from "./musicOrganizer.js";

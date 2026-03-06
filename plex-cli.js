@@ -43,6 +43,7 @@ const MUSIC_DIR = path.join(ROOT, "agents", "MusicCurator");
 const SERIES_DIR = path.join(ROOT, "agents", "SeriesCurator");
 const STORMBRINGER_DIR = path.join(ROOT, "agents", "Stormbringer");
 const TIDECALLER_DIR = path.join(ROOT, "agents", "TideCaller");
+const TRANSPORTER_DIR = path.join(ROOT, "agents", "Transporter");
 
 /**
  * Cada entrada:
@@ -151,6 +152,48 @@ const COMMANDS = [
     args: ["test"],
   },
 
+  // ── Transporter ────────────────────────────────────────────────────────────
+  {
+    id: "transporter:all",
+    label: "Mover TODOS os downloads para a biblioteca do Plex (Tidal + Torrent)",
+    group: "🚚  Transporter",
+    cwd: TRANSPORTER_DIR,
+    cmd: "node",
+    args: ["src/run.js"],
+  },
+  {
+    id: "transporter:all:dry",
+    label: "Mover todos os downloads — DRY RUN (sem mover arquivos)",
+    group: "🚚  Transporter",
+    cwd: TRANSPORTER_DIR,
+    cmd: "node",
+    args: ["src/run.js", "--dry-run"],
+  },
+  {
+    id: "transporter:music",
+    label: "Mover música (Tidal) para a biblioteca",
+    group: "🚚  Transporter",
+    cwd: TRANSPORTER_DIR,
+    cmd: "node",
+    args: ["src/run.js", "--music"],
+  },
+  {
+    id: "transporter:video",
+    label: "Mover filmes e séries (torrent) para a biblioteca",
+    group: "🚚  Transporter",
+    cwd: TRANSPORTER_DIR,
+    cmd: "node",
+    args: ["src/run.js", "--video"],
+  },
+  {
+    id: "transporter:video:dry",
+    label: "Mover filmes e séries — DRY RUN (sem mover arquivos)",
+    group: "🚚  Transporter",
+    cwd: TRANSPORTER_DIR,
+    cmd: "node",
+    args: ["src/run.js", "--video", "--dry-run"],
+  },
+
   // ── Stormbringer (Torrent) ───────────────────────────────────────────────────
   {
     id: "stormbringer:start",
@@ -177,22 +220,6 @@ const COMMANDS = [
     args: ["src/downloadManagerCli.js", "status"],
   },
   {
-    id: "stormbringer:plex-organize",
-    label: "Organizar downloads baixados nas pastas do Plex",
-    group: "⚡  Stormbringer",
-    cwd: STORMBRINGER_DIR,
-    cmd: "node",
-    args: ["src/plexOrganizer.js"],
-  },
-  {
-    id: "stormbringer:plex-organize:dry",
-    label: "Organizar downloads — DRY RUN (sem mover arquivos)",
-    group: "⚡  Stormbringer",
-    cwd: STORMBRINGER_DIR,
-    cmd: "node",
-    args: ["src/plexOrganizer.js", "--dry-run"],
-  },
-  {
     id: "stormbringer:test",
     label: "Rodar testes do Stormbringer",
     group: "⚡  Stormbringer",
@@ -217,14 +244,6 @@ const COMMANDS = [
     cwd: TIDECALLER_DIR,
     cmd: "bash",
     args: ["scripts/download_artists.sh"],
-  },
-  {
-    id: "tidecaller:organize",
-    label: "Organizar downloads do Tidal na biblioteca de música",
-    group: "🌊  TideCaller",
-    cwd: TIDECALLER_DIR,
-    cmd: "bash",
-    args: ["scripts/organize_albums.sh"],
   },
   {
     id: "tidecaller:enrich",

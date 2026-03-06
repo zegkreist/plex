@@ -37,14 +37,16 @@ const REPO_ROOT = path.resolve(__dirname, "../../..");
 class PlexOrganizer {
   constructor(config) {
     this.config = config;
-    this.sourceMovies = path.resolve(config.downloads.movies);
-    this.sourceSeries = path.resolve(config.downloads.series);
-    this.sourceMusic = path.resolve(config.downloads.music);
+    // Resolver paths de download relativamente ao REPO_ROOT
+    this.sourceMovies = path.resolve(REPO_ROOT, config.downloads.movies);
+    this.sourceSeries = path.resolve(REPO_ROOT, config.downloads.series);
+    this.sourceMusic = path.resolve(REPO_ROOT, config.downloads.music);
 
+    // Resolver paths de destino relativamente ao REPO_ROOT
     const plex = config.plex || {};
-    this.destMovies = plex.movies || process.env.MOVIES_PATH || path.join(REPO_ROOT, "movies");
-    this.destSeries = plex.series || process.env.SERIES_PATH || path.join(REPO_ROOT, "tv");
-    this.destMusic = plex.music || process.env.MUSIC_PATH || path.join(REPO_ROOT, "music");
+    this.destMovies = plex.movies ? path.resolve(REPO_ROOT, plex.movies) : (process.env.MOVIES_PATH || path.join(REPO_ROOT, "movies"));
+    this.destSeries = plex.series ? path.resolve(REPO_ROOT, plex.series) : (process.env.SERIES_PATH || path.join(REPO_ROOT, "tv"));
+    this.destMusic = plex.music ? path.resolve(REPO_ROOT, plex.music) : (process.env.MUSIC_PATH || path.join(REPO_ROOT, "music"));
 
     // Extensões de vídeo suportadas (Stormbringer-specific)
     this.videoExtensions = [".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".mpg", ".mpeg"];
@@ -593,17 +595,33 @@ class PlexOrganizer {
     if (fs.existsSync(this.sourceMovies)) {
       for (const item of fs.readdirSync(this.sourceMovies)) {
         const itemPath = path.join(this.sourceMovies, item);
-        if (!fs.statSync(itemPath).isDirectory()) continue;
-        for (const videoFile of this.findVideoFiles(itemPath)) {
-          const info = this.parseMovieName(path.basename(videoFile));
-          if (!info) continue;
-          const folderName = this.sanitizeName(info.name + (info.year ? ` (${info.year})` : ""));
-          plan.push({
-            type: "movie",
-            label: `${info.name}${info.year ? ` (${info.year})` : ""}`,
-            source: videoFile,
-            dest: path.join(this.destMovies, folderName, path.basename(videoFile)),
-          });
+        const stats = fs.statSync(itemPath);
+        
+        if (stats.isDirectory()) {
+          // Processar vídeos dentro de pastas
+          for (const videoFile of this.findVideoFiles(itemPath)) {
+            const info = this.parseMovieName(path.basename(videoFile));
+            if (!info) continue;
+            const folderName = this.sanitizeName(info.name + (info.year ? ` (${info.year})` : ""));
+            plan.push({
+              type: "movie",
+              label: `${info.name}${info.year ? ` (${info.year})` : ""}`,
+              source: videoFile,
+              dest: path.join(this.destMovies, folderName, path.basename(videoFile)),
+            });
+          }
+        } else if (this.isVideoFile(itemPath)) {
+          // Processar vídeos soltos na raiz
+          const info = this.parseMovieName(item);
+          if (info) {
+            const folderName = this.sanitizeName(info.name + (info.year ? ` (${info.year})` : ""));
+            plan.push({
+              type: "movie",
+              label: `${info.name}${info.year ? ` (${info.year})` : ""}`,
+              source: itemPath,
+              dest: path.join(this.destMovies, folderName, path.basename(itemPath)),
+            });
+          }
         }
       }
     }
@@ -612,21 +630,41 @@ class PlexOrganizer {
     if (fs.existsSync(this.sourceSeries)) {
       for (const item of fs.readdirSync(this.sourceSeries)) {
         const itemPath = path.join(this.sourceSeries, item);
-        if (!fs.statSync(itemPath).isDirectory()) continue;
-        for (const videoFile of this.findVideoFiles(itemPath)) {
-          const info = this.parseEpisodeName(path.basename(videoFile));
-          if (!info) continue;
-          const showFolder = this.sanitizeName(info.showName + (info.year ? ` (${info.year})` : ""));
-          const seasonFolder = `Season ${String(info.season).padStart(2, "0")}`;
-          let epFile = `${this.sanitizeName(info.showName)} - s${String(info.season).padStart(2, "0")}e${String(info.episode).padStart(2, "0")}`;
-          if (info.episodeTitle) epFile += ` - ${this.sanitizeName(info.episodeTitle)}`;
-          epFile += path.extname(videoFile);
-          plan.push({
-            type: "series",
-            label: `${info.showName} S${String(info.season).padStart(2, "0")}E${String(info.episode).padStart(2, "0")}`,
-            source: videoFile,
-            dest: path.join(this.destSeries, showFolder, seasonFolder, epFile),
-          });
+        const stats = fs.statSync(itemPath);
+        
+        if (stats.isDirectory()) {
+          // Processar vídeos dentro de pastas
+          for (const videoFile of this.findVideoFiles(itemPath)) {
+            const info = this.parseEpisodeName(path.basename(videoFile));
+            if (!info) continue;
+            const showFolder = this.sanitizeName(info.showName + (info.year ? ` (${info.year})` : ""));
+            const seasonFolder = `Season ${String(info.season).padStart(2, "0")}`;
+            let epFile = `${this.sanitizeName(info.showName)} - s${String(info.season).padStart(2, "0")}e${String(info.episode).padStart(2, "0")}`;
+            if (info.episodeTitle) epFile += ` - ${this.sanitizeName(info.episodeTitle)}`;
+            epFile += path.extname(videoFile);
+            plan.push({
+              type: "series",
+              label: `${info.showName} S${String(info.season).padStart(2, "0")}E${String(info.episode).padStart(2, "0")}`,
+              source: videoFile,
+              dest: path.join(this.destSeries, showFolder, seasonFolder, epFile),
+            });
+          }
+        } else if (this.isVideoFile(itemPath)) {
+          // Processar vídeos soltos na raiz
+          const info = this.parseEpisodeName(item);
+          if (info) {
+            const showFolder = this.sanitizeName(info.showName + (info.year ? ` (${info.year})` : ""));
+            const seasonFolder = `Season ${String(info.season).padStart(2, "0")}`;
+            let epFile = `${this.sanitizeName(info.showName)} - s${String(info.season).padStart(2, "0")}e${String(info.episode).padStart(2, "0")}`;
+            if (info.episodeTitle) epFile += ` - ${this.sanitizeName(info.episodeTitle)}`;
+            epFile += path.extname(itemPath);
+            plan.push({
+              type: "series",
+              label: `${info.showName} S${String(info.season).padStart(2, "0")}E${String(info.episode).padStart(2, "0")}`,
+              source: itemPath,
+              dest: path.join(this.destSeries, showFolder, seasonFolder, epFile),
+            });
+          }
         }
       }
     }

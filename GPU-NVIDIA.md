@@ -58,9 +58,8 @@ O script irá:
 
 ```bash
 # 1. Configurar repositório
-distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
-curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
+curl -fsSL https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
     sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
@@ -140,18 +139,18 @@ O arquivo já está configurado para usar GPU:
 ollama:
   image: ollama/ollama:latest
   container_name: ollama
+  user: "${PUID:-1000}:${PGID:-1000}"
+  runtime: nvidia
+  environment:
+    - NVIDIA_VISIBLE_DEVICES=all
+    - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    - HOME=/home/ollama
+    - OLLAMA_MODELS=/home/ollama/.ollama
   ports:
     - "11434:11434"
   volumes:
-    - ./ollama:/root/.ollama
+    - ./ollama:/home/ollama/.ollama
   restart: unless-stopped
-  deploy:
-    resources:
-      reservations:
-        devices:
-          - driver: nvidia
-            count: all
-            capabilities: [gpu]
 ```
 
 ### Usar GPU específica

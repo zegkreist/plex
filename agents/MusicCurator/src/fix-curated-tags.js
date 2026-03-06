@@ -20,7 +20,10 @@ import { AlbumConsolidator } from "./album-consolidator.js";
 
 dotenv.config();
 
-const MUSIC_PATH = process.env.MUSIC_PATH || "/home/zegkreist/Documents/Pessoal/plex_server/music";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PLEX_SERVER_ROOT = path.resolve(__dirname, "../..");
+const MUSIC_PATH = process.env.MUSIC_PATH || path.join(PLEX_SERVER_ROOT, "music");
 
 // ─── Parse de argumentos ──────────────────────────────────────────────────────
 const args = process.argv.slice(2);

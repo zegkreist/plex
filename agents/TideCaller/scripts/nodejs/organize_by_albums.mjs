@@ -12,9 +12,10 @@ import { createHash } from "crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const PROJECT_ROOT = join(__dirname, "..", "..");
-const DOWNLOADS_DIR = join(PROJECT_ROOT, "downloads");
-const OUTPUT_DIR = "/home/zegkreist/Documents/Pessoal/plex_server/music";
+// __dirname = agents/TideCaller/scripts/nodejs → plex_server (4 níveis acima)
+const PLEX_SERVER_ROOT = join(__dirname, "..", "..", "..", "..");
+const DOWNLOADS_DIR = join(PLEX_SERVER_ROOT, "agents", "TideCaller", "downloads");
+const OUTPUT_DIR = join(PLEX_SERVER_ROOT, "music");
 
 // Formatos de áudio e imagem
 const AUDIO_EXTENSIONS = [".flac", ".m4a", ".mp3", ".opus", ".ogg", ".wav"];
@@ -346,6 +347,18 @@ function calculateSimilarity(str1, str2) {
  * Busca álbum correto no library_enriched para uma música
  */
 function findAlbumForTrack(libraryData, trackMetadata) {
+  // Se não há library data, retornar unknown
+  if (!libraryData || !libraryData.albums) {
+    return {
+      artist: trackMetadata.artist,
+      album_name: null,
+      album_id: null,
+      mbid: null,
+      total_tracks: null,
+      is_unknown: true,
+    };
+  }
+
   const trackTitle = normalizeForComparison(trackMetadata.title);
   const trackArtist = normalizeForComparison(trackMetadata.artist);
 
@@ -521,17 +534,16 @@ async function main() {
   console.log("=".repeat(70));
   console.log();
 
-  // Carregar library_enriched.json
-  const enrichedFile = join(PROJECT_ROOT, "library_enriched.json");
-  console.log(`📖 Carregando ${enrichedFile}...`);
-
-  let libraryData;
+  // Carregar library_enriched.json (OPCIONAL)
+  const enrichedFile = join(PLEX_SERVER_ROOT, "agents", "TideCaller", "library_enriched.json");
+  let libraryData = null;
+  
   try {
-    libraryData = JSON.parse(await readFile(enrichedFile, "utf-8"));
-    console.log(`✅ Carregado: ${libraryData.albums.length} álbuns identificados`);
+    const fileContent = await readFile(enrichedFile, "utf-8");
+    libraryData = JSON.parse(fileContent);
+    console.log(`✅ library_enriched.json encontrado: ${libraryData.albums.length} álbuns`);
   } catch (error) {
-    console.error(`❌ Erro ao carregar library_enriched.json: ${error.message}`);
-    process.exit(1);
+    console.log(`⚠️  library_enriched.json não encontrado - organizando apenas por metadados e covers`);
   }
 
   console.log();

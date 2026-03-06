@@ -22,7 +22,9 @@ const execAsync = promisify(exec);
  */
 class FullLibraryConsolidator {
   constructor() {
-    this.musicPath = "/home/zegkreist/Documents/Pessoal/plex_server/music";
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const PLEX_SERVER_ROOT = path.resolve(__dirname, "../..");
+    this.musicPath = process.env.MUSIC_PATH || path.join(PLEX_SERVER_ROOT, "music");
     this.allfather = null;
     this.consolidator = null;
 
