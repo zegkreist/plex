@@ -147,8 +147,15 @@ def load_session_from_config() -> "tidalapi.Session | None":
     return None
 
 
+def clickable_link(url: str, text: str = None) -> str:
+    """Retorna URL com sequência OSC 8 para ser clicável em terminais modernos."""
+    label = text or url
+    return f"\033]8;;{url}\033\\{label}\033]8;;\033\\"
+
+
 def oauth_login() -> "tidalapi.Session":
     """Inicia fluxo OAuth interativo. Requer que o usuário abra o link."""
+    import subprocess, os
     session = tidalapi.Session()
     print()
     print("🔐 Iniciando autenticação OAuth2...")
@@ -156,14 +163,28 @@ def oauth_login() -> "tidalapi.Session":
 
     login, future = session.login_oauth()
 
+    url = f"https://{login.verification_uri_complete}"
+
     print("━" * 60)
-    print("  Abra o link abaixo no seu navegador:")
-    print(f"  👉  {login.verification_uri_complete}")
+    print(f"  👉  {clickable_link(url)}  ← clique aqui ou copie o link")
     print()
-    print(f"  Ou acesse {login.verification_uri} e use o código: {login.user_code}")
+    print(f"  Código: {login.user_code}")
     print("━" * 60)
     print()
-    print("⏳ Aguardando autorização...")
+
+    # Tentar abrir o browser automaticamente
+    try:
+        if subprocess.call(["xdg-open", url],
+                           stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL) == 0:
+            print("🌐 Browser aberto automaticamente.")
+        else:
+            print("⚠️  Não foi possível abrir o browser. Abra o link manualmente.")
+    except FileNotFoundError:
+        print("⚠️  xdg-open não encontrado. Abra o link manualmente.")
+
+    print()
+    print("⏳ Aguardando autorização no browser...")
 
     try:
         future.result()

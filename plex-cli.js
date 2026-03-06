@@ -234,6 +234,14 @@ const COMMANDS = [
     cmd: "bash",
     args: ["scripts/enrich_metadata.sh"],
   },
+  {
+    id: "tidecaller:refresh-token",
+    label: "Renovar token Tidal (zera tokens + device auth interativo)",
+    group: "🌊  TideCaller",
+    cwd: TIDECALLER_DIR,
+    cmd: "bash",
+    args: ["scripts/refresh_token.sh"],
+  },
 
   // ── Testes ───────────────────────────────────────────────────────────────────
   {
