@@ -42,6 +42,7 @@ const bold = (str) => `${C.bold}${str}${C.reset}`;
 const MUSIC_DIR = path.join(ROOT, "agents", "MusicCurator");
 const SERIES_DIR = path.join(ROOT, "agents", "SeriesCurator");
 const STORMBRINGER_DIR = path.join(ROOT, "agents", "Stormbringer");
+const TIDECALLER_DIR = path.join(ROOT, "agents", "TideCaller");
 
 /**
  * Cada entrada:
@@ -198,6 +199,40 @@ const COMMANDS = [
     cwd: STORMBRINGER_DIR,
     cmd: "npm",
     args: ["test"],
+  },
+
+  // ── TideCaller (Tidal) ─────────────────────────────────────────────────────
+  {
+    id: "tidecaller:rip",
+    label: "Baixar URL do Tidal (álbum / faixa / playlist) via streamrip",
+    group: "🌊  TideCaller",
+    cwd: TIDECALLER_DIR,
+    cmd: "bash",
+    args: ["scripts/rip.sh", "url"],
+  },
+  {
+    id: "tidecaller:download-artists",
+    label: "Baixar discografias dos artistas em artist_urls.txt",
+    group: "🌊  TideCaller",
+    cwd: TIDECALLER_DIR,
+    cmd: "bash",
+    args: ["scripts/download_artists.sh"],
+  },
+  {
+    id: "tidecaller:organize",
+    label: "Organizar downloads do Tidal na biblioteca de música",
+    group: "🌊  TideCaller",
+    cwd: TIDECALLER_DIR,
+    cmd: "bash",
+    args: ["scripts/organize_albums.sh"],
+  },
+  {
+    id: "tidecaller:enrich",
+    label: "Enriquecer metadados via MusicBrainz",
+    group: "🌊  TideCaller",
+    cwd: TIDECALLER_DIR,
+    cmd: "bash",
+    args: ["scripts/enrich_metadata.sh"],
   },
 
   // ── Testes ───────────────────────────────────────────────────────────────────

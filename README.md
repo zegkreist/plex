@@ -116,15 +116,14 @@ Agente de download de alta qualidade via **Tidal** usando [streamrip](https://gi
 - **Token auto-refresh**: mantém as credenciais do Tidal atualizadas via script
 - **Organização de biblioteca**: integra com o fluxo de organização da `music/`
 
-**Scripts principais:**
+**Comandos via `plex-cli`:**
 
-| Script                           | Descrição                                       |
-| -------------------------------- | ----------------------------------------------- |
-| `scripts/rip.sh`                 | Baixa uma URL do Tidal (álbum, faixa, playlist) |
-| `scripts/tidal.sh`               | Wrapper geral para o streamrip                  |
-| `scripts/download_artists.sh`    | Baixa todos os artistas listados em `artist_urls.txt` |
-| `scripts/organize_albums.sh`     | Organiza os downloads na biblioteca             |
-| `scripts/enrich_metadata.sh`     | Enriquece metadados via APIs externas           |
+| Comando                       | Script interno                | Descrição                                       |
+| ----------------------------- | ----------------------------- | ----------------------------------------------- |
+| `tidecaller:rip`              | `scripts/rip.sh`              | Baixa uma URL do Tidal (álbum, faixa, playlist) |
+| `tidecaller:download-artists` | `scripts/download_artists.sh` | Baixa todos os artistas em `artist_urls.txt`    |
+| `tidecaller:organize`         | `scripts/organize_albums.sh`  | Organiza os downloads na biblioteca             |
+| `tidecaller:enrich`           | `scripts/enrich_metadata.sh`  | Enriquece metadados via MusicBrainz             |
 
 📖 [Ver documentação completa →](agents/TideCaller/README.md)
 
@@ -136,13 +135,13 @@ Biblioteca de utilitários compartilhados para organização de mídia, usada pe
 
 **Módulos exportados (`@plex-agents/transporter`):**
 
-| Módulo       | Funções principais                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------ |
-| `strings`    | `sanitizeName`, `cleanAlbumName`, `normalizeForComparison`, `calculateSimilarity`          |
-| `live`       | `isLiveRecording`                                                                          |
+| Módulo       | Funções principais                                                                                                               |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `strings`    | `sanitizeName`, `cleanAlbumName`, `normalizeForComparison`, `calculateSimilarity`                                                |
+| `live`       | `isLiveRecording`                                                                                                                |
 | `audio`      | `AUDIO_EXTENSIONS`, `isAudioFile`, `isDiscFolder`, `hasDirectAudio`, `isReleaseFolder`, `findAudioFiles`, `parseAlbumFolderName` |
-| `filesystem` | `ensureDir`, `moveFile`, `removeIfEmpty`, `saveCoverArt`                                   |
-| `dedup`      | `findExistingAlbumDir`                                                                     |
+| `filesystem` | `ensureDir`, `moveFile`, `removeIfEmpty`, `saveCoverArt`                                                                         |
+| `dedup`      | `findExistingAlbumDir`                                                                                                           |
 
 ---
 
@@ -193,24 +192,35 @@ npm run test:all                                  # roda todos os testes
 
 #### 📺 Séries
 
-| Comando               | Descrição                                                  |
-| --------------------- | ---------------------------------------------------------- |
-| `series:curate`       | Cura a biblioteca de séries (requer sudo)                  |
-| `series:curate:dry`   | Idem, sem aplicar mudanças (dry-run, requer sudo)          |
-| `series:fix-tags`     | Corrige tags de vídeo dos episódios curados (requer sudo)  |
-| `series:fix-tags:dry` | Idem, sem aplicar mudanças (dry-run)                       |
-| `series:test`         | Roda a suíte de testes do SeriesCurator                    |
+| Comando               | Descrição                                                 |
+| --------------------- | --------------------------------------------------------- |
+| `series:curate`       | Cura a biblioteca de séries (requer sudo)                 |
+| `series:curate:dry`   | Idem, sem aplicar mudanças (dry-run, requer sudo)         |
+| `series:fix-tags`     | Corrige tags de vídeo dos episódios curados (requer sudo) |
+| `series:fix-tags:dry` | Idem, sem aplicar mudanças (dry-run)                      |
+| `series:test`         | Roda a suíte de testes do SeriesCurator                   |
 
 #### ⚡ Stormbringer
 
-| Comando                          | Descrição                                               |
-| -------------------------------- | ------------------------------------------------------- |
-| `stormbringer:start`             | Inicia o daemon de downloads (fica rodando)             |
-| `stormbringer:search`            | Busca torrent interativamente pelo nome                 |
-| `stormbringer:downloads`         | Lista status dos downloads em andamento                 |
-| `stormbringer:plex-organize`     | Move downloads concluídos para as pastas do Plex        |
-| `stormbringer:plex-organize:dry` | Idem, sem mover arquivos (dry-run)                      |
-| `stormbringer:test`              | Roda a suíte de testes do Stormbringer                  |
+| Comando                          | Descrição                                        |
+| -------------------------------- | ------------------------------------------------ |
+| `stormbringer:start`             | Inicia o daemon de downloads (fica rodando)      |
+| `stormbringer:search`            | Busca torrent interativamente pelo nome          |
+| `stormbringer:downloads`         | Lista status dos downloads em andamento          |
+| `stormbringer:plex-organize`     | Move downloads concluídos para as pastas do Plex |
+| `stormbringer:plex-organize:dry` | Idem, sem mover arquivos (dry-run)               |
+| `stormbringer:test`              | Roda a suíte de testes do Stormbringer           |
+
+#### 🌊 TideCaller
+
+| Comando                       | Descrição                                                        |
+| ----------------------------- | ---------------------------------------------------------------- |
+| `tidecaller:rip`              | Baixar uma URL do Tidal (álbum, faixa ou playlist) via streamrip |
+| `tidecaller:download-artists` | Baixar discografias dos artistas listados em `artist_urls.txt`   |
+| `tidecaller:organize`         | Organizar downloads do Tidal na biblioteca de música             |
+| `tidecaller:enrich`           | Enriquecer metadados via MusicBrainz                             |
+
+> **Nota:** `tidecaller:rip` precisa de uma URL como argumento adicional. Use diretamente no terminal: `cd agents/TideCaller && bash scripts/rip.sh url https://tidal.com/browse/album/...`
 
 #### 🧪 Testes
 
@@ -223,14 +233,14 @@ npm run test:all                                  # roda todos os testes
 
 #### 🐳 Docker / Plex
 
-| Comando        | Descrição                                          |
-| -------------- | -------------------------------------------------- |
-| `plex:status`  | Status dos containers (`docker compose ps`)        |
-| `plex:start`   | Sobe todos os containers (`docker compose up -d`)  |
-| `plex:stop`    | Para todos os containers                           |
-| `plex:restart` | Reinicia o container do Plex                       |
-| `plex:logs`    | Logs do Plex (últimas 50 linhas, modo follow)      |
-| `plex:scan`    | Força o Plex a reescanear as bibliotecas via API   |
+| Comando        | Descrição                                         |
+| -------------- | ------------------------------------------------- |
+| `plex:status`  | Status dos containers (`docker compose ps`)       |
+| `plex:start`   | Sobe todos os containers (`docker compose up -d`) |
+| `plex:stop`    | Para todos os containers                          |
+| `plex:restart` | Reinicia o container do Plex                      |
+| `plex:logs`    | Logs do Plex (últimas 50 linhas, modo follow)     |
+| `plex:scan`    | Força o Plex a reescanear as bibliotecas via API  |
 
 ---
 
@@ -284,11 +294,11 @@ Acesse <http://localhost:32400/web> e siga o assistente:
 
 ### Acessar o Plex
 
-| Contexto | URL                                    |
-| -------- | -------------------------------------- |
-| Local    | <http://localhost:32400/web>           |
-| Na rede  | `http://<IP-DO-SERVIDOR>:32400/web`    |
-| Remoto   | Configure em Settings → Remote Access  |
+| Contexto | URL                                   |
+| -------- | ------------------------------------- |
+| Local    | <http://localhost:32400/web>          |
+| Na rede  | `http://<IP-DO-SERVIDOR>:32400/web`   |
+| Remoto   | Configure em Settings → Remote Access |
 
 ### Backup
 
