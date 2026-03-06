@@ -15,13 +15,30 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Define UID e GID do usuário atual para evitar problemas de permissão
-export USER_ID=$(id -u)
-export GROUP_ID=$(id -g)
+# Resolve caminhos do venv a partir da localização deste script
+_TIDAL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_TIDAL_AGENT_DIR="$(dirname "$_TIDAL_SCRIPT_DIR")"
+
+# Auto-setup: instala venv + deps se necessário (só quando executado, não quando sourced)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  source "$_TIDAL_AGENT_DIR/setup/ensure_setup.sh"
+fi
+_TIDAL_VENV="$_TIDAL_AGENT_DIR/.venv_tidal"
+_TIDAL_RIP="$_TIDAL_VENV/bin/rip"
+export XDG_CONFIG_HOME="$_TIDAL_AGENT_DIR/config/.config"
+
+# Token guard: retry automático em caso de falha de autenticação
+# shellcheck source=../setup/token_guard.sh
+source "$_TIDAL_AGENT_DIR/setup/token_guard.sh"
 
 # Função base para executar streamrip
 rip_cmd() {
-    docker-compose run --rm streamrip "$@"
+    if [[ ! -x "$_TIDAL_RIP" ]]; then
+        echo -e "${RED}❌ streamrip não encontrado em $_TIDAL_VENV${NC}"
+        echo "   Execute: bash $_TIDAL_AGENT_DIR/setup/setup.sh"
+        return 1
+    fi
+    token_guard "$_TIDAL_RIP" "$@"
 }
 
 # ============================================

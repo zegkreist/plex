@@ -10,7 +10,6 @@ Uso:
 import sys
 import re
 import subprocess
-import time
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
@@ -131,7 +130,8 @@ def pick_multi(options: list, prompt: str = "Escolha") -> list[int]:
     for i, opt in enumerate(options):
         print(f"  {cyan(str(i + 1).rjust(2))}. {opt}")
     print()
-    print(f"  {yellow('Digite os números separados por vírgula, ou \"all\" para todos.')}")
+    hint = 'Digite os números separados por vírgula, ou "all" para todos.'
+    print(f"  {yellow(hint)}")
     print()
     while True:
         raw = ask(f"{prompt}: ").strip()
@@ -153,38 +153,18 @@ def pick_multi(options: list, prompt: str = "Escolha") -> list[int]:
             return indices
 
 
-# ── Download via docker-compose ───────────────────────────────────────────────
-def bump_token_expiry():
-    """
-    Garante que token_expiry no config.toml é >= agora + 2 dias.
-    O streamrip tenta refresh se expiry < 1 dia, mas usa client_id revogado — falha.
-    Mantendo expiry no futuro ele usa o access_token diretamente.
-    """
-    try:
-        content = CONFIG_TOML.read_text(encoding="utf-8")
-        m = re.search(r'^(token_expiry\s*=\s*)"(\d+)"', content, re.MULTILINE)
-        if m:
-            current = int(m.group(2))
-            min_expiry = int(time.time()) + (2 * 24 * 3600)
-            if current < min_expiry:
-                new_expiry = int(time.time()) + (7 * 24 * 3600)
-                updated = re.sub(
-                    r'^(token_expiry\s*=\s*)"\d+"',
-                    rf'\g<1>"{new_expiry}"',
-                    content, flags=re.MULTILINE
-                )
-                CONFIG_TOML.write_text(updated, encoding="utf-8")
-    except Exception:
-        pass  # não bloqueia o download se falhar
-
-
+# ── Download via streamrip (venv) ───────────────────────────────────────────
 def download_url(url: str) -> bool:
-    """Baixa uma URL do Tidal via docker-compose run streamrip."""
+    """Baixa uma URL do Tidal via streamrip do venv."""
     import os
-    bump_token_expiry()
-    env = {**os.environ, "USER_ID": str(os.getuid()), "GROUP_ID": str(os.getgid())}
+    # Localiza o binário rip no .venv_tidal deste agente
+    rip_bin = AGENT_DIR / ".venv_tidal" / "bin" / "rip"
+    env = {
+        **os.environ,
+        "XDG_CONFIG_HOME": str(AGENT_DIR / "config" / ".config"),
+    }
     result = subprocess.run(
-        ["docker-compose", "run", "--rm", "streamrip", "url", url],
+        [str(rip_bin), "url", url],
         cwd=str(AGENT_DIR),
         env=env,
     )

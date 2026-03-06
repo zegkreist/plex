@@ -1,11 +1,18 @@
-#!/bin/bash
-
-# Script auxiliar para executar streamrip via Docker
+#!/usr/bin/env bash
+# Script auxiliar para executar streamrip via virtualenv Python
 # Uso: ./rip.sh [argumentos do rip]
-# Exemplo: ./rip.sh url https://www.qobuz.com/album/...
+# Exemplo: ./rip.sh url https://tidal.com/browse/album/...
+set -euo pipefail
 
-# Define UID e GID do usuário atual para evitar problemas de permissão
-export USER_ID=$(id -u)
-export GROUP_ID=$(id -g)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AGENT_DIR="$(dirname "$SCRIPT_DIR")"
 
-docker-compose run --rm streamrip "$@"
+# Auto-setup: instala venv + deps se necessário
+source "$AGENT_DIR/setup/ensure_setup.sh"
+
+# Token guard: retry automático em caso de falha de autenticação
+source "$AGENT_DIR/setup/token_guard.sh"
+
+RIP="$TIDECALLER_VENV/bin/rip"
+export XDG_CONFIG_HOME="$TIDECALLER_AGENT_DIR/config/.config"
+token_guard "$RIP" "$@"

@@ -67,13 +67,11 @@ export class MusicOrganizer {
       if (!fs.statSync(itemPath).isDirectory()) continue;
 
       if (isReleaseFolder(itemPath)) {
-        // Caso A/B/E: a pasta raiz já é uma release
+        // Caso A/B/E: a pasta raiz já é uma release (contém áudio diretamente)
         const info = parseAlbumFolderName(item);
         await this._moveRelease(itemPath, info.artist, info.album, info.year, prefix);
-      } else if (!this.dryRun) {
-        // Pode ser: artista/álbum/... OU pasta residual (só imagens, sem áudio)
-        this._cleanResidualFolder(itemPath, item, prefix);
-
+      } else {
+        // Caso C/D: artista com subpastas de álbum  OU  pasta residual sem áudio
         let hasRelease = false;
         for (const sub of fs.readdirSync(itemPath)) {
           const subPath = path.join(itemPath, sub);
@@ -86,11 +84,12 @@ export class MusicOrganizer {
             await this._moveRelease(subPath, resolvedArtist, info.album, info.year, prefix);
           }
         }
-        if (!this.dryRun) removeIfEmpty(itemPath);
-
-        // Pasta residual (só tem cover.jpg, sem áudio): mover cover e apagar pasta
-        if (!this.dryRun && !hasRelease && fs.existsSync(itemPath)) {
-          this._cleanResidualFolder(itemPath, item, prefix);
+        if (!this.dryRun) {
+          removeIfEmpty(itemPath);
+          // Ainda existe e só tem imagens? Pasta residual de execução anterior
+          if (fs.existsSync(itemPath)) {
+            this._cleanResidualFolder(itemPath, item, prefix);
+          }
         }
       }
     }

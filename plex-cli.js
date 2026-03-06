@@ -230,6 +230,14 @@ const COMMANDS = [
 
   // ── TideCaller (Tidal) ─────────────────────────────────────────────────────
   {
+    id: "tidecaller:setup",
+    label: "Setup do TideCaller (venv, streamrip, config)",
+    group: "🌊  TideCaller",
+    cwd: TIDECALLER_DIR,
+    cmd: "bash",
+    args: ["setup/setup.sh", "--no-auth"],
+  },
+  {
     id: "tidecaller:rip",
     label: "Baixar URL do Tidal (álbum / faixa / playlist) via streamrip",
     group: "🌊  TideCaller",
@@ -238,12 +246,20 @@ const COMMANDS = [
     args: ["scripts/rip.sh", "url"],
   },
   {
-    id: "tidecaller:download-artists",
-    label: "Baixar discografias dos artistas em artist_urls.txt",
+    id: "tidecaller:download-artist",
+    label: "Buscar artista e baixar discografia ou álbuns selecionados",
     group: "🌊  TideCaller",
     cwd: TIDECALLER_DIR,
     cmd: "bash",
-    args: ["scripts/download_artists.sh"],
+    args: ["scripts/download_artist.sh"],
+  },
+  {
+    id: "tidecaller:refresh-token",
+    label: "Renovar token Tidal (zera tokens + device auth interativo)",
+    group: "🌊  TideCaller",
+    cwd: TIDECALLER_DIR,
+     cmd: "bash",
+     args: ["scripts/refresh_token.sh", "--force"],
   },
   {
     id: "tidecaller:enrich",
@@ -254,20 +270,12 @@ const COMMANDS = [
     args: ["scripts/enrich_metadata.sh"],
   },
   {
-    id: "tidecaller:refresh-token",
-    label: "Renovar token Tidal (zera tokens + device auth interativo)",
+    id: "tidecaller:test",
+    label: "Rodar testes do TideCaller (BATS + pytest)",
     group: "🌊  TideCaller",
     cwd: TIDECALLER_DIR,
     cmd: "bash",
-    args: ["scripts/refresh_token.sh"],
-  },
-  {
-    id: "tidecaller:download-artist",
-    label: "Buscar artista e baixar discografia ou álbuns selecionados",
-    group: "🌊  TideCaller",
-    cwd: TIDECALLER_DIR,
-    cmd: "bash",
-    args: ["scripts/download_artist.sh"],
+    args: ["setup/run_tests.sh"],
   },
 
   // ── Testes ───────────────────────────────────────────────────────────────────

@@ -1,11 +1,12 @@
-#!/bin/bash
-# Script de download de discografia - Gerado em 2026-03-04T21:28:55.942Z
-# Execute: chmod +x /home/zegkreist/Documents/Pessoal/music/streamrip/scripts/download_artists.sh && /home/zegkreist/Documents/Pessoal/music/streamrip/scripts/download_artists.sh
-
-set -e
+#!/usr/bin/env bash
+# Script de download de discografia
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Auto-setup: instala venv + deps se necessário
+source "$PROJECT_ROOT/setup/ensure_setup.sh"
 
 # Carregar funções do tidal.sh
 source "$SCRIPT_DIR/tidal.sh"
