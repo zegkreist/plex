@@ -62,6 +62,7 @@ show_menu() {
     echo "1) Verificar status do Ollama"
     echo "2) Listar modelos instalados"
     echo "3) Baixar modelo recomendado (llama3.2:3b)"
+    echo "8) Baixar modelo DeepSeek (deepseek-r1:7b)"
     echo "4) Baixar modelo personalizado"
     echo "5) Testar modelo"
     echo "6) Remover modelo"
@@ -94,6 +95,9 @@ show_menu() {
             ;;
         7)
             show_popular_models
+            ;;
+        8)
+            pull_model "deepseek-r1:7b"
             ;;
         0)
             echo "👋 Até logo!"
