@@ -207,14 +207,10 @@ def apply_tokens(session: "tidalapi.Session"):
     access_token = session.access_token or ""
     refresh_token = session.refresh_token or ""
 
-    # Tenta ler expiry da sessão; fallback: +7 dias
+    # Sempre grava +7 dias independente do expiry real do tidalapi.
+    # O streamrip usa client_id revogado para refresh — se o expiry for < 1 dia
+    # ele tenta refresh e falha. Forçando +7 dias ele usa o access_token direto.
     expiry = int(time.time()) + (7 * 24 * 3600)
-    try:
-        if hasattr(session, "expiry_time") and session.expiry_time:
-            import calendar
-            expiry = int(calendar.timegm(session.expiry_time.timetuple()))
-    except Exception:
-        pass
 
     print()
     print("─" * 60)
