@@ -1,4 +1,4 @@
-# Plex Media Server
+# Plex Media Server — Monorepo
 
 Servidor Plex pessoal com Docker, agentes de automação e IA local via Ollama.
 
@@ -8,8 +8,8 @@ Servidor Plex pessoal com Docker, agentes de automação e IA local via Ollama.
 plex_server/
 ├── docker-compose.yml       # Configuração Docker (Plex + Ollama)
 ├── .env                     # Variáveis de ambiente (não commitar!)
-├── plex-cli.js              # CLI central para operar os agentes
-├── package.json             # Scripts npm (atalhos para o CLI)
+├── plex-cli.js              # CLI central para operar todos os agentes
+├── package.json             # npm workspaces (raiz) + scripts atalho
 ├── ollama-setup.sh          # Gerenciamento de modelos Ollama
 ├── config/                  # Configurações do Plex (persistência)
 ├── tv/                      # Séries
@@ -19,10 +19,15 @@ plex_server/
 ├── agents/
 │   ├── AllFather/           # Biblioteca de IA compartilhada
 │   ├── MusicCurator/        # Agente de curadoria de música
-│   └── SeriesCurator/       # Agente de curadoria de séries
+│   ├── SeriesCurator/       # Agente de curadoria de séries
+│   ├── Stormbringer/        # Agente de torrent + organização Plex
+│   ├── TideCaller/          # Agente de download via Tidal (streamrip)
+│   └── Transporter/         # Utilitários compartilhados (Node.js)
 ├── OLLAMA.md                # Documentação completa do Ollama
 └── GPU-NVIDIA.md            # Guia de configuração GPU NVIDIA
 ```
+
+> Os agentes Node.js são gerenciados como **npm workspaces**: um único `npm install` na raiz instala todas as dependências.
 
 ---
 
@@ -34,8 +39,7 @@ Biblioteca compartilhada de IA, usada pelos outros agentes para se comunicar com
 
 - Encapsula toda a lógica de comunicação com o Ollama
 - Fornece métodos `ask()`, `askWithContext()` e `askForJSON()`
-- Permite que MusicCurator e SeriesCurator usem IA para decisões inteligentes
-- Suporta controle de temperatura, reasoning on/off e respostas estruturadas em JSON
+- Suporta controle de temperatura, reasoning on/off e respostas em JSON estruturado
 
 ```javascript
 import { AllFather } from "@plex-agents/allfather";
@@ -61,8 +65,6 @@ Agente responsável por organizar e normalizar a biblioteca de música.
 - **Correção focada**: modo restrito que reprocessa somente álbuns já marcados como `[CURATED]`
 - **Dry-run**: todos os comandos têm modo `--dry-run` que simula as mudanças sem tocar nos arquivos
 
-Operações usam `ffmpeg`/`ffprobe` para leitura e escrita de tags. Arquivos temporários vão para `/tmp` para evitar erros de permissão em diretórios criados pelo Docker.
-
 📖 [Ver documentação completa →](agents/MusicCurator/README.md)
 
 ---
@@ -73,39 +75,108 @@ Agente responsável por organizar a biblioteca de séries de TV.
 
 **O que faz:**
 
-- **Curadoria de séries**: varre todos os diretórios em `tv/`, identifica arquivos de episódio (`.mkv`, `.mp4`, `.avi`, etc.), agrupa por nome de série e temporada, e renomeia pastas e arquivos para o padrão `Nome da Série (Ano)/Season XX/S01E01 - Título.ext`
-- **Agrupamento inteligente**: reconhece variantes do mesmo nome (`Game.of.Thrones`, `Game_of_Thrones` e `Game of Thrones` são tratados como a mesma série)
-- **Consolidação de temporadas**: move episódios da mesma temporada espalhados em pastas diferentes para um único diretório
-- **Correção de tags de vídeo**: atualiza as tags `title`, `season_number` e `episode_sort` nos arquivos `.mkv`/`.mp4` via `ffmpeg`
-- **Integração com AllFather**: usa IA para identificar nomes canônicos de séries quando há ambiguidade
+- **Curadoria de séries**: varre `tv/`, identifica arquivos de episódio e renomeia pastas e arquivos para o padrão `Nome da Série (Ano)/Season XX/S01E01 - Título.ext`
+- **Agrupamento inteligente**: reconhece variantes do mesmo nome (`Game.of.Thrones`, `Game_of_Thrones` → mesma série)
+- **Consolidação de temporadas**: move episódios espalhados em pastas diferentes para um único diretório
+- **Correção de tags de vídeo**: atualiza `title`, `season_number` e `episode_sort` via `ffmpeg`
+- **Integração com AllFather**: usa IA para identificar nomes canônicos quando há ambiguidade
 - **Dry-run**: modo simulação para revisar todas as mudanças antes de aplicar
 
-Requer `sudo` porque o diretório `tv/` é criado como `root:root` pelo Docker.
+> Requer `sudo` porque o diretório `tv/` é criado como `root:root` pelo Docker.
 
 📖 [Ver documentação completa →](agents/SeriesCurator/README.md)
 
 ---
 
+### ⚡ Stormbringer
+
+Agente de torrent — busca, baixa e organiza mídia nas pastas do Plex automaticamente.
+
+**O que faz:**
+
+- **Daemon de downloads**: monitora um cliente de torrent (qBittorrent) e detecta downloads concluídos
+- **Busca interativa**: pesquisa torrents por nome e filtra por qualidade, idioma e seeders
+- **Organização automática**: move filmes, séries e músicas baixadas para `movies/`, `tv/` e `music/` no formato correto para o Plex
+- **Fuzzy dedup de álbuns**: evita duplicatas usando similaridade de string (threshold 0.85) + detecção de recordings ao vivo (`live`, `ao vivo`, etc.)
+- **Cover art**: extrai e salva capas de álbum a partir dos metadados de áudio (`music-metadata`)
+- **Dry-run**: modo simulação para revisar antes de mover os arquivos
+
+📖 [Ver documentação completa →](agents/Stormbringer/README.md)
+
+---
+
+### 🌊 TideCaller
+
+Agente de download de alta qualidade via **Tidal** usando [streamrip](https://github.com/nathom/streamrip).
+
+**O que faz:**
+
+- **Download via Tidal**: baixa músicas, álbuns e playlists em até 24-bit/192kHz (MQA/FLAC)
+- **Dockerizado**: roda sobre Python + streamrip em container isolado, sem poluir o sistema
+- **Token auto-refresh**: mantém as credenciais do Tidal atualizadas via script
+- **Organização de biblioteca**: integra com o fluxo de organização da `music/`
+
+**Scripts principais:**
+
+| Script                           | Descrição                                       |
+| -------------------------------- | ----------------------------------------------- |
+| `scripts/rip.sh`                 | Baixa uma URL do Tidal (álbum, faixa, playlist) |
+| `scripts/tidal.sh`               | Wrapper geral para o streamrip                  |
+| `scripts/download_artists.sh`    | Baixa todos os artistas listados em `artist_urls.txt` |
+| `scripts/organize_albums.sh`     | Organiza os downloads na biblioteca             |
+| `scripts/enrich_metadata.sh`     | Enriquece metadados via APIs externas           |
+
+📖 [Ver documentação completa →](agents/TideCaller/README.md)
+
+---
+
+### 🚚 Transporter
+
+Biblioteca de utilitários compartilhados para organização de mídia, usada pelo Stormbringer (e futuramente pelo TideCaller).
+
+**Módulos exportados (`@plex-agents/transporter`):**
+
+| Módulo       | Funções principais                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------ |
+| `strings`    | `sanitizeName`, `cleanAlbumName`, `normalizeForComparison`, `calculateSimilarity`          |
+| `live`       | `isLiveRecording`                                                                          |
+| `audio`      | `AUDIO_EXTENSIONS`, `isAudioFile`, `isDiscFolder`, `hasDirectAudio`, `isReleaseFolder`, `findAudioFiles`, `parseAlbumFolderName` |
+| `filesystem` | `ensureDir`, `moveFile`, `removeIfEmpty`, `saveCoverArt`                                   |
+| `dedup`      | `findExistingAlbumDir`                                                                     |
+
+---
+
 ## 🖥️ plex-cli — Operando os agentes
 
-O `plex-cli.js` é o ponto central de controle. Pode ser executado da raiz do projeto.
+O `plex-cli.js` é o ponto central de controle de todos os agentes. Roda a partir da raiz do projeto.
 
 ### Modos de uso
 
 ```bash
-# Menu interativo numerado
+# Menu interativo numerado (recomendado para explorar)
 node plex-cli.js
 
-# Executar comando diretamente
+# Executar um comando diretamente (útil em scripts)
 node plex-cli.js <comando>
 
 # Listar todos os comandos disponíveis
 node plex-cli.js --help
 
-# Via npm (equivalente)
+# Via npm scripts (atalhos equivalentes)
 npm run cli
 npm run <comando>
 ```
+
+**Exemplos rápidos:**
+
+```bash
+node plex-cli.js stormbringer:plex-organize:dry   # preview antes de mover arquivos
+node plex-cli.js stormbringer:search              # busca torrent interativamente
+node plex-cli.js plex:scan                        # força re-scan das bibliotecas
+npm run test:all                                  # roda todos os testes
+```
+
+---
 
 ### Comandos disponíveis
 
@@ -122,81 +193,85 @@ npm run <comando>
 
 #### 📺 Séries
 
-| Comando               | Descrição                                                 |
-| --------------------- | --------------------------------------------------------- |
-| `series:curate`       | Cura a biblioteca de séries (requer sudo)                 |
-| `series:curate:dry`   | Idem, sem aplicar mudanças (dry-run, requer sudo)         |
-| `series:fix-tags`     | Corrige tags de vídeo dos episódios curados (requer sudo) |
-| `series:fix-tags:dry` | Idem, sem aplicar mudanças (dry-run)                      |
-| `series:test`         | Roda a suíte de testes do SeriesCurator                   |
+| Comando               | Descrição                                                  |
+| --------------------- | ---------------------------------------------------------- |
+| `series:curate`       | Cura a biblioteca de séries (requer sudo)                  |
+| `series:curate:dry`   | Idem, sem aplicar mudanças (dry-run, requer sudo)          |
+| `series:fix-tags`     | Corrige tags de vídeo dos episódios curados (requer sudo)  |
+| `series:fix-tags:dry` | Idem, sem aplicar mudanças (dry-run)                       |
+| `series:test`         | Roda a suíte de testes do SeriesCurator                    |
+
+#### ⚡ Stormbringer
+
+| Comando                          | Descrição                                               |
+| -------------------------------- | ------------------------------------------------------- |
+| `stormbringer:start`             | Inicia o daemon de downloads (fica rodando)             |
+| `stormbringer:search`            | Busca torrent interativamente pelo nome                 |
+| `stormbringer:downloads`         | Lista status dos downloads em andamento                 |
+| `stormbringer:plex-organize`     | Move downloads concluídos para as pastas do Plex        |
+| `stormbringer:plex-organize:dry` | Idem, sem mover arquivos (dry-run)                      |
+| `stormbringer:test`              | Roda a suíte de testes do Stormbringer                  |
 
 #### 🧪 Testes
 
-| Comando       | Descrição                                           |
-| ------------- | --------------------------------------------------- |
-| `test:all`    | Roda todos os testes (MusicCurator + SeriesCurator) |
-| `test:music`  | Apenas testes do MusicCurator                       |
-| `test:series` | Apenas testes do SeriesCurator                      |
+| Comando             | Descrição                                                          |
+| ------------------- | ------------------------------------------------------------------ |
+| `test:all`          | Roda todos os testes (MusicCurator + SeriesCurator + Stormbringer) |
+| `test:music`        | Apenas testes do MusicCurator                                      |
+| `test:series`       | Apenas testes do SeriesCurator                                     |
+| `test:stormbringer` | Apenas testes do Stormbringer                                      |
 
 #### 🐳 Docker / Plex
 
-| Comando        | Descrição                                         |
-| -------------- | ------------------------------------------------- |
-| `plex:status`  | Status dos containers (`docker compose ps`)       |
-| `plex:start`   | Sobe todos os containers (`docker compose up -d`) |
-| `plex:stop`    | Para todos os containers                          |
-| `plex:restart` | Reinicia o container do Plex                      |
-| `plex:logs`    | Logs do Plex (últimas 50 linhas, modo follow)     |
-| `plex:scan`    | Força o Plex a reescanear as bibliotecas via API  |
-
-### Variáveis de ambiente (`.env`)
-
-```dotenv
-PLEX_CLAIM=claim-xxxxxxxxxx   # Obtido em https://www.plex.tv/claim/ (só na 1ª execução)
-PLEX_TOKEN=xxxxxxxxxxxx       # Token para comandos de API (plex:scan)
-PUID=1000
-PGID=1000
-TZ=America/Sao_Paulo
-MUSIC_PATH=/caminho/para/music
-SERIES_PATH=/caminho/para/tv
-```
-
-> Para descobrir seu `PUID`/`PGID`: `id`
+| Comando        | Descrição                                          |
+| -------------- | -------------------------------------------------- |
+| `plex:status`  | Status dos containers (`docker compose ps`)        |
+| `plex:start`   | Sobe todos os containers (`docker compose up -d`)  |
+| `plex:stop`    | Para todos os containers                           |
+| `plex:restart` | Reinicia o container do Plex                       |
+| `plex:logs`    | Logs do Plex (últimas 50 linhas, modo follow)      |
+| `plex:scan`    | Força o Plex a reescanear as bibliotecas via API   |
 
 ---
 
-## 🚀 Setup do Plex
+## 🚀 Setup
 
 ### Pré-requisitos
 
 - Docker e Docker Compose instalados
 - Conta Plex gratuita em <https://www.plex.tv/>
-- Node.js 18+ (para os agentes)
+- Node.js 18+
 
 ### 1. Configure o `.env`
 
-```bash
-cp .env.example .env   # se existir, senão crie manualmente
-```
-
-Preencha pelo menos:
-
 ```dotenv
-PLEX_CLAIM=claim-xxxxxxxxxx   # https://www.plex.tv/claim/  (válido por 4 min)
+PLEX_CLAIM=claim-xxxxxxxxxx     # https://www.plex.tv/claim/  (válido por 4 min, 1ª execução)
+PLEX_TOKEN=xxxxxxxxxxxx         # Token para API do Plex (plex:scan)
 PUID=1000
 PGID=1000
 TZ=America/Sao_Paulo
-MUSIC_PATH=/home/seu-usuario/plex_server/music
-SERIES_PATH=/home/seu-usuario/plex_server/tv
+MUSIC_PATH=/caminho/para/music
+SERIES_PATH=/caminho/para/tv
+MOVIES_PATH=/caminho/para/movies
 ```
 
-### 2. Suba os containers
+> Para descobrir seu `PUID`/`PGID`: `id`
+
+### 2. Instale as dependências (todos os agentes de uma vez)
+
+```bash
+npm install
+```
+
+> O projeto usa **npm workspaces**. Um único `npm install` na raiz instala as dependências de todos os agentes Node.js (`AllFather`, `MusicCurator`, `SeriesCurator`, `Stormbringer`, `Transporter`) em um `node_modules/` compartilhado.
+
+### 3. Suba os containers
 
 ```bash
 docker compose up -d
 ```
 
-### 3. Configure o Plex pela primeira vez
+### 4. Configure o Plex pela primeira vez
 
 Acesse <http://localhost:32400/web> e siga o assistente:
 
@@ -207,20 +282,13 @@ Acesse <http://localhost:32400/web> e siga o assistente:
    - **Séries** → `/tv`
    - **Música** → `/music`
 
-### 4. Instale as dependências dos agentes
-
-```bash
-cd agents/MusicCurator && npm install && cd ../..
-cd agents/SeriesCurator && npm install && cd ../..
-```
-
 ### Acessar o Plex
 
-| Contexto | URL                                   |
-| -------- | ------------------------------------- |
-| Local    | <http://localhost:32400/web>          |
-| Na rede  | `http://<IP-DO-SERVIDOR>:32400/web`   |
-| Remoto   | Configure em Settings → Remote Access |
+| Contexto | URL                                    |
+| -------- | -------------------------------------- |
+| Local    | <http://localhost:32400/web>           |
+| Na rede  | `http://<IP-DO-SERVIDOR>:32400/web`    |
+| Remoto   | Configure em Settings → Remote Access  |
 
 ### Backup
 
@@ -236,25 +304,16 @@ O Ollama executa modelos de linguagem localmente, sem custo e sem internet. Os a
 
 ### Sem GPU (CPU only)
 
-O `docker-compose.yml` já inclui o serviço `ollama`. Basta subir:
-
 ```bash
 docker compose up -d ollama
 
 # Verificar se está rodando
 curl http://localhost:11434
 # Esperado: "Ollama is running"
-```
 
-Baixe um modelo leve para começar:
-
-```bash
-# Via script interativo
-./ollama-setup.sh
-
-# Ou direto
+# Baixar um modelo
 ./ollama-setup.sh pull llama3.2:3b      # recomendado para CPU (3 GB)
-./ollama-setup.sh pull llama3.2:1b      # ultra leve (1 GB), mais rápido
+./ollama-setup.sh pull deepseek-r1:1.5b # padrão dos agentes (1 GB)
 ```
 
 Modelos úteis para os agentes:
@@ -271,10 +330,9 @@ Modelos úteis para os agentes:
 #### 1. Instale o driver NVIDIA
 
 ```bash
-# Verificar se já está instalado
-nvidia-smi
+nvidia-smi   # verificar se já está instalado
 
-# Se não estiver, instalar (Ubuntu/Debian)
+# Se não estiver (Ubuntu/Debian):
 sudo ubuntu-drivers autoinstall
 # Reinicie após instalar
 ```
@@ -282,10 +340,10 @@ sudo ubuntu-drivers autoinstall
 #### 2. Instale o NVIDIA Container Toolkit
 
 ```bash
-# Método automático (recomendado)
+# Método automático
 sudo ./setup-nvidia-docker.sh
 
-# Método manual — Ubuntu/Debian
+# Ou manualmente (Ubuntu/Debian)
 distribution=$(. /etc/os-release; echo $ID$VERSION_ID)
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey \
   | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
@@ -298,21 +356,12 @@ sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 ```
 
-#### 3. Suba o Ollama com suporte a GPU
-
-O `docker-compose.yml` já está configurado. Basta subir normalmente:
+#### 3. Suba o Ollama com GPU
 
 ```bash
 docker compose up -d ollama
-```
 
-#### 4. Verificar que a GPU está sendo usada
-
-```bash
-# Testar acesso à GPU no container
-docker run --rm --gpus all nvidia/cuda:12.0.0-base-ubuntu22.04 nvidia-smi
-
-# Verificar uso de GPU durante inferência
+# Verificar uso de GPU
 watch -n1 nvidia-smi
 ```
 
@@ -336,7 +385,7 @@ Os diretórios `tv/` e `music/` podem ser criados como `root:root` pelo Docker. 
 
 ### `plex:scan` não funciona
 
-Certifique-se de que `PLEX_TOKEN` está definido no `.env`. Para obter o token: Settings → Account → no Plex Web, inspecione qualquer requisição à API — o token aparece como `X-Plex-Token`.
+Certifique-se de que `PLEX_TOKEN` está definido no `.env`. Para obter o token: no Plex Web, inspecione qualquer requisição à API — o token aparece como `X-Plex-Token`.
 
 ### Ollama lento (sem GPU)
 
@@ -349,4 +398,5 @@ Use modelos menores (`llama3.2:1b` ou `deepseek-r1:1.5b`). Para acelerar signifi
 - [Plex Official Website](https://www.plex.tv/)
 - [Plex Docker Image (LinuxServer)](https://docs.linuxserver.io/images/docker-plex)
 - [Ollama](https://ollama.com/)
+- [streamrip](https://github.com/nathom/streamrip)
 - [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
