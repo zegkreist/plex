@@ -4,7 +4,7 @@
  * Analisa downloads/ e library_enriched.json para criar estrutura organizada por álbuns
  */
 
-import { readFile, writeFile, readdir, stat, mkdir, copyFile, access } from "fs/promises";
+import { readFile, writeFile, readdir, stat, mkdir, copyFile, rename, access, unlink } from "fs/promises";
 import { join, dirname, basename, extname } from "path";
 import { fileURLToPath } from "url";
 import { parseFile } from "music-metadata";
@@ -442,25 +442,35 @@ async function getNextTrackNumber(singlesDir) {
 }
 
 /**
- * Cria estrutura de pastas e copia arquivo
+ * Move arquivo para a estrutura organizada.
+ * Usa rename() para eficiência; fallback para copy+unlink em filesystems diferentes (EXDEV).
  */
-async function copyToOrganized(sourcePath, targetPath) {
+async function moveToOrganized(sourcePath, targetPath) {
   const targetDir = dirname(targetPath);
 
   // Criar diretório se não existir
   await mkdir(targetDir, { recursive: true });
 
-  // Verificar se arquivo já existe
+  // Verificar se arquivo já existe no destino
   try {
     await access(targetPath);
     console.log(`   ⏭️  Já existe: ${basename(targetPath)}`);
     return false;
   } catch {
-    // Arquivo não existe, pode copiar
+    // Arquivo não existe, pode mover
   }
 
-  // Copiar arquivo
-  await copyFile(sourcePath, targetPath);
+  // Mover arquivo (rename; fallback cross-filesystem)
+  try {
+    await rename(sourcePath, targetPath);
+  } catch (err) {
+    if (err.code === "EXDEV") {
+      await copyFile(sourcePath, targetPath);
+      await unlink(sourcePath);
+    } else {
+      throw err;
+    }
+  }
   return true;
 }
 
@@ -560,7 +570,7 @@ async function main() {
 
   const stats = {
     processed: 0,
-    copied: 0,
+    moved: 0,
     skipped: 0,
     ignoredLive: 0, // Contador de músicas ignoradas por serem LIVE
     errors: 0,
@@ -792,15 +802,15 @@ async function main() {
 
       const targetPath = join(albumDir, targetFileName);
 
-      // Copiar arquivo
-      const copied = await copyToOrganized(audioFile, targetPath);
+      // Mover arquivo
+      const moved = await moveToOrganized(audioFile, targetPath);
 
-      if (copied) {
-        console.log(`   ✅ Copiado como: ${targetFileName}`);
+      if (moved) {
+        console.log(`   ✅ Movido como: ${targetFileName}`);
         if (!isMerged) {
           console.log(`      Destino: ${artistFolder}/${albumFolder}/`);
         }
-        stats.copied++;
+        stats.moved++;
         stats.albums.add(`${artistFolder}/${albumFolder}`);
         if (isMerged) {
           stats.merged++;
@@ -1025,12 +1035,12 @@ async function main() {
 
       const targetPath = join(albumDir, targetFileName);
 
-      // Copiar arquivo
-      const copied = await copyToOrganized(audioFile, targetPath);
+      // Mover arquivo
+      const moved = await moveToOrganized(audioFile, targetPath);
 
-      if (copied) {
-        console.log(`   ✅ Copiado: ${artistFolder}/${albumFolder}/`);
-        stats.copied++;
+      if (moved) {
+        console.log(`   ✅ Movido: ${artistFolder}/${albumFolder}/`);
+        stats.moved++;
         stats.albums.add(`${artistFolder}/${albumFolder}`);
 
         // Salvar cover
@@ -1072,7 +1082,7 @@ async function main() {
   console.log(`   🎶 De playlists: ${stats.fromPlaylists}`);
   console.log();
   console.log("📊 Resultados:");
-  console.log(`   ✅ Copiados: ${stats.copied}`);
+  console.log(`   ✅ Movidos: ${stats.moved}`);
   console.log(`   🔗 Mesclados em álbuns: ${stats.merged}`);
   console.log(`   🎵 Playlists → álbuns existentes: ${stats.playlistMergedToAlbum}`);
   console.log(`   🖼️  Playlists agrupadas por cover: ${stats.playlistGroupedByCover}`);
@@ -1081,7 +1091,7 @@ async function main() {
   console.log(`   🚫 Ignorados (LIVE): ${stats.ignoredLive}`);
   console.log(`   ❌ Erros: ${stats.errors}`);
   console.log();
-  console.log(`💿 Álbuns únicos criados: ${stats.albums.size}`);
+  console.log(`💿 Álbuns únicos processados: ${stats.albums.size}`);
   console.log();
   console.log(`📂 Pasta organizada: ${OUTPUT_DIR}`);
   console.log("=".repeat(70));
