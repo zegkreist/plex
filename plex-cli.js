@@ -243,7 +243,8 @@ const COMMANDS = [
     group: "🌊  TideCaller",
     cwd: TIDECALLER_DIR,
     cmd: "bash",
-    args: ["scripts/rip.sh", "url"],
+    args: ["scripts/rip.sh", "url", "{TIDAL_URL}"],
+    inputs: [{ key: "TIDAL_URL", prompt: "URL do Tidal (álbum / faixa / playlist): " }],
   },
   {
     id: "tidecaller:download-artist",
@@ -367,10 +368,29 @@ const COMMANDS = [
   },
 ];
 
+// ─── Resolução de inputs dinâmicos ──────────────────────────────────────────
+async function resolveArgs(command, extraArgs = []) {
+  if (!command.inputs || command.inputs.length === 0) return command.args;
+
+  const values = {};
+  for (let i = 0; i < command.inputs.length; i++) {
+    const input = command.inputs[i];
+    if (extraArgs[i] !== undefined) {
+      values[input.key] = extraArgs[i];
+    } else {
+      const val = await prompt(c("cyan", `  → ${input.prompt}`));
+      values[input.key] = val.trim();
+    }
+  }
+
+  return command.args.map((arg) => arg.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? ""));
+}
+
 // ─── Execução de um comando ───────────────────────────────────────────────────
-function run(command) {
+function run(command, resolvedArgs) {
   return new Promise((resolve) => {
-    const { cmd, args, cwd, sudo } = command;
+    const { cmd, cwd, sudo } = command;
+    const args = resolvedArgs ?? command.args;
 
     const finalCmd = sudo ? "sudo" : cmd;
     const finalArgs = sudo ? [cmd, ...args] : args;
@@ -490,7 +510,8 @@ async function interactiveMenu() {
     const selected = allItems[idx];
     console.log(`\n  ${bold("Executando:")} ${c("yellow", selected.label)}\n`);
 
-    await run(selected);
+    const resolvedArgs = await resolveArgs(selected);
+    await run(selected, resolvedArgs);
     await prompt(c("dim", "\n  Pressione ENTER para voltar ao menu..."));
   }
 }
@@ -529,6 +550,8 @@ if (!cliArg || cliArg === "--help" || cliArg === "-h") {
     process.exit(1);
   }
   console.log(`\n${bold("Plex CLI")} — ${c("yellow", command.label)}`);
-  const code = await run(command);
+  const extraArgs = process.argv.slice(3);
+  const resolvedArgs = await resolveArgs(command, extraArgs);
+  const code = await run(command, resolvedArgs);
   process.exit(code ?? 0);
 }

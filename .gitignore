@@ -31,3 +31,5 @@ Thumbs.db
 agents/*/node_modules/
 agents/*/.env
 agents/*/package-lock.json
+
+agents/MusicCurator/consolidation-report-2026-03-07.json
