@@ -63,7 +63,7 @@ const COMMANDS = [
     group: "🎵  Música",
     cwd: MUSIC_DIR,
     cmd: "node",
-    args: ["src/full-library-consolidation.js"],
+    args: ["src/full-library-consolidation.js", "music"],
   },
   {
     id: "music:fix-all-tags",

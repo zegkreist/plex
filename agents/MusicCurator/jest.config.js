@@ -5,4 +5,5 @@ export default {
   testMatch: ["**/tests/**/*.test.js"],
   testTimeout: 30000,
   verbose: true,
+  setupFiles: ["../../jest.setup.js"],
 };

@@ -9,8 +9,10 @@ import { WebSearch } from "./src/web-search.js";
  */
 export class AllFather {
   constructor(config = {}) {
-    this.ollamaUrl = config.ollamaUrl || process.env.OLLAMA_URL || "http://localhost:11434";
-    this.model = config.model || process.env.OLLAMA_DEFAULT_MODEL || "deepseek-r1:7b";
+    const hostIp = process.env.HOST_IP || "localhost";
+    const ollamaBase =  `http://${hostIp}:11434` || config.ollamaUrl || process.env.OLLAMA_URL
+    this.ollamaUrl = ollamaBase;
+    this.model = config.model || process.env.OLLAMA_DEFAULT_MODEL || "deepseek-r1:14b-qwen-distill-q4_K_M";
     this.temperature = config.temperature ?? 0.7;
     this.timeout = config.timeout || 30000; // 30 segundos
     this.maxRetries = config.maxRetries ?? 3;
@@ -32,9 +34,17 @@ export class AllFather {
    */
   async checkConnection() {
     try {
+      console.log(`[AllFather] Testando conexão com Ollama em: ${this.ollamaUrl}`);
       const response = await this.axiosInstance.get("/");
+      console.log(`[AllFather] Output Ollama:`, response.data);
       return response.status === 200;
     } catch (error) {
+      console.log(`[AllFather] Falha na conexão com Ollama em: ${this.ollamaUrl}`);
+      if (error.response) {
+        console.log(`[AllFather] Output de erro Ollama:`, error.response.data);
+      } else {
+        console.log(`[AllFather] Erro:`, error.message);
+      }
       return false;
     }
   }

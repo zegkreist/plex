@@ -21,10 +21,15 @@ const execAsync = promisify(exec);
  * - Aplicação de tags [CURATED]
  */
 class FullLibraryConsolidator {
-  constructor() {
+  constructor(musicPathArg = null) {
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const PLEX_SERVER_ROOT = path.resolve(__dirname, "../..");
-    this.musicPath = process.env.MUSIC_PATH || path.join(PLEX_SERVER_ROOT, "music");
+    const PLEX_SERVER_ROOT = path.resolve(__dirname, "../../..");
+    // Se argumento fornecido, resolve relativo ao projeto
+    if (musicPathArg) {
+      this.musicPath = path.resolve(PLEX_SERVER_ROOT, musicPathArg);
+    } else {
+      this.musicPath = process.env.MUSIC_PATH || path.join(PLEX_SERVER_ROOT, "music");
+    }
     this.allfather = null;
     this.consolidator = null;
 
@@ -424,7 +429,9 @@ export { FullLibraryConsolidator };
 // Exemplo: node src/full-library-consolidation.js
 const __filename = fileURLToPath(import.meta.url);
 if (process.argv[1] === __filename) {
-  const consolidator = new FullLibraryConsolidator();
+  // Permite passar caminho relativo como argumento
+  const musicPathArg = process.argv[2] || null;
+  const consolidator = new FullLibraryConsolidator(musicPathArg);
   consolidator.run().catch((error) => {
     console.error("💥 ERRO FATAL:", error);
     process.exit(1);
