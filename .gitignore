@@ -8,6 +8,7 @@ movies/
 music/
 node_modules/
 ollama/
+downloads/
 
 # Backups
 *.tar.gz
