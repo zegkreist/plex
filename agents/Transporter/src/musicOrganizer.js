@@ -224,15 +224,23 @@ export class MusicOrganizer {
 
     // Escolher a imagem com maior prioridade; fallback para a primeira encontrada
     const chosen = PRIORITY.find((p) => files.includes(p)) || files[0];
-    const src = path.join(sourceDir, chosen);
     const dest = path.join(destDir, "folder.jpg");
 
-    if (fs.existsSync(dest)) return;
-    try {
-      moveFile(src, dest);
-      if (this.verbose) console.log(`   🖼️  cover → folder.jpg`);
-    } catch (err) {
-      console.error(`   ✗ cover: ${err.message}`);
+    if (!fs.existsSync(dest)) {
+      try {
+        moveFile(path.join(sourceDir, chosen), dest);
+        if (this.verbose) console.log(`   🖼️  cover → folder.jpg`);
+      } catch (err) {
+        console.error(`   ✗ cover: ${err.message}`);
+      }
+    }
+
+    // Remover todas as imagens restantes para não deixar arquivos para trás
+    for (const f of files) {
+      if (f === chosen) continue;
+      try {
+        fs.unlinkSync(path.join(sourceDir, f));
+      } catch { /* ignorar */ }
     }
   }
 
