@@ -20,3 +20,26 @@ services:
       - ./movies:/movies
       - ./music:/music
     restart: unless-stopped
+
+  mediasage:
+    image: ecwilson/mediasage:latest
+    container_name: mediasage
+    ports:
+      - "5765:5765"
+    environment:
+      - PLEX_URL=http://192.168.15.94:32400
+      - PLEX_TOKEN=T3p39zpTTpBHBA7eUZk-
+      - PLEX_MUSIC_LIBRARY=${PLEX_MUSIC_LIBRARY:-Music}
+      - UVICORN_WORKERS=${UVICORN_WORKERS:-1}
+      # LLM: Ollama rodando fora do container
+      - LLM_PROVIDER=ollama
+      - OLLAMA_URL=http://192.168.15.94:11434
+      - OLLAMA_CONTEXT_WINDOW=25768
+    volumes:
+      # Persist library cache across restarts
+      # Ensure directory is writable: either set 'user' above, or run:
+      #   mkdir -p ./mediasage && chmod 777 ./mediasage
+      - ./mediasage:/app/data
+      # Optional: persist UI settings
+      # - ./mediasage/config.user.yaml:/app/config.user.yaml
+    restart: unless-stopped
