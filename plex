@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# plex — Wrapper interativo para plex-cli.js
+#
+# Por que este wrapper existe
+# ──────────────────────────────────────────────────────────────────────────────
+# Node.js readline (usado no menu) inicia leituras assíncronas em fd 0 via
+# libuv. Mesmo após readline.close() + pause(), libuv pode ter bytes do TTY
+# já em buffer interno. Quando Node.js tentava spawnar um filho interativo
+# (ex: Stormbringer com inquirer), ambos competiam pelos mesmos bytes e o filho
+# recebia input vazio ou truncado — saindo imediatamente.
+#
+# Solução: plex-cli.js cuida APENAS do menu. Quando o usuário escolhe uma
+# ação, ele grava um snippet shell num arquivo temporário e sai (exit 42).
+# Este script executa o snippet diretamente no shell, com posse exclusiva e
+# limpa do TTY. Depois relança o menu automaticamente.
+#
+# Uso:
+#   ./plex             → menu interativo com suporte total a programas interativos
+#
+# Comandos diretos (sem o menu) continuam funcionando normalmente:
+#   node plex-cli.js stormbringer:search
+# ──────────────────────────────────────────────────────────────────────────────
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLI="$SCRIPT_DIR/plex-cli.js"
+
+# Arquivo temporário para o snippet de execução.
+# O trap garante remoção mesmo em caso de Ctrl+C ou erro.
+TMPFILE="$(mktemp /tmp/plex-cmd.XXXXXX.sh)"
+trap 'rm -f "$TMPFILE"' EXIT
+
+while true; do
+  # Roda o menu em modo --pick: exibe o menu, grava o snippet no TMPFILE e
+  # sai com código 42. Se o usuário sair normalmente, exit 0.
+  node "$CLI" --pick "$TMPFILE"
+  EXIT_CODE=$?
+
+  if [ "$EXIT_CODE" -eq 0 ]; then
+    # Usuário escolheu sair do menu
+    break
+  fi
+
+  if [ "$EXIT_CODE" -eq 42 ] && [ -s "$TMPFILE" ]; then
+    # Executa o snippet — o shell tem posse exclusiva do TTY aqui.
+    # 'source' (.) em vez de 'bash' para que o 'exec' dentro do snippet
+    # substitua este processo pelo comando escolhido.
+    echo
+    bash "$TMPFILE"
+    EXEC_CODE=$?
+    echo
+    if [ "$EXEC_CODE" -eq 0 ]; then
+      printf "\033[32m✅  Concluído com sucesso\033[0m\n"
+    else
+      printf "\033[31m❌  Processo encerrado com código %d\033[0m\n" "$EXEC_CODE"
+    fi
+    echo
+    read -r -p "  Pressione ENTER para voltar ao menu..." _
+    # Limpa o arquivo para a próxima iteração
+    > "$TMPFILE"
+  else
+    # Código de saída inesperado — sai do loop
+    exit "$EXIT_CODE"
+  fi
+done

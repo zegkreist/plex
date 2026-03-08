@@ -25,6 +25,7 @@
     "series:fix-tags:dry": "node plex-cli.js series:fix-tags:dry",
     "series:test": "node plex-cli.js series:test",
     "stormbringer:start": "node plex-cli.js stormbringer:start",
+    "stormbringer:download": "node plex-cli.js stormbringer:download",
     "stormbringer:search": "node plex-cli.js stormbringer:search",
     "stormbringer:downloads": "node plex-cli.js stormbringer:downloads",
     "stormbringer:plex-organize": "node plex-cli.js stormbringer:plex-organize",
@@ -47,7 +48,8 @@
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
-    "jest": "^29.7.0"
+    "jest": "^29.7.0",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "22": "^0.0.0"

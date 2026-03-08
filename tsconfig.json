@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "lib": ["ES2022"],
+    "types": ["node"]
+  },
+  "include": [
+    "plex-cli.js",
+    "plex-cli-menu.js",
+    "plex-cli-stdin.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "tests",
+    "agents"
+  ]
+}

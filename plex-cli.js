@@ -2,10 +2,14 @@
 /**
  * plex-cli.js — Controlador central para os agentes do Plex Server
  *
+ * Uso via wrapper (recomendado para comandos interativos):
+ *   ./plex                                    → menu interativo (TTY limpo)
+ *
  * Uso direto:
- *   node plex-cli.js                          → menu interativo
+ *   node plex-cli.js                          → menu interativo (spawnSync)
  *   node plex-cli.js <comando>                → executa diretamente
  *   node plex-cli.js --help                   → lista comandos
+ *   node plex-cli.js --pick <arquivo>         → menu: grava snippet shell e sai (usado por ./plex)
  *
  * Exemplos:
  *   node plex-cli.js music:fix-all-tags
@@ -14,14 +18,23 @@
  *   node plex-cli.js test:all
  */
 
-import { spawn } from "child_process";
+import fs from "fs";
 import readline from "readline";
 import path from "path";
 import { fileURLToPath } from "url";
 import { buildGroups, parseGroupChoice, parseCommandChoice } from "./plex-cli-menu.js";
+import { runCommand, buildExecSnippet } from "./plex-cli-run.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const ROOT = path.dirname(__filename);
+
+// When running via the `./plex` wrapper, this is the path of the temp file
+// where we write the shell snippet to execute. The wrapper reads it and runs
+// it directly in the shell, giving the child exclusive TTY ownership.
+const PICK_FILE = (() => {
+  const idx = process.argv.indexOf("--pick");
+  return idx !== -1 ? process.argv[idx + 1] : null;
+})();
 
 // ─── Cores ANSI ───────────────────────────────────────────────────────────────
 const C = {
@@ -205,8 +218,16 @@ const COMMANDS = [
     args: ["src/index.js"],
   },
   {
+    id: "stormbringer:download",
+    label: "Buscar e baixar torrent (busca → seleciona → baixa)",
+    group: "⚡  Stormbringer",
+    cwd: STORMBRINGER_DIR,
+    cmd: "node",
+    args: ["src/cli.js", "download"],
+  },
+  {
     id: "stormbringer:search",
-    label: "Buscar torrent interativamente",
+    label: "Buscar torrent (só exibe resultados, sem baixar)",
     group: "⚡  Stormbringer",
     cwd: STORMBRINGER_DIR,
     cmd: "node",
@@ -388,39 +409,11 @@ async function resolveArgs(command, extraArgs = []) {
 }
 
 // ─── Execução de um comando ───────────────────────────────────────────────────
+// Delegates to runCommand (plex-cli-run.js) which uses spawnSync so the parent
+// event loop is fully suspended while the child runs. This gives interactive
+// children (inquirer, bash menus, fzf, …) exclusive access to the terminal.
 function run(command, resolvedArgs) {
-  return new Promise((resolve) => {
-    const { cmd, cwd, sudo } = command;
-    const args = resolvedArgs ?? command.args;
-
-    const finalCmd = sudo ? "sudo" : cmd;
-    const finalArgs = sudo ? [cmd, ...args] : args;
-
-    console.log();
-    console.log(c("dim", `▶  ${finalCmd} ${finalArgs.join(" ")}  (em ${path.relative(ROOT, cwd) || "."})`));
-    console.log(c("dim", "─".repeat(70)));
-
-    const child = spawn(finalCmd, finalArgs, {
-      cwd,
-      stdio: "inherit",
-      env: { ...process.env },
-    });
-
-    child.on("close", (code) => {
-      console.log();
-      if (code === 0) {
-        console.log(c("green", `✅  Concluído com sucesso`));
-      } else {
-        console.log(c("red", `❌  Processo encerrado com código ${code}`));
-      }
-      resolve(code);
-    });
-
-    child.on("error", (err) => {
-      console.error(c("red", `❌  Erro ao iniciar: ${err.message}`));
-      resolve(1);
-    });
-  });
+  return runCommand(command, resolvedArgs);
 }
 
 // ─── Header ──────────────────────────────────────────────────────────────────
@@ -524,6 +517,15 @@ async function interactiveMenu() {
       console.log(`\n  ${bold("Executando:")} ${c("yellow", selected.label)}\n`);
 
       const resolvedArgs = await resolveArgs(selected);
+
+      if (PICK_FILE) {
+        // --pick mode: write the shell snippet and exit so the ./plex wrapper
+        // can run the command with full, clean TTY ownership.
+        const snippet = buildExecSnippet(selected, resolvedArgs);
+        fs.writeFileSync(PICK_FILE, snippet + "\n", "utf8");
+        process.exit(42);
+      }
+
       await run(selected, resolvedArgs);
       await prompt(c("dim", "\n  Pressione ENTER para voltar ao menu..."));
     }
@@ -548,9 +550,9 @@ function sleep(ms) {
 // ─── Entry point ─────────────────────────────────────────────────────────────
 const cliArg = process.argv[2];
 
-if (!cliArg || cliArg === "--help" || cliArg === "-h") {
-  if (!cliArg) {
-    // Modo interativo
+if (!cliArg || cliArg === "--help" || cliArg === "-h" || cliArg === "--pick") {
+  if (!cliArg || cliArg === "--pick") {
+    // Modo interativo (direto ou via ./plex wrapper)
     await interactiveMenu();
   } else {
     printHelp();
