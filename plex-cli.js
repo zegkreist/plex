@@ -55,6 +55,7 @@ const bold = (str) => `${C.bold}${str}${C.reset}`;
 // ─── Definição dos comandos ───────────────────────────────────────────────────
 const MUSIC_DIR = path.join(ROOT, "agents", "MusicCurator");
 const SERIES_DIR = path.join(ROOT, "agents", "SeriesCurator");
+const MOVIE_DIR = path.join(ROOT, "agents", "MovieCurator");
 const STORMBRINGER_DIR = path.join(ROOT, "agents", "Stormbringer");
 const TIDECALLER_DIR = path.join(ROOT, "agents", "TideCaller");
 const TRANSPORTER_DIR = path.join(ROOT, "agents", "Transporter");
@@ -166,6 +167,40 @@ const COMMANDS = [
     args: ["test"],
   },
 
+  // ── Filmes ────────────────────────────────────────────────────────────────
+  {
+    id: "movie:curate",
+    label: "Curar biblioteca de filmes (renomeia pastas + arquivos para Plex)",
+    group: "🎬  Filmes",
+    cwd: MOVIE_DIR,
+    cmd: "node",
+    args: ["index.js"],
+  },
+  {
+    id: "movie:curate:dry",
+    label: "Curar filmes — DRY RUN (sem alterações)",
+    group: "🎬  Filmes",
+    cwd: MOVIE_DIR,
+    cmd: "node",
+    args: ["index.js", "--dry-run"],
+  },
+  {
+    id: "movie:curate:skip",
+    label: "Curar filmes — pular já curados",
+    group: "🎬  Filmes",
+    cwd: MOVIE_DIR,
+    cmd: "node",
+    args: ["index.js", "--skip-curated"],
+  },
+  {
+    id: "movie:test",
+    label: "Rodar testes do MovieCurator",
+    group: "🎬  Filmes",
+    cwd: MOVIE_DIR,
+    cmd: "npm",
+    args: ["test"],
+  },
+
   // ── Transporter ────────────────────────────────────────────────────────────
   {
     id: "transporter:all",
@@ -206,6 +241,22 @@ const COMMANDS = [
     cwd: TRANSPORTER_DIR,
     cmd: "node",
     args: ["src/run.js", "--video", "--dry-run"],
+  },
+  {
+    id: "transporter:movies",
+    label: "Mover filmes (downloads/filmes/ → movies/) com MovieCurator",
+    group: "🚚  Transporter",
+    cwd: TRANSPORTER_DIR,
+    cmd: "node",
+    args: ["src/run.js", "--movies"],
+  },
+  {
+    id: "transporter:movies:dry",
+    label: "Mover filmes — DRY RUN (sem mover arquivos)",
+    group: "🚚  Transporter",
+    cwd: TRANSPORTER_DIR,
+    cmd: "node",
+    args: ["src/run.js", "--movies", "--dry-run"],
   },
 
   // ── Stormbringer (Torrent) ───────────────────────────────────────────────────

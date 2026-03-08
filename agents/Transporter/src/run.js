@@ -28,6 +28,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 import { MusicOrganizer } from "./musicOrganizer.js";
+import { MovieOrganizer } from "./movieOrganizer.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +38,7 @@ const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run") || args.includes("-d");
 const onlyMusic = args.includes("--music");
 const onlyVideo = args.includes("--video");
+const onlyMovies = args.includes("--movies");
 const verbose = args.includes("--verbose") || args.includes("-v");
 
 const C = {
@@ -85,6 +87,24 @@ async function runMusic() {
   organizer.printStats();
 }
 
+async function runMovies() {
+  console.log(`\n${C.dim}${"─".repeat(70)}${C.reset}`);
+  console.log(`${C.bold}${C.cyan}🚚 Transporter → Filmes (Torrent → library)${C.reset}`);
+  console.log(`${C.dim}${"─".repeat(70)}${C.reset}`);
+
+  const organizer = new MovieOrganizer(path.join(PLEX_ROOT, "movies"), {
+    dryRun,
+    verbose,
+  });
+
+  organizer.processSource(
+    path.join(PLEX_ROOT, "agents", "Stormbringer", "downloads", "filmes"),
+    "Stormbringer"
+  );
+
+  organizer.printStats();
+}
+
 async function runVideo() {
   const extraArgs = dryRun ? ["--dry-run"] : [];
   const stormbringerDir = path.join(PLEX_ROOT, "agents", "Stormbringer");
@@ -97,10 +117,11 @@ async function main() {
     console.log(`${C.yellow}🔍 Modo DRY RUN — nenhum arquivo será movido${C.reset}\n`);
   }
 
-  const runAll = !onlyMusic && !onlyVideo;
+  const runAll = !onlyMusic && !onlyVideo && !onlyMovies;
 
   try {
     if (runAll || onlyMusic) await runMusic();
+    if (runAll || onlyMovies) await runMovies();
     if (runAll || onlyVideo) await runVideo();
     console.log(`\n${C.bold}${C.green}✅ Transporter concluído!${C.reset}\n`);
   } catch (err) {

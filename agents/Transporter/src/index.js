@@ -11,3 +11,4 @@ export * from "./audio.js";
 export * from "./filesystem.js";
 export * from "./dedup.js";
 export { MusicOrganizer } from "./musicOrganizer.js";
+export { MovieOrganizer } from "./movieOrganizer.js";
