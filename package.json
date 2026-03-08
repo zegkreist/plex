@@ -39,7 +39,11 @@
     "plex:start": "node plex-cli.js plex:start",
     "plex:stop": "node plex-cli.js plex:stop",
     "plex:scan": "node plex-cli.js plex:scan",
-    "plex:logs": "node plex-cli.js plex:logs"
+    "plex:logs": "node plex-cli.js plex:logs",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --testPathPattern=tests/"
+  },
+  "jest": {
+    "transform": {}
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",

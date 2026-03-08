@@ -36,3 +36,5 @@ agents/*/package-lock.json
 agents/MusicCurator/consolidation-report-2026-03-07.json
 
 mediasage/
+
+agents/Stormbringer/.download-state.json

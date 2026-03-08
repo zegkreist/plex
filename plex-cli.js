@@ -18,6 +18,7 @@ import { spawn } from "child_process";
 import readline from "readline";
 import path from "path";
 import { fileURLToPath } from "url";
+import { buildGroups, parseGroupChoice, parseCommandChoice } from "./plex-cli-menu.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const ROOT = path.dirname(__filename);
@@ -456,63 +457,76 @@ function printHelp() {
   console.log();
 }
 
-// ─── Menu interativo ──────────────────────────────────────────────────────────
+// ─── Menu interativo (dois níveis) ───────────────────────────────────────────
 async function interactiveMenu() {
-  // Agrupa comandos por grupo
-  const groups = [];
-  const groupMap = {};
-  for (const cmd of COMMANDS) {
-    if (!groupMap[cmd.group]) {
-      groupMap[cmd.group] = [];
-      groups.push({ name: cmd.group, items: groupMap[cmd.group] });
-    }
-    groupMap[cmd.group].push(cmd);
-  }
+  const groups = buildGroups(COMMANDS);
 
+  // Nível 1 — seleciona o componente
   while (true) {
     printHeader();
-
-    // Lista grupos com números
-    const allItems = [];
-    let currentGroup = null;
-    for (const cmd of COMMANDS) {
-      if (cmd.group !== currentGroup) {
-        currentGroup = cmd.group;
-        console.log(`  ${bold(cmd.group)}`);
-      }
-      const num = String(allItems.length + 1).padStart(3);
-      const id = c("yellow", cmd.id.padEnd(28));
-      const label = c("dim", cmd.label);
-      const sudo = cmd.sudo ? c("red", " ⚑") : "";
-      console.log(`  ${c("dim", num)}  ${id} ${label}${sudo}`);
-      allItems.push(cmd);
-    }
-
-    console.log();
-    console.log(c("dim", "  ⚑ = requer sudo   |   0 = sair"));
+    console.log(c("dim", "  Escolha o componente:"));
     console.log();
 
-    const answer = await prompt(c("cyan", "  → Escolha o número: "));
-    const trimmed = answer.trim();
+    groups.forEach((g, i) => {
+      const num = c("dim", String(i + 1).padStart(3));
+      console.log(`  ${num}  ${bold(g.name)}  ${c("dim", `(${g.items.length} ações)`)}`);
+    });
 
-    if (trimmed === "0" || trimmed === "q" || trimmed === "exit") {
+    console.log();
+    console.log(c("dim", "  0 = sair"));
+    console.log();
+
+    const groupAnswer = await prompt(c("cyan", "  → Componente: "));
+    const groupResult = parseGroupChoice(groupAnswer, groups);
+
+    if (groupResult.type === "exit") {
       console.log(c("dim", "\n  Até logo!\n"));
       process.exit(0);
     }
 
-    const idx = parseInt(trimmed, 10) - 1;
-    if (isNaN(idx) || idx < 0 || idx >= allItems.length) {
+    if (groupResult.type === "invalid") {
       console.log(c("red", "\n  Opção inválida."));
       await sleep(800);
       continue;
     }
 
-    const selected = allItems[idx];
-    console.log(`\n  ${bold("Executando:")} ${c("yellow", selected.label)}\n`);
+    // Nível 2 — seleciona a ação dentro do componente
+    const { group } = groupResult;
+    while (true) {
+      printHeader();
+      console.log(`  ${bold(group.name)}`);
+      console.log();
 
-    const resolvedArgs = await resolveArgs(selected);
-    await run(selected, resolvedArgs);
-    await prompt(c("dim", "\n  Pressione ENTER para voltar ao menu..."));
+      group.items.forEach((cmd, i) => {
+        const num = c("dim", String(i + 1).padStart(3));
+        const id  = c("yellow", cmd.id.padEnd(28));
+        const lbl = c("dim", cmd.label);
+        const sudo = cmd.sudo ? c("red", " ⚑") : "";
+        console.log(`  ${num}  ${id} ${lbl}${sudo}`);
+      });
+
+      console.log();
+      console.log(c("dim", "  ⚑ = requer sudo   |   0 = voltar"));
+      console.log();
+
+      const cmdAnswer = await prompt(c("cyan", "  → Ação: "));
+      const cmdResult = parseCommandChoice(cmdAnswer, group.items);
+
+      if (cmdResult.type === "back") break;
+
+      if (cmdResult.type === "invalid") {
+        console.log(c("red", "\n  Opção inválida."));
+        await sleep(800);
+        continue;
+      }
+
+      const selected = cmdResult.command;
+      console.log(`\n  ${bold("Executando:")} ${c("yellow", selected.label)}\n`);
+
+      const resolvedArgs = await resolveArgs(selected);
+      await run(selected, resolvedArgs);
+      await prompt(c("dim", "\n  Pressione ENTER para voltar ao menu..."));
+    }
   }
 }
 
