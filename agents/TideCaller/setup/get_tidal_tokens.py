@@ -60,9 +60,9 @@ def write_tokens_to_config(user_id, country_code, access_token, refresh_token, e
 
     updated = content
     for key, value in fields.items():
-        # Substitui  key = "qualquer_coisa"  ou  key = "..."  dentro do arquivo
-        # Usa lookahead para não cruzar para outra seção
-        pattern = rf'^({re.escape(key)}\s*=\s*)"[^"]*"'
+        # Substitui  key = "qualquer_coisa"  ou  key = 1234  (com ou sem aspas)
+        # Necessário porque o streamrip grava user_id e token_expiry sem aspas
+        pattern = rf'^({re.escape(key)}\s*=\s*)(?:"[^"]*"|\S+)'
         replacement = rf'\1"{value}"'
         new = re.sub(pattern, replacement, updated, flags=re.MULTILINE)
         if new == updated:
@@ -93,7 +93,8 @@ def save_backup(user_id, country_code, access_token, refresh_token, expiry):
 def get_expiry_from_config() -> int:
     """Lê token_expiry do config.toml. Retorna 0 se não encontrar."""
     content = read_config()
-    m = re.search(r'^token_expiry\s*=\s*"(\d+)"', content, re.MULTILINE)
+    # Aceita "1234", "1234.0", 1234, 1234.0 (streamrip grava sem aspas e com casas decimais)
+    m = re.search(r'^token_expiry\s*=\s*"?(\d+)', content, re.MULTILINE)
     return int(m.group(1)) if m else 0
 
 
@@ -121,7 +122,11 @@ def load_session_from_config() -> "tidalapi.Session | None":
     content = read_config()
 
     def extract(key):
+        # Tenta formato com aspas primeiro; fallback para valor sem aspas
         m = re.search(rf'^{re.escape(key)}\s*=\s*"([^"]*)"', content, re.MULTILINE)
+        if m:
+            return m.group(1)
+        m = re.search(rf'^{re.escape(key)}\s*=\s*(\S+)', content, re.MULTILINE)
         return m.group(1) if m else ""
 
     access_token = extract("access_token")

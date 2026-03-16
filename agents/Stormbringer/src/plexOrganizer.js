@@ -23,6 +23,9 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+// AGENT_ROOT: raiz do agente Stormbringer (onde fica config.json e downloads/)
+const AGENT_ROOT = path.resolve(__dirname, "..");
+// REPO_ROOT: raiz do plex_server (onde ficam tv/, movies/, music/)
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 
 /**
@@ -37,10 +40,10 @@ const REPO_ROOT = path.resolve(__dirname, "../../..");
 class PlexOrganizer {
   constructor(config) {
     this.config = config;
-    // Resolver paths de download relativamente ao REPO_ROOT
-    this.sourceMovies = path.resolve(REPO_ROOT, config.downloads.movies);
-    this.sourceSeries = path.resolve(REPO_ROOT, config.downloads.series);
-    this.sourceMusic = path.resolve(REPO_ROOT, config.downloads.music);
+    // Resolver paths de download relativamente ao AGENT_ROOT (agents/Stormbringer/)
+    this.sourceMovies = path.resolve(AGENT_ROOT, config.downloads.movies);
+    this.sourceSeries = path.resolve(AGENT_ROOT, config.downloads.series);
+    this.sourceMusic = path.resolve(AGENT_ROOT, config.downloads.music);
 
     // Resolver paths de destino relativamente ao REPO_ROOT
     const plex = config.plex || {};
