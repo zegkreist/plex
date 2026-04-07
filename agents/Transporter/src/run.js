@@ -106,7 +106,7 @@ async function runMovies() {
 }
 
 async function runVideo() {
-  const extraArgs = dryRun ? ["--dry-run"] : [];
+  const extraArgs = dryRun ? ["--dry-run"] : ["--yes"];
   const stormbringerDir = path.join(PLEX_ROOT, "agents", "Stormbringer");
   await spawnAsync("node", ["src/plexOrganizer.js", ...extraArgs], stormbringerDir, "Vídeo (Torrent → library)");
 }

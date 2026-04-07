@@ -174,6 +174,14 @@ export class MusicOrganizer {
         await saveCoverArt(albumDir, audioFiles[0]);
       }
 
+      // Remover arquivos residuais (nfo, log, cue, txt…)
+      this._removeLitterFiles(releaseDir);
+      // Subpastas de disco também podem ter litter
+      for (const sub of fs.readdirSync(releaseDir)) {
+        const subp = path.join(releaseDir, sub);
+        if (fs.statSync(subp).isDirectory()) this._removeLitterFiles(subp);
+      }
+
       // Remover pasta de origem (agora vazia)
       removeIfEmpty(releaseDir);
     }
@@ -214,7 +222,7 @@ export class MusicOrganizer {
   /**
    * Move imagens de capa da pasta de origem para o destino.
    * Prioriza: folder.jpg > cover.jpg > front.jpg > qualquer imagem encontrada.
-   * Não sobrescreve se já existir.
+   * Não sobrescreve se já existir — mas SEMPRE limpa o arquivo de origem.
    * @private
    */
   _moveImages(sourceDir, destDir, extensions) {
@@ -223,7 +231,7 @@ export class MusicOrganizer {
     if (files.length === 0) return;
 
     // Escolher a imagem com maior prioridade; fallback para a primeira encontrada
-    const chosen = PRIORITY.find((p) => files.includes(p)) || files[0];
+    const chosen = PRIORITY.find((p) => files.map(f => f.toLowerCase()).includes(p)) || files[0];
     const dest = path.join(destDir, "folder.jpg");
 
     if (!fs.existsSync(dest)) {
@@ -235,12 +243,30 @@ export class MusicOrganizer {
       }
     }
 
-    // Remover todas as imagens restantes para não deixar arquivos para trás
+    // Remover TODAS as imagens da origem (incluindo o chosen se não foi movido)
     for (const f of files) {
-      if (f === chosen) continue;
+      const fp = path.join(sourceDir, f);
+      if (!fs.existsSync(fp)) continue; // já foi movido via moveFile (rename/unlink)
       try {
-        fs.unlinkSync(path.join(sourceDir, f));
+        fs.unlinkSync(fp);
       } catch { /* ignorar */ }
+    }
+  }
+
+  /**
+   * Remove arquivos residuais não-áudio/imagem (metadata, logs, cue sheets, etc.)
+   * que ficam quando o torrent ou streamrip inclui arquivos extras.
+   * @private
+   */
+  _removeLitterFiles(dir) {
+    const LITTER_EXT = new Set([".nfo", ".log", ".cue", ".m3u", ".m3u8", ".sfv",
+                                  ".txt", ".pdf", ".accurip", ".md5"]);
+    if (!fs.existsSync(dir)) return;
+    for (const f of fs.readdirSync(dir)) {
+      const ext = path.extname(f).toLowerCase();
+      if (LITTER_EXT.has(ext)) {
+        try { fs.unlinkSync(path.join(dir, f)); } catch { /* ignorar */ }
+      }
     }
   }
 

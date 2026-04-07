@@ -10,50 +10,64 @@
 import { logger } from "../logger.js";
 export class RecommendationEngine {
   /**
-   * @param {{ allfather, libraryScanner, historyService, analyzer }} config
+   * @param {{ allfather, libraryScanner, historyService, analyzer, lastFmService }} config
    */
-  constructor({ allfather, libraryScanner, historyService, analyzer } = {}) {
+  constructor({ allfather, libraryScanner, historyService, analyzer, lastFmService } = {}) {
     this.allfather = allfather;
     this.libraryScanner = libraryScanner;
     this.historyService = historyService;
     this.analyzer = analyzer;
+    this.lastFmService = lastFmService;
   }
 
   /**
    * Retorna recomendações de artistas e músicas fora da biblioteca.
-   * @param {{ limit?: number }} options
+   * @param {{ limit?: number, genre?: string }} options
    * @returns {Promise<Array<{artist, genre, description, whyRecommended}>>}
    */
-  async recommend({ limit = 10 } = {}) {
-    logger.info("RECOMMEND", `recommend() chamado — limit=${limit}`);
+  async recommend({ limit = 10, genre = null } = {}) {
+    logger.info("RECOMMEND", `recommend() chamado — limit=${limit}${genre ? `, genre=${genre}` : ''}`);
     try {
-      const [favorites, profile] = await Promise.all([
-        this.historyService.getFavoriteArtists(10),
+      const [favorites, favoriteTracks, profile] = await Promise.all([
+        this.historyService.getFavoriteArtists(20),
+        this.historyService.getFavoriteTracks(15),
         this._buildProfile(),
       ]);
 
       logger.debug("RECOMMEND", `Perfil: topGenres=[${(profile.topGenres||[]).join(", ")}], mood=${profile.dominantMood}, energy=${profile.avgEnergy}`);
 
       const existingArtists = this.libraryScanner.getArtistNames();
-      const favoriteText = favorites.map((f) => `${f.artist} (${f.playCount} plays)`).join(", ");
+      const favoriteArtistText = favorites.map((f, i) => `${i + 1}. ${f.artist} (${f.playCount}x)`).join("\n");
+      const favoriteTrackText  = favoriteTracks.slice(0, 12).map((t, i) => `${i + 1}. "${t.title}" — ${t.artist} (${t.playCount}x)`).join("\n");
+      const topAnchorArtists   = favorites.slice(0, 3).map((f) => f.artist).join(", ");
 
       const prompt = this._buildRecommendationPrompt({
         limit,
         profile,
-        favoriteText,
+        favoriteArtistText,
+        favoriteTrackText,
+        topAnchorArtists,
         existingArtists: existingArtists.slice(0, 50),
+        genre,
       });
 
       const t0 = Date.now();
-      const raw = await this.allfather.askForJSON(prompt, { temperature: 0.7, maxTokens: 1500 });
+      const raw = await this.allfather.askForJSON(prompt, { temperature: 0.7, maxTokens: 2000 });
       logger.debug("OLLAMA", `askForJSON respondeu em ${Date.now() - t0}ms`);
 
       const items = Array.isArray(raw) ? raw : (raw?.recommendations ?? []);
 
+      // Normaliza: aceita tanto {why} (formato compacto) quanto {whyRecommended} (legado)
+      const normalized = items.map(r => ({
+        artist:          r.artist ?? r.name ?? '',
+        genre:           r.genre  ?? r.g    ?? '',
+        whyRecommended:  r.why    ?? r.whyRecommended ?? '',
+      }));
+
       // Filtra artistas já na biblioteca (case-insensitive)
       const existingLower = new Set(existingArtists.map((a) => a.toLowerCase()));
-      const filtered = items.filter(
-        (r) => r?.artist && !existingLower.has(r.artist.toLowerCase())
+      const filtered = normalized.filter(
+        (r) => r.artist && !existingLower.has(r.artist.toLowerCase())
       );
 
       logger.info("RECOMMEND", `${filtered.length} recomendações geradas (${items.length - filtered.length} filtradas por já estarem na biblioteca)`);
@@ -66,12 +80,90 @@ export class RecommendationEngine {
 
   /**
    * Retorna recomendações focadas em artistas.
-   * @param {{ limit?: number }} options
+   * @param {{ limit?: number, genre?: string }} options
    * @returns {Promise<Array<{artist, genre, whyRecommended}>>}
    */
-  async recommendArtists({ limit = 10 } = {}) {
-    const recs = await this.recommend({ limit: limit + 10 }); // pede extra para compensar filtro
+  async recommendArtists({ limit = 10, genre = null } = {}) {
+    const recs = await this.recommend({ limit: limit + 10, genre }); // pede extra para compensar filtro
     return recs.slice(0, limit);
+  }
+
+  /**
+   * Retorna artistas semelhantes a um artista dado.
+   * Combina Last.fm (candidatos scored) + Ollama (curadoria contextual).
+   * @param {string} seedArtist — artista pivot
+   * @param {{ limit?: number }} options
+   * @returns {Promise<Array<{artist, genre, whyRecommended, similarity, source}>>}
+   */
+  async similarTo(seedArtist, { limit = 10 } = {}) {
+    logger.info("RECOMMEND", `similarTo() chamado — seed="${seedArtist}", limit=${limit}`);
+    try {
+      const existingArtists = this.libraryScanner.getArtistNames();
+      const existingLower = new Set(existingArtists.map((a) => a.toLowerCase()));
+
+      // 1. Last.fm: busca candidatos scored
+      const [lastFmCandidates, seedTags] = this.lastFmService
+        ? await Promise.all([
+            this.lastFmService.getSimilarArtists(seedArtist, 30),
+            this.lastFmService.getArtistTags(seedArtist),
+          ])
+        : [[], []];
+
+      // 2. Filtra os que já estão na biblioteca
+      const filtered = lastFmCandidates.filter(
+        (c) => !existingLower.has(c.artist.toLowerCase())
+      );
+
+      // 3. Ollama: curadoria + explicação
+      const prompt = this._buildSimilarPrompt({
+        seedArtist,
+        seedTags,
+        candidates: filtered.slice(0, 20),
+        limit,
+        existingArtists: existingArtists.slice(0, 30),
+      });
+
+      const t0 = Date.now();
+      const raw = await this.allfather.askForJSON(prompt, { temperature: 0.6, maxTokens: 1500 });
+      logger.debug("OLLAMA", `similarTo askForJSON respondeu em ${Date.now() - t0}ms`);
+
+      const items = Array.isArray(raw) ? raw : [];
+      const source = filtered.length > 0 ? "lastfm+ollama" : "ollama";
+
+      const normalized = items
+        .map((r) => ({
+          artist:         r.artist ?? "",
+          genre:          r.genre  ?? "",
+          whyRecommended: r.why    ?? r.whyRecommended ?? "",
+          similarity:     r.similarity ?? null,
+          source,
+        }))
+        .filter((r) => r.artist && !existingLower.has(r.artist.toLowerCase()));
+
+      logger.info("RECOMMEND", `similarTo("${seedArtist}"): ${normalized.length} resultados`);
+      return normalized.slice(0, limit);
+    } catch (err) {
+      logger.error("RECOMMEND", `Erro em similarTo: ${err.message}`);
+      return [];
+    }
+  }
+
+  _buildSimilarPrompt({ seedArtist, seedTags, candidates, limit, existingArtists }) {
+    const tagsText  = seedTags.length ? seedTags.join(", ") : "unknown";
+    const libList   = existingArtists.join(", ");
+    const candidateSection = candidates.length
+      ? `Last.fm similar artists (use as inspiration): ${candidates.map((c) => `${c.artist} (similarity: ${c.similarity.toFixed(2)})`).join(", ")}`
+      : `No Last.fm data available — use your knowledge of artists similar to "${seedArtist}".`;
+
+    return `You are a music expert. The listener enjoys "${seedArtist}" (tags: ${tagsText}).
+${candidateSection}
+
+LIBRARY (do NOT recommend these): ${libList}
+
+Recommend exactly ${limit} artists similar to "${seedArtist}" that are NOT in the library.
+Return a JSON array:
+[{"artist":"...", "genre":"...", "why":"one sentence why a fan of ${seedArtist} would enjoy them"}]
+Return ONLY the JSON array.`;
   }
 
   // ── Internos ─────────────────────────────────────────────────────────────
@@ -81,30 +173,41 @@ export class RecommendationEngine {
     return this.analyzer.buildLibraryProfile(artists);
   }
 
-  _buildRecommendationPrompt({ limit, profile, favoriteText, existingArtists }) {
-    const genreText = (profile.topGenres || []).slice(0, 5).join(", ") || "various";
-    const libraryList = existingArtists.join(", ");
+  _buildRecommendationPrompt({ limit, profile, favoriteArtistText, favoriteTrackText, topAnchorArtists, existingArtists, genre }) {
+    const genreText    = genre ? genre : (profile.topGenres || []).slice(0, 5).join(", ") || "various";
+    const libraryList  = existingArtists.join(", ");
+    const genreClause  = genre
+      ? `Focus specifically on ${genre} genre artists.`
+      : `Prioritize artists whose style matches the genres: ${genreText}.`;
+    const anchorClause = topAnchorArtists
+      ? `The listener's absolute favorites are: ${topAnchorArtists}. Recommendations MUST appeal to fans of these artists.`
+      : "";
+    const moodClause   = profile.dominantMood
+      ? `Overall library mood: ${profile.dominantMood}, energy level: ${profile.avgEnergy || 5}/10.`
+      : "";
 
-    return `You are a music recommendation expert. Based on the listener's taste profile below, 
-recommend exactly ${limit} artists or musicians they would likely enjoy that are NOT already in their library.
+    return `You are a music recommendation expert.
 
-LISTENER TASTE PROFILE:
-- Top genres: ${genreText}
-- Dominant mood: ${profile.dominantMood || "varied"}
-- Average energy level: ${profile.avgEnergy || 5}/10
-- Most played artists recently: ${favoriteText || "unknown"}
+The listener's MOST PLAYED ARTISTS (primary signal — use this as the main basis):
+${favoriteArtistText || "(no data)"}
 
-LIBRARY (do NOT recommend these artists — they are already owned):
-${libraryList}
+The listener's MOST PLAYED TRACKS (use to understand style and taste):
+${favoriteTrackText || "(no data)"}
 
-Return a JSON array of exactly ${limit} recommendations. Each item must have:
-{
-  "artist": "Artist Name",
-  "genre": "Primary Genre",
-  "description": "One sentence description of the artist",
-  "whyRecommended": "One sentence explaining why this listener would enjoy them"
-}
+${anchorClause}
+${moodClause}
+${genreClause}
 
-IMPORTANT: Return ONLY the JSON array, no extra text. Do not include any artist from the library list.`;
+Based primarily on the most played artists and tracks above, recommend exactly ${limit} NEW artists that:
+- Sound similar to or are frequently enjoyed alongside the top played artists
+- Are NOT already in the listener's library
+- Each recommendation should feel like a natural next step from the actual listening data
+
+LIBRARY — do NOT recommend any of these: ${libraryList}
+
+Return a JSON array of exactly ${limit} items:
+[{"artist":"...", "genre":"...", "why":"one sentence specifically referencing which of the listener's favorites this is similar to"}]
+
+Return ONLY the JSON array.`;
   }
 }

@@ -23,6 +23,10 @@ function makeHistoryService(history = []) {
       { artist: "Pink Floyd", playCount: 15 },
       { artist: "Radiohead", playCount: 10 },
     ]),
+    getFavoriteTracks: jest.fn().mockResolvedValue([
+      { title: "Comfortably Numb", artist: "Pink Floyd", album: "The Wall", playCount: 8 },
+      { title: "Karma Police", artist: "Radiohead", album: "OK Computer", playCount: 6 },
+    ]),
   };
 }
 
@@ -45,20 +49,17 @@ const OLLAMA_RECOMMENDATIONS = [
   {
     artist: "King Crimson",
     genre: "Progressive Rock",
-    description: "Banda seminal do rock progressivo britânico",
-    whyRecommended: "Similaridade com Pink Floyd em complexidade e atmosfera",
+    why: "Similaridade com Pink Floyd em complexidade e atmosfera",
   },
   {
     artist: "Thom Yorke",
     genre: "Alternative Electronic",
-    description: "Projeto solo do vocalista do Radiohead",
-    whyRecommended: "Mesmo universo sonoro do Radiohead com influências eletrônicas",
+    why: "Mesmo universo sonoro do Radiohead com influências eletrônicas",
   },
   {
     artist: "John Coltrane",
     genre: "Jazz",
-    description: "Saxofonista lendário do jazz modal",
-    whyRecommended: "Colegas de era com Miles Davis, sonoridade complementar",
+    why: "Colegas de era com Miles Davis, sonoridade complementar",
   },
 ];
 
@@ -98,12 +99,7 @@ describe("RecommendationEngine", () => {
       // Ollama retorna artistas que incluem "Pink Floyd" (já na biblioteca)
       allfather.askForJSON.mockResolvedValueOnce([
         ...OLLAMA_RECOMMENDATIONS,
-        {
-          artist: "Pink Floyd",
-          genre: "Progressive Rock",
-          description: "Já existe",
-          whyRecommended: "Já existe",
-        },
+        { artist: "Pink Floyd",  genre: "Progressive Rock", why: "Já existe" },
       ]);
 
       const recs = await engine.recommend({ limit: 10 });
@@ -138,6 +134,7 @@ describe("RecommendationEngine", () => {
       await engine.recommend();
 
       expect(historyService.getFavoriteArtists).toHaveBeenCalled();
+      expect(historyService.getFavoriteTracks).toHaveBeenCalled();
       const prompt = allfather.askForJSON.mock.calls[0][0];
       expect(prompt).toMatch(/Pink Floyd|Radiohead/);
     });
@@ -148,6 +145,13 @@ describe("RecommendationEngine", () => {
       const recs = await engine.recommend();
 
       expect(recs).toEqual([]);
+    });
+
+    it("filtra por genre quando informado e inclui no prompt", async () => {
+      await engine.recommend({ limit: 5, genre: "Jazz" });
+
+      const prompt = allfather.askForJSON.mock.calls[0][0];
+      expect(prompt).toContain("Jazz");
     });
   });
 
@@ -167,7 +171,7 @@ describe("RecommendationEngine", () => {
     it("não inclui artistas já na biblioteca", async () => {
       allfather.askForJSON.mockResolvedValueOnce([
         ...OLLAMA_RECOMMENDATIONS,
-        { artist: "Radiohead", genre: "Alternative", description: "x", whyRecommended: "y" },
+        { artist: "Radiohead", genre: "Alternative", why: "já existe" },
       ]);
 
       const recs = await engine.recommendArtists({ limit: 10 });

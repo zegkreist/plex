@@ -13,7 +13,14 @@
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
-  "keywords": ["plex", "music", "recommendation", "playlist", "ollama", "ai"],
+  "keywords": [
+    "plex",
+    "music",
+    "recommendation",
+    "playlist",
+    "ollama",
+    "ai"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {

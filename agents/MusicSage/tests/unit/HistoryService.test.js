@@ -5,7 +5,34 @@ function makeAxios(overrides = {}) {
   return { get: jest.fn(), post: jest.fn(), ...overrides };
 }
 
-const PLEX_HISTORY_RESPONSE = {
+// Mock para /library/sections — retorna seção de música com key=1
+const PLEX_SECTIONS_RESPONSE = {
+  data: {
+    MediaContainer: {
+      Directory: [
+        { key: "1", type: "artist", title: "Musicas" },
+        { key: "2", type: "show",   title: "Series"  },
+        { key: "3", type: "movie",  title: "Movies"  },
+      ],
+    },
+  },
+};
+
+// Mock para /library/sections/1/all?type=8 (artistas)
+const PLEX_ARTISTS_RESPONSE = {
+  data: {
+    MediaContainer: {
+      Metadata: [
+        { title: "Pink Floyd",  viewCount: 42, type: "artist" },
+        { title: "Radiohead",   viewCount: 30, type: "artist" },
+        { title: "Miles Davis", viewCount: 15, type: "artist" },
+      ],
+    },
+  },
+};
+
+// Mock para /library/sections/1/all?type=10 (faixas)
+const PLEX_TRACKS_RESPONSE = {
   data: {
     MediaContainer: {
       Metadata: [
@@ -13,36 +40,22 @@ const PLEX_HISTORY_RESPONSE = {
           title: "Money",
           grandparentTitle: "Pink Floyd",
           parentTitle: "The Dark Side of the Moon",
-          viewedAt: 1743000000,
-          type: "track",
+          viewCount: 10,
+          lastViewedAt: 1743000000,
         },
         {
           title: "Karma Police",
           grandparentTitle: "Radiohead",
           parentTitle: "OK Computer",
-          viewedAt: 1742900000,
-          type: "track",
+          viewCount: 8,
+          lastViewedAt: 1742900000,
         },
         {
           title: "Brain Damage",
           grandparentTitle: "Pink Floyd",
           parentTitle: "The Dark Side of the Moon",
-          viewedAt: 1742800000,
-          type: "track",
-        },
-        {
-          title: "High and Dry",
-          grandparentTitle: "Radiohead",
-          parentTitle: "The Bends",
-          viewedAt: 1742700000,
-          type: "track",
-        },
-        {
-          title: "So What",
-          grandparentTitle: "Miles Davis",
-          parentTitle: "Kind of Blue",
-          viewedAt: 1742600000,
-          type: "track",
+          viewCount: 7,
+          lastViewedAt: 1742800000,
         },
       ],
     },
@@ -65,35 +78,42 @@ describe("HistoryService", () => {
   // ── getRecentlyPlayed() ───────────────────────────────────────────────────
 
   describe("getRecentlyPlayed()", () => {
-    it("retorna lista de faixas ouvidas recentemente com campos corretos", async () => {
-      axios.get.mockResolvedValueOnce(PLEX_HISTORY_RESPONSE);
+    it("retorna lista de faixas com campos corretos", async () => {
+      axios.get
+        .mockResolvedValueOnce(PLEX_SECTIONS_RESPONSE)
+        .mockResolvedValueOnce(PLEX_TRACKS_RESPONSE);
 
       const tracks = await service.getRecentlyPlayed();
 
-      expect(tracks).toHaveLength(5);
+      expect(tracks).toHaveLength(3);
       expect(tracks[0]).toMatchObject({
-        title: "Money",
+        title:  "Money",
         artist: "Pink Floyd",
-        album: "The Dark Side of the Moon",
+        album:  "The Dark Side of the Moon",
       });
       expect(tracks[0]).toHaveProperty("playedAt");
+      expect(tracks[0]).toHaveProperty("playCount");
     });
 
     it("respeita o parâmetro limit", async () => {
-      axios.get.mockResolvedValueOnce(PLEX_HISTORY_RESPONSE);
+      axios.get
+        .mockResolvedValueOnce(PLEX_SECTIONS_RESPONSE)
+        .mockResolvedValueOnce(PLEX_TRACKS_RESPONSE);
 
       await service.getRecentlyPlayed(3);
 
-      const callArgs = axios.get.mock.calls[0];
+      const callArgs = axios.get.mock.calls[1]; // [0] é sections
       expect(callArgs[1].params.limit).toBe(3);
     });
 
     it("usa limit padrão de 50 quando não informado", async () => {
-      axios.get.mockResolvedValueOnce(PLEX_HISTORY_RESPONSE);
+      axios.get
+        .mockResolvedValueOnce(PLEX_SECTIONS_RESPONSE)
+        .mockResolvedValueOnce(PLEX_TRACKS_RESPONSE);
 
       await service.getRecentlyPlayed();
 
-      const callArgs = axios.get.mock.calls[0];
+      const callArgs = axios.get.mock.calls[1];
       expect(callArgs[1].params.limit).toBe(50);
     });
 
@@ -105,10 +125,10 @@ describe("HistoryService", () => {
       expect(tracks).toEqual([]);
     });
 
-    it("retorna array vazio quando não há histórico", async () => {
-      axios.get.mockResolvedValueOnce({
-        data: { MediaContainer: {} },
-      });
+    it("retorna array vazio quando não há itens", async () => {
+      axios.get
+        .mockResolvedValueOnce(PLEX_SECTIONS_RESPONSE)
+        .mockResolvedValueOnce({ data: { MediaContainer: {} } });
 
       const tracks = await service.getRecentlyPlayed();
 
@@ -119,18 +139,22 @@ describe("HistoryService", () => {
   // ── getFavoriteArtists() ──────────────────────────────────────────────────
 
   describe("getFavoriteArtists()", () => {
-    it("retorna artistas ordenados por número de plays", async () => {
-      axios.get.mockResolvedValueOnce(PLEX_HISTORY_RESPONSE);
+    it("retorna artistas ordenados por viewCount do Plex", async () => {
+      axios.get
+        .mockResolvedValueOnce(PLEX_SECTIONS_RESPONSE)
+        .mockResolvedValueOnce(PLEX_ARTISTS_RESPONSE);
 
       const artists = await service.getFavoriteArtists();
 
-      // Pink Floyd = 2 plays, Radiohead = 2 plays, Miles Davis = 1 play
-      expect(artists[0].artist).toMatch(/Pink Floyd|Radiohead/);
-      expect(artists[artists.length - 1].artist).toBe("Miles Davis");
+      expect(artists[0].artist).toBe("Pink Floyd");
+      expect(artists[0].playCount).toBe(42);
+      expect(artists[1].artist).toBe("Radiohead");
     });
 
     it("cada entrada contém artist e playCount", async () => {
-      axios.get.mockResolvedValueOnce(PLEX_HISTORY_RESPONSE);
+      axios.get
+        .mockResolvedValueOnce(PLEX_SECTIONS_RESPONSE)
+        .mockResolvedValueOnce(PLEX_ARTISTS_RESPONSE);
 
       const artists = await service.getFavoriteArtists();
 
@@ -138,12 +162,15 @@ describe("HistoryService", () => {
       expect(artists[0]).toHaveProperty("playCount");
     });
 
-    it("respeita o parâmetro limit", async () => {
-      axios.get.mockResolvedValueOnce(PLEX_HISTORY_RESPONSE);
+    it("passa limit correto para o Plex", async () => {
+      axios.get
+        .mockResolvedValueOnce(PLEX_SECTIONS_RESPONSE)
+        .mockResolvedValueOnce(PLEX_ARTISTS_RESPONSE);
 
-      const artists = await service.getFavoriteArtists(2);
+      await service.getFavoriteArtists(2);
 
-      expect(artists).toHaveLength(2);
+      const callArgs = axios.get.mock.calls[1];
+      expect(callArgs[1].params.limit).toBe(2);
     });
 
     it("retorna array vazio quando Plex está indisponível", async () => {
@@ -153,27 +180,113 @@ describe("HistoryService", () => {
 
       expect(artists).toEqual([]);
     });
+
+    it("filtra artistas com viewCount zero", async () => {
+      axios.get
+        .mockResolvedValueOnce(PLEX_SECTIONS_RESPONSE)
+        .mockResolvedValueOnce({
+          data: {
+            MediaContainer: {
+              Metadata: [
+                { title: "Artist A", viewCount: 5 },
+                { title: "Artist B", viewCount: 0 },
+              ],
+            },
+          },
+        });
+
+      const artists = await service.getFavoriteArtists();
+
+      expect(artists).toHaveLength(1);
+      expect(artists[0].artist).toBe("Artist A");
+    });
   });
 
-  // ── Autenticação ──────────────────────────────────────────────────────────
+  // ── getFavoriteTracks() ───────────────────────────────────────────────────
 
-  describe("autenticação Plex", () => {
-    it("usa o endpoint correto do histórico de sessões", async () => {
-      axios.get.mockResolvedValueOnce(PLEX_HISTORY_RESPONSE);
+  describe("getFavoriteTracks()", () => {
+    it("retorna faixas ordenadas por viewCount", async () => {
+      axios.get
+        .mockResolvedValueOnce(PLEX_SECTIONS_RESPONSE)
+        .mockResolvedValueOnce(PLEX_TRACKS_RESPONSE);
 
-      await service.getRecentlyPlayed();
+      const tracks = await service.getFavoriteTracks();
 
-      const url = axios.get.mock.calls[0][0];
-      expect(url).toContain("/status/sessions/history/all");
+      expect(tracks[0]).toMatchObject({
+        title:     "Money",
+        artist:    "Pink Floyd",
+        album:     "The Dark Side of the Moon",
+        playCount: 10,
+      });
+    });
+
+    it("passa limit correto para o Plex", async () => {
+      axios.get
+        .mockResolvedValueOnce(PLEX_SECTIONS_RESPONSE)
+        .mockResolvedValueOnce(PLEX_TRACKS_RESPONSE);
+
+      await service.getFavoriteTracks(5);
+
+      const callArgs = axios.get.mock.calls[1];
+      expect(callArgs[1].params.limit).toBe(5);
+    });
+
+    it("retorna array vazio quando Plex está indisponível", async () => {
+      axios.get.mockRejectedValueOnce(new Error("timeout"));
+
+      const tracks = await service.getFavoriteTracks();
+
+      expect(tracks).toEqual([]);
+    });
+  });
+
+  // ── Autenticação / URL ────────────────────────────────────────────────────
+
+  describe("endpoint e autenticação", () => {
+    it("consulta /library/sections para detectar seção de música", async () => {
+      axios.get
+        .mockResolvedValueOnce(PLEX_SECTIONS_RESPONSE)
+        .mockResolvedValueOnce(PLEX_ARTISTS_RESPONSE);
+
+      await service.getFavoriteArtists();
+
+      const sectionsUrl = axios.get.mock.calls[0][0];
+      expect(sectionsUrl).toContain("/library/sections");
+    });
+
+    it("usa /library/sections/{id}/all para buscar artistas", async () => {
+      axios.get
+        .mockResolvedValueOnce(PLEX_SECTIONS_RESPONSE)
+        .mockResolvedValueOnce(PLEX_ARTISTS_RESPONSE);
+
+      await service.getFavoriteArtists();
+
+      const artistsUrl = axios.get.mock.calls[1][0];
+      expect(artistsUrl).toContain("/library/sections/1/all");
     });
 
     it("inclui X-Plex-Token no header", async () => {
-      axios.get.mockResolvedValueOnce(PLEX_HISTORY_RESPONSE);
+      axios.get
+        .mockResolvedValueOnce(PLEX_SECTIONS_RESPONSE)
+        .mockResolvedValueOnce(PLEX_ARTISTS_RESPONSE);
 
-      await service.getRecentlyPlayed();
+      await service.getFavoriteArtists();
 
-      const headers = axios.get.mock.calls[0][1].headers;
+      const headers = axios.get.mock.calls[1][1].headers;
       expect(headers["X-Plex-Token"]).toBe("test-token");
+    });
+
+    it("cacheia o _musicKey — sections chamado apenas uma vez por instância", async () => {
+      axios.get
+        .mockResolvedValueOnce(PLEX_SECTIONS_RESPONSE)
+        .mockResolvedValueOnce(PLEX_ARTISTS_RESPONSE)
+        .mockResolvedValueOnce(PLEX_ARTISTS_RESPONSE);
+
+      await service.getFavoriteArtists();
+      await service.getFavoriteArtists(); // segunda chamada — não deve re-chamar sections
+
+      const sectionCalls = axios.get.mock.calls.filter((c) => c[0].includes("/library/sections") && !c[0].includes("/all"));
+      expect(sectionCalls).toHaveLength(1);
     });
   });
 });

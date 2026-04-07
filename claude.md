@@ -65,23 +65,26 @@ Organiza e normaliza a biblioteca de músicas em `music/`.
 - Todos os comandos têm modo `--dry-run`
 
 ### MusicSage (`@plex-agents/musicsage`)
-Webserver Express.js de recomendações musicais com **frontend SPA** integrado. Roda na porta `3001`.
+Webserver Express.js de recomendações musicais com **frontend SPA** integrado. Roda na porta `3002`.
 
 **O que faz:**
 - Escaneia a biblioteca Plex via API → artistas, álbuns, faixas
 - Analisa perfil musical com AllFather (Ollama) → gênero, mood, energia, timbre
-- Lê histórico de plays do Plex para entender gostos do usuário
+- Lê histórico de plays do Plex (viewCount) para entender gostos do usuário
 - **Recomenda artistas** fora da biblioteca que combinam com o perfil analisado
+- Busca **artistas semelhantes** via Last.fm + re-rank por Ollama
 - **Constrói playlists** da biblioteca por critérios (mood, gênero, energia) ou via **prompt em linguagem natural**
-- **Frontend SPA dark-theme** acessível em `http://localhost:3001`
+- **Sincroniza playlists bidireccionalmente com o Plex** (rename, update faixas, delete)
+- **Frontend SPA dark-theme** acessível em `http://localhost:3002`
 
-**Seções do frontend:**
+**Seções do frontend (redesenhadas):**
 | Seção | Função |
 |---|---|
-| Dashboard | Cards com totais da biblioteca (artistas/álbuns/faixas), top gêneros e status do servidor |
-| Recomendações | Grid de artistas recomendados com filtro por gênero + botão Atualizar |
-| Playlists | Lista de playlists salvas — expande para ver faixas, renomear inline, remover faixas, excluir |
-| Nova Playlist | Duas tabs: "Por Critérios" (mood + gênero + energia + tamanho) e "Por Prompt" (texto livre interpretado pelo Ollama) |
+| Dashboard | Stats grid (artistas/álbuns/faixas/status), top géneros chips, top artistas e faixas mais ouvidas |
+| Recomendações | Grid filtrável por gênero + painel recolhível de artistas semelhantes (Last.fm + Ollama) |
+| Playlists | Layout 2 painéis: lista à esquerda, detalhe + faixas editáveis à direita; sync com Plex |
+| Nova Playlist | Tabs: "Por Critérios" (mood/gênero/energia/tamanho) e "Por Prompt" (Ollama interpreta) |
+| Downloads | Stormbringer (torrent), TideCaller (Tidal URL ou browser de artista), Transporter + monitor ativo |
 
 **Como iniciar:**
 ```bash
@@ -92,34 +95,42 @@ node plex-cli.js musicsage:start
 cd agents/MusicSage && node index.js
 
 # Abrir Interface Web
-xdg-open http://localhost:3001
+xdg-open http://localhost:3002
 ```
 
 **Variáveis de ambiente necessárias:**
 ```env
 PLEX_URL=http://localhost:32400
 PLEX_TOKEN=<token-do-plex>
-OLLAMA_URL=http://localhost:11434
-OLLAMA_DEFAULT_MODEL=deepseek-r1:14b-qwen-distill-q4_K_M
-MUSICSAGE_PORT=3001             # opcional, padrão 3001
+OLLAMA_URL=http://192.168.15.94:11434
+OLLAMA_DEFAULT_MODEL=qwen3:14b
+MUSICSAGE_PORT=3002             # opcional, padrão 3002
+LASTFM_API_KEY=<chave>          # opcional — habilita artistas semelhantes via Last.fm
+MUSICSAGE_DEBUG=1               # opcional — logs verbosos
 ```
 
 **API REST** (para uso programático):
 ```
-GET  /api/health                         → status do servidor
-GET  /api/library/stats                  → totais + top géneros
-GET  /api/recommendations?limit=N        → artistas recomendados
-POST /api/playlists/generate             → { name?, mood?, genre?, energy?, size? }
-POST /api/playlists/from-prompt          → { prompt: "texto livre" }
-GET  /api/playlists                      → lista playlists salvas
-GET  /api/playlists/:id                  → playlist por id
-PATCH /api/playlists/:id                 → { name?, tracks? } — editar
-DELETE /api/playlists/:id                → remove
+GET  /api/health                                   → status do servidor
+GET  /api/library/stats                            → totais + top géneros
+GET  /api/library/history                          → top artistas e faixas (Plex viewCount)
+GET  /api/recommendations?limit=N&genre=X          → artistas recomendados
+GET  /api/recommendations/artists?limit=N          → artistas-only
+GET  /api/recommendations/similar?artist=X&limit=N → artistas semelhantes (Last.fm + Ollama)
+POST /api/playlists/generate                       → { name?, mood?, genre?, energy?, size? }
+POST /api/playlists/from-prompt                    → { prompt: "texto livre" }
+GET  /api/playlists                                → lista playlists salvas
+GET  /api/playlists/:id                            → playlist por id
+PATCH /api/playlists/:id                           → { name?, tracks? } — edita e sincroniza Plex
+DELETE /api/playlists/:id                          → remove (e do Plex se sincronizado)
+POST /api/playlists/:id/push-to-plex               → cria/re-cria playlist no Plex
 ```
 
-**Persistência:** playlists salvas em `mediasage/playlists/playlists.json`
+**Sincronização Plex:** PATCH rename → `PUT /playlists/:plexId?title=...`; PATCH tracks → delete+push; DELETE → limpa do Plex; push-to-plex → overwrite idempotente. Auto-healing: se `plexId` estiver obsoleto, recria automaticamente.
 
-**Arquitetura:** 5 serviços por DI — `LibraryScanner`, `HistoryService`, `MusicAnalyzer`, `RecommendationEngine`, `PlaylistBuilder`. 68 testes (unit + integração).
+**Persistência:** playlists (incluindo `plexId`) salvas em `mediasage/playlists/playlists.json`
+
+**Arquitetura:** 7 serviços por DI — `LibraryScanner`, `HistoryService`, `MusicAnalyzer`, `RecommendationEngine`, `PlaylistBuilder`, `PlexService`, `LastFmService`. **82 testes** (unit + integração).
 
 ### SeriesCurator (`@plex-agents/seriescurator`)
 Organiza e renomeia séries de TV em `tv/`.
@@ -188,8 +199,8 @@ npm run <comando>
 ### MusicSage
 | Comando | Descrição |
 |---|---|
-| `musicsage:start` | Inicia o servidor MusicSage (porta 3001) |
-| `musicsage:test` | Suite de testes do MusicSage (68 testes) |
+| `musicsage:start` | Inicia o servidor MusicSage (porta 3002) |
+| `musicsage:test` | Suite de testes do MusicSage (82 testes) |
 
 ### Séries
 | Comando | Descrição |

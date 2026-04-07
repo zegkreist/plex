@@ -62,6 +62,7 @@ function makePlaylistBuilder(overrides = {}) {
     }),
     list: jest.fn().mockReturnValue([]),
     get: jest.fn().mockReturnValue(null),
+    update: jest.fn().mockImplementation((id, fields) => ({ id, name: 'Updated', tracks: [], plexId: null, ...fields })),
     delete: jest.fn().mockReturnValue(false),
     ...overrides,
   };
@@ -235,6 +236,7 @@ describe("GET /api/playlists/:id", () => {
 
 describe("DELETE /api/playlists/:id", () => {
   it("retorna 204 quando playlist é deletada com sucesso", async () => {
+    playlistBuilder.get.mockReturnValue({ id: "p1", name: "Test Playlist", plexId: null, tracks: [] });
     playlistBuilder.delete.mockReturnValue(true);
 
     const res = await supertest(app).delete("/api/playlists/p1");
@@ -243,10 +245,190 @@ describe("DELETE /api/playlists/:id", () => {
   });
 
   it("retorna 404 quando a playlist não existe para deletar", async () => {
-    playlistBuilder.delete.mockReturnValue(false);
+    playlistBuilder.get.mockReturnValue(null);
 
     const res = await supertest(app).delete("/api/playlists/ghost");
 
     expect(res.status).toBe(404);
+  });
+});
+
+// ── PATCH /api/playlists/:id ──────────────────────────────────────────────
+
+describe("PATCH /api/playlists/:id", () => {
+  it("retorna 400 quando body não tem name nem tracks", async () => {
+    const res = await supertest(app).patch("/api/playlists/p1").send({});
+
+    expect(res.status).toBe(400);
+  });
+
+  it("retorna 404 quando a playlist não existe", async () => {
+    playlistBuilder.get.mockReturnValue(null);
+
+    const res = await supertest(app).patch("/api/playlists/ghost").send({ name: "Novo Nome" });
+
+    expect(res.status).toBe(404);
+  });
+
+  it("retorna 200 e atualiza nome localmente", async () => {
+    const existing = { id: "p1", name: "Antigo", plexId: null, tracks: [] };
+    playlistBuilder.get.mockReturnValue(existing);
+    playlistBuilder.update.mockReturnValue({ ...existing, name: "Novo Nome" });
+
+    const res = await supertest(app).patch("/api/playlists/p1").send({ name: "Novo Nome" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe("Novo Nome");
+  });
+
+  it("retorna 200 e atualiza faixas localmente", async () => {
+    const track = { title: "Song", artist: "Band", ratingKey: "42" };
+    const existing = { id: "p1", name: "Mix", plexId: null, tracks: [track] };
+    playlistBuilder.get.mockReturnValue(existing);
+    playlistBuilder.update.mockReturnValue({ ...existing, tracks: [] });
+
+    const res = await supertest(app).patch("/api/playlists/p1").send({ tracks: [] });
+
+    expect(res.status).toBe(200);
+  });
+
+  it("chama plexService.renamePlaylist quando só nome muda e plexId existe", async () => {
+    const plexService = { renamePlaylist: jest.fn().mockResolvedValue(), updatePlaylistTracks: jest.fn() };
+    const existing = { id: "p1", name: "Antigo", plexId: "plex-99", tracks: [] };
+    playlistBuilder.get.mockReturnValue(existing);
+    playlistBuilder.update.mockReturnValue({ ...existing, name: "Novo" });
+
+    const localApp = (await import("../../src/server.js")).createServer({
+      libraryScanner, historyService, recommendationEngine, playlistBuilder, plexService,
+    });
+    const res = await supertest(localApp).patch("/api/playlists/p1").send({ name: "Novo" });
+
+    expect(res.status).toBe(200);
+    expect(plexService.renamePlaylist).toHaveBeenCalledWith("plex-99", "Novo");
+  });
+
+  it("chama plexService.updatePlaylistTracks quando faixas mudam e plexId existe", async () => {
+    const plexService = {
+      updatePlaylistTracks: jest.fn().mockResolvedValue({ plexId: "plex-100" }),
+      renamePlaylist: jest.fn(),
+    };
+    const track = { title: "Song", artist: "Band", ratingKey: "42" };
+    const existing = { id: "p1", name: "Mix", plexId: "plex-99", tracks: [] };
+    playlistBuilder.get.mockReturnValue(existing);
+    playlistBuilder.update.mockReturnValue({ ...existing, tracks: [track] });
+
+    const localApp = (await import("../../src/server.js")).createServer({
+      libraryScanner, historyService, recommendationEngine, playlistBuilder, plexService,
+    });
+    const res = await supertest(localApp).patch("/api/playlists/p1").send({ tracks: [track] });
+
+    expect(res.status).toBe(200);
+    expect(plexService.updatePlaylistTracks).toHaveBeenCalledWith("plex-99", "Mix", ["42"]);
+  });
+
+  it("chama plexService.deletePlaylist quando faixas ficam vazias e plexId existe", async () => {
+    const plexService = {
+      deletePlaylist: jest.fn().mockResolvedValue(),
+      updatePlaylistTracks: jest.fn(),
+      renamePlaylist: jest.fn(),
+    };
+    const existing = { id: "p1", name: "Mix", plexId: "plex-99", tracks: [{ ratingKey: "1" }] };
+    playlistBuilder.get.mockReturnValue(existing);
+    playlistBuilder.update.mockReturnValue({ ...existing, tracks: [] });
+
+    const localApp = (await import("../../src/server.js")).createServer({
+      libraryScanner, historyService, recommendationEngine, playlistBuilder, plexService,
+    });
+    const res = await supertest(localApp).patch("/api/playlists/p1").send({ tracks: [] });
+
+    expect(res.status).toBe(200);
+    expect(plexService.deletePlaylist).toHaveBeenCalledWith("plex-99");
+  });
+});
+
+// ── GET /api/embeddings/clusters ─────────────────────────────────────────
+
+describe("GET /api/embeddings/clusters", () => {
+  function makeEmbedding(overrides = {}) {
+    return {
+      embedding:   overrides.embedding ?? new Array(8).fill(0).map((_, i) => i / 8),
+      title:       overrides.title   ?? "Track",
+      artist:      overrides.artist  ?? "Artist",
+      album:       overrides.album   ?? "Album",
+      genres:      overrides.genres  ?? [],
+      processedAt: new Date().toISOString(),
+    };
+  }
+
+  function makeClusteringService(overrides = {}) {
+    return {
+      cluster:     jest.fn().mockReturnValue({ k: 3, clusters: [] }),
+      clusterAuto: jest.fn().mockReturnValue({ k: 4, clusters: [] }),
+      ...overrides,
+    };
+  }
+
+  it("retorna 503 quando embeddingService não está configurado", async () => {
+    const localApp = createServer({ libraryScanner, historyService, recommendationEngine, playlistBuilder });
+    const res = await supertest(localApp).get("/api/embeddings/clusters?k=3");
+    expect(res.status).toBe(503);
+  });
+
+  it("retorna 400 quando há menos de 2 embeddings no store", async () => {
+    const embeddingService = { getStored: jest.fn().mockReturnValue({ only1: makeEmbedding() }) };
+    const clusteringService = makeClusteringService();
+    const localApp = createServer({ libraryScanner, historyService, recommendationEngine, playlistBuilder, embeddingService, clusteringService });
+    const res = await supertest(localApp).get("/api/embeddings/clusters?k=3");
+    expect(res.status).toBe(400);
+  });
+
+  it("chama cluster(k) com k do query string quando k é numérico", async () => {
+    const store = { a: makeEmbedding(), b: makeEmbedding() };
+    const embeddingService = { getStored: jest.fn().mockReturnValue(store) };
+    const clusteringService = makeClusteringService();
+    const localApp = createServer({ libraryScanner, historyService, recommendationEngine, playlistBuilder, embeddingService, clusteringService });
+
+    const res = await supertest(localApp).get("/api/embeddings/clusters?k=5");
+
+    expect(res.status).toBe(200);
+    expect(clusteringService.cluster).toHaveBeenCalledWith(store, 5);
+    expect(clusteringService.clusterAuto).not.toHaveBeenCalled();
+    expect(res.body.k).toBe(3);
+  });
+
+  it("chama clusterAuto() quando k=auto", async () => {
+    const store = { a: makeEmbedding(), b: makeEmbedding() };
+    const embeddingService = { getStored: jest.fn().mockReturnValue(store) };
+    const clusteringService = makeClusteringService();
+    const localApp = createServer({ libraryScanner, historyService, recommendationEngine, playlistBuilder, embeddingService, clusteringService });
+
+    const res = await supertest(localApp).get("/api/embeddings/clusters?k=auto");
+
+    expect(res.status).toBe(200);
+    expect(clusteringService.clusterAuto).toHaveBeenCalledWith(store, 2, 15);
+    expect(clusteringService.cluster).not.toHaveBeenCalled();
+    expect(res.body.k).toBe(4);
+  });
+
+  it("usa k=8 como padrão quando k não é fornecido", async () => {
+    const store = { a: makeEmbedding(), b: makeEmbedding() };
+    const embeddingService = { getStored: jest.fn().mockReturnValue(store) };
+    const clusteringService = makeClusteringService();
+    const localApp = createServer({ libraryScanner, historyService, recommendationEngine, playlistBuilder, embeddingService, clusteringService });
+
+    await supertest(localApp).get("/api/embeddings/clusters");
+
+    expect(clusteringService.cluster).toHaveBeenCalledWith(store, 8);
+  });
+
+  it("resposta inclui totalEmbedded", async () => {
+    const store = { a: makeEmbedding(), b: makeEmbedding(), c: makeEmbedding() };
+    const embeddingService = { getStored: jest.fn().mockReturnValue(store) };
+    const clusteringService = makeClusteringService();
+    const localApp = createServer({ libraryScanner, historyService, recommendationEngine, playlistBuilder, embeddingService, clusteringService });
+
+    const res = await supertest(localApp).get("/api/embeddings/clusters?k=2");
+
+    expect(res.body.totalEmbedded).toBe(3);
   });
 });

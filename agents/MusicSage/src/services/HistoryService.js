@@ -1,8 +1,9 @@
 /**
- * HistoryService — lê o histórico de reprodução do Plex
+ * HistoryService — lê dados de reprodução da biblioteca Plex
  *
- * Endpoint: GET /status/sessions/history/all
- *   params: sort=viewedAt:desc, limit=N, type=10 (tracks)
+ * Usa o endpoint correto: GET /library/sections/{id}/all?sort=viewCount:desc
+ * O endpoint /status/sessions/history/all NÃO é confiável — Plex não armazena
+ * histórico de sessão por padrão, retornando sempre vazio.
  */
 export class HistoryService {
   /**
@@ -12,6 +13,7 @@ export class HistoryService {
     this.axios = axios;
     this.plexUrl = plexUrl || process.env.PLEX_URL || "http://localhost:32400";
     this.plexToken = plexToken || process.env.PLEX_TOKEN || "";
+    this._musicKey = null; // seção da biblioteca de música (auto-detectada)
   }
 
   get _headers() {
@@ -21,27 +23,37 @@ export class HistoryService {
     };
   }
 
+  /** Encontra e cacheia o key da seção de música (type=artist). */
+  async _findMusicSection() {
+    if (this._musicKey) return;
+    const res = await this.axios.get(`${this.plexUrl}/library/sections`, { headers: this._headers });
+    const dirs = res.data?.MediaContainer?.Directory || [];
+    const music = dirs.find((d) => d.type === "artist");
+    if (!music) throw new Error("Nenhuma biblioteca de música encontrada no Plex");
+    this._musicKey = music.key;
+  }
+
   /**
-   * Retorna faixas ouvidas recentemente.
-   * @param {number} limit — máximo de registros (padrão 50)
-   * @returns {Promise<Array<{title, artist, album, playedAt}>>}
+   * @deprecated Use getFavoriteArtists() ou getFavoriteTracks() diretamente.
+   * Mantido para compatibilidade com testes existentes.
    */
   async getRecentlyPlayed(limit = 50) {
     try {
+      await this._findMusicSection();
       const res = await this.axios.get(
-        `${this.plexUrl}/status/sessions/history/all`,
+        `${this.plexUrl}/library/sections/${this._musicKey}/all`,
         {
           headers: this._headers,
-          params: { sort: "viewedAt:desc", limit, type: 10 },
+          params: { type: 10, sort: "lastViewedAt:desc", limit },
         }
       );
-
       const items = res.data?.MediaContainer?.Metadata || [];
       return items.map((item) => ({
-        title: item.title,
-        artist: item.grandparentTitle,
-        album: item.parentTitle,
-        playedAt: item.viewedAt,
+        title:    item.title,
+        artist:   item.grandparentTitle,
+        album:    item.parentTitle,
+        playedAt: item.lastViewedAt,
+        playCount: item.viewCount || 0,
       }));
     } catch (err) {
       console.warn("[HistoryService] Erro ao obter histórico:", err.message);
@@ -50,28 +62,56 @@ export class HistoryService {
   }
 
   /**
-   * Retorna artistas favoritos ordenados por contagem de plays.
+   * Retorna artistas favoritos ordenados por viewCount (plays reais do Plex).
    * @param {number} limit — máximo de artistas (padrão 20)
    * @returns {Promise<Array<{artist, playCount}>>}
    */
   async getFavoriteArtists(limit = 20) {
     try {
-      const history = await this.getRecentlyPlayed(500);
-      if (!history.length) return [];
-
-      const counts = {};
-      for (const track of history) {
-        if (track.artist) {
-          counts[track.artist] = (counts[track.artist] || 0) + 1;
+      await this._findMusicSection();
+      const res = await this.axios.get(
+        `${this.plexUrl}/library/sections/${this._musicKey}/all`,
+        {
+          headers: this._headers,
+          params: { type: 8, sort: "viewCount:desc", limit },
         }
-      }
-
-      return Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, limit)
-        .map(([artist, playCount]) => ({ artist, playCount }));
+      );
+      const items = res.data?.MediaContainer?.Metadata || [];
+      return items
+        .filter((a) => (a.viewCount || 0) > 0)
+        .map((a) => ({ artist: a.title, playCount: a.viewCount || 0 }));
     } catch (err) {
       console.warn("[HistoryService] Erro ao calcular favoritos:", err.message);
+      return [];
+    }
+  }
+
+  /**
+   * Retorna faixas mais ouvidas ordenadas por viewCount.
+   * @param {number} limit — máximo de faixas (padrão 20)
+   * @returns {Promise<Array<{title, artist, album, playCount}>>}
+   */
+  async getFavoriteTracks(limit = 20) {
+    try {
+      await this._findMusicSection();
+      const res = await this.axios.get(
+        `${this.plexUrl}/library/sections/${this._musicKey}/all`,
+        {
+          headers: this._headers,
+          params: { type: 10, sort: "viewCount:desc", limit },
+        }
+      );
+      const items = res.data?.MediaContainer?.Metadata || [];
+      return items
+        .filter((t) => (t.viewCount || 0) > 0)
+        .map((t) => ({
+          title:     t.title,
+          artist:    t.grandparentTitle,
+          album:     t.parentTitle,
+          playCount: t.viewCount || 0,
+        }));
+    } catch (err) {
+      console.warn("[HistoryService] Erro ao calcular faixas favoritas:", err.message);
       return [];
     }
   }

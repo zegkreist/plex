@@ -17,6 +17,8 @@ export class AllFather {
     this.temperature = config.temperature ?? 0.7;
     this.timeout = config.timeout || 30000; // 30 segundos
     this.maxRetries = config.maxRetries ?? 3;
+    this.defaultMaxTokens = config.defaultMaxTokens ?? 4096;
+    this.defaultNumCtx = config.defaultNumCtx ?? 8192;
     this.disableReasoning = config.disableReasoning ?? true; // Desabilita reasoning por padrão
     this.templates = new PromptTemplates();
     this.webSearch = new WebSearch(); // Inicializa o sistema de busca web
@@ -105,7 +107,8 @@ export class AllFather {
       stream: false,
       options: {
         temperature: options.temperature ?? this.temperature,
-        num_predict: options.maxTokens || 500,
+        num_predict: options.maxTokens ?? this.defaultMaxTokens,
+        num_ctx: options.numCtx ?? this.defaultNumCtx,
       },
     };
 
@@ -183,6 +186,15 @@ export class AllFather {
   }
 
   /**
+   * Tenta corrigir problemas comuns de JSON gerado por LLMs:
+   * - Chave sem aspas de abertura: { artist": → { "artist":
+   */
+  _repairJson(str) {
+    // Lookbehind (?<!") garante que não duplicamos aspas já existentes
+    return str.replace(/(?<!")\b(\w+)":/g, '"$1":');
+  }
+
+  /**
    * Pede resposta em formato JSON
    */
   async askForJSON(question, options = {}) {
@@ -199,18 +211,51 @@ export class AllFather {
 
       // Remove markdown code fences (```json ... ``` ou ``` ... ```)
       const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-      if (fenceMatch) cleaned = fenceMatch[1].trim();
+      if (fenceMatch) {
+        cleaned = fenceMatch[1].trim();
+      } else {
+        // Handle truncated response: opening fence without closing fence
+        cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").trim();
+      }
+
+      // Remove comentários JavaScript (// linha e /* bloco */) e Python (# linha)
+      // Usa regex cuidadoso para não remover caracteres especiais dentro de strings
+      cleaned = cleaned
+        .replace(/("(?:[^"\\]|\\.)*")|\/\/[^\n]*/g, (m, str) => str ?? "")
+        .replace(/("(?:[^"\\]|\\.)*")|\/\*[\s\S]*?\*\//g, (m, str) => str ?? "")
+        .replace(/("(?:[^"\\]|\\.)*")|\s*#[^\n]*/g, (m, str) => str ?? "")
+        .trim();
 
       // Tenta extrair array JSON primeiro (resposta mais comum para listas)
       const arrayMatch = cleaned.match(/(\[[\s\S]*\])/);
       if (arrayMatch) {
         try { return JSON.parse(arrayMatch[1]); } catch {}
+        // Tenta reparar chaves com aspas de abertura faltando (ex: artist": → "artist":)
+        try { return JSON.parse(this._repairJson(arrayMatch[1])); } catch {}
+      }
+
+      // Recovery: tenta recuperar array JSON truncado (sem ] de fechamento)
+      if (cleaned.trimStart().startsWith('[')) {
+        // Caso 1: array de objetos — procura pelo último }
+        const lastBrace = cleaned.lastIndexOf('}');
+        if (lastBrace !== -1) {
+          const truncated = cleaned.slice(0, lastBrace + 1) + ']';
+          try { return JSON.parse(truncated); } catch {}
+          try { return JSON.parse(this._repairJson(truncated)); } catch {}
+        }
+        // Caso 2: array de primitivos (números/strings) — corta no último ,
+        const lastComma = cleaned.lastIndexOf(',');
+        if (lastComma !== -1) {
+          const truncated = cleaned.slice(0, lastComma) + ']';
+          try { return JSON.parse(truncated); } catch {}
+        }
       }
 
       // Tenta extrair objeto JSON
       const objMatch = cleaned.match(/(\{[\s\S]*\})/);
       if (objMatch) {
-        return JSON.parse(objMatch[1]);
+        try { return JSON.parse(objMatch[1]); } catch {}
+        return JSON.parse(this._repairJson(objMatch[1]));
       }
 
       // Tenta parsear a resposta limpa diretamente

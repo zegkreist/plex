@@ -9,13 +9,19 @@ const { config: dotenvConfig } = await import("dotenv");
 dotenvConfig({ path: join(__dirname, "../../.env") });
 
 import { logger } from "./src/logger.js";
+import { PlexService } from "./src/services/PlexService.js";
+import { EmbeddingService } from "./src/services/EmbeddingService.js";
+import { ClusteringService } from "./src/services/ClusteringService.js";
+import { AudioAnalyzerService } from "./src/services/AudioAnalyzerService.js";
 import axios from "axios";
 import { AllFather } from "@plex-agents/allfather";
 import { LibraryScanner } from "./src/services/LibraryScanner.js";
 import { HistoryService } from "./src/services/HistoryService.js";
+import { MetricsService } from "./src/services/MetricsService.js";
 import { MusicAnalyzer } from "./src/services/MusicAnalyzer.js";
 import { RecommendationEngine } from "./src/services/RecommendationEngine.js";
 import { PlaylistBuilder } from "./src/services/PlaylistBuilder.js";
+import { LastFmService } from "./src/services/LastFmService.js";
 import { createServer } from "./src/server.js";
 
 const PORT = parseInt(process.env.MUSICSAGE_PORT || "3001", 10);
@@ -35,16 +41,33 @@ const allfather = new AllFather({
 
 const libraryScanner = new LibraryScanner({ axios, plexUrl: PLEX_URL, plexToken: PLEX_TOKEN });
 const historyService = new HistoryService({ axios, plexUrl: PLEX_URL, plexToken: PLEX_TOKEN });
+const metricsService = new MetricsService({ axios, plexUrl: PLEX_URL, plexToken: PLEX_TOKEN });
 const analyzer = new MusicAnalyzer({ allfather });
+const lastFmService = new LastFmService({ axios, apiKey: process.env.LASTFM_API_KEY });
 
 const recommendationEngine = new RecommendationEngine({
   allfather,
   libraryScanner,
   historyService,
   analyzer,
+  lastFmService,
 });
 
-const playlistBuilder = new PlaylistBuilder({ allfather, libraryScanner });
+const plexService     = new PlexService({ axios, plexUrl: PLEX_URL, plexToken: PLEX_TOKEN });
+const clusteringService = new ClusteringService();
+const audioAnalyzer     = new AudioAnalyzerService({
+  plexMediaRoot:  process.env.PLEX_MEDIA_ROOT  || "/home/developer/workspace/plex_server/music",
+  plexPathPrefix: process.env.PLEX_PATH_PREFIX || "/music",
+});
+const embeddingService  = new EmbeddingService({
+  axios,
+  libraryScanner,
+  audioAnalyzer,
+  ollamaUrl:      OLLAMA_URL,
+  embeddingModel: process.env.EMBEDDING_MODEL || "nomic-embed-text",
+});
+
+const playlistBuilder = new PlaylistBuilder({ allfather, libraryScanner, embeddingService });
 
 // ── Inicializa e faz scan inicial da biblioteca ───────────────────────────
 
@@ -62,7 +85,7 @@ libraryScanner.scan().then((result) => {
 
 // ── Sobe o servidor ───────────────────────────────────────────────────────
 
-const app = createServer({ libraryScanner, historyService, recommendationEngine, playlistBuilder });
+const app = createServer({ libraryScanner, historyService, recommendationEngine, playlistBuilder, plexService, embeddingService, clusteringService, metricsService });
 
 const server = app.listen(PORT);
 
