@@ -4,14 +4,16 @@
 
 /* ─── Design tokens ───────────────────────────────────── */
 :root {
-  --sidebar-w:  240px;
-  --topbar-h:   0px;
-  --radius:     12px;
-  --radius-sm:  8px;
-  --radius-xs:  6px;
-  --transition: 150ms ease;
-  --accent:     #7c6af5;
-  --accent-hi:  #9d8eff;
+  --sidebar-w:        240px;
+  --topbar-h:         0px;
+  --mobile-header-h:  52px;
+  --mobile-nav-h:     60px;
+  --radius:           12px;
+  --radius-sm:        8px;
+  --radius-xs:        6px;
+  --transition:       150ms ease;
+  --accent:           #7c6af5;
+  --accent-hi:        #9d8eff;
 }
 
 /* ─── Base reset ──────────────────────────────────────── */

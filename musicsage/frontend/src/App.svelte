@@ -1,6 +1,9 @@
 <script>
   import { currentPage } from '$lib/stores/router.js';
+  import { isMobile } from '$lib/stores/device.js';
   import Sidebar from './components/layout/Sidebar.svelte';
+  import MobileHeader from './components/layout/MobileHeader.svelte';
+  import BottomNav from './components/layout/BottomNav.svelte';
   import ToastContainer from './components/ui/ToastContainer.svelte';
 
   // Pages (lazy imports for code splitting)
@@ -15,32 +18,72 @@
   import PlexStatus      from './pages/PlexStatus.svelte';
 </script>
 
-<div class="flex h-screen w-full overflow-hidden bg-bg text-white">
-  <Sidebar />
+{#if $isMobile}
+  <!-- ── Mobile layout ───────────────────────────────────── -->
+  <div class="flex flex-col h-screen w-full overflow-hidden bg-bg text-white">
+    <MobileHeader />
 
-  <main class="flex-1 overflow-y-auto" id="main-content">
-    {#if $currentPage === 'dashboard'}
-      <Dashboard />
-    {:else if $currentPage === 'recommendations'}
-      <Recommendations />
-    {:else if $currentPage === 'playlists'}
-      <Playlists />
-    {:else if $currentPage === 'new-playlist'}
-      <NewPlaylist />
-    {:else if $currentPage === 'clusters'}
-      <Clusters />
-    {:else if $currentPage === 'analysis-library'}
-      <AnalysisLibrary />
-    {:else if $currentPage === 'downloads'}
-      <Downloads />
-    {:else if $currentPage === 'logs'}
-      <Logs />
-    {:else if $currentPage === 'plex-status'}
-      <PlexStatus />
-    {:else}
-      <Dashboard />
-    {/if}
-  </main>
+    <main
+      class="flex-1 overflow-y-auto"
+      id="main-content"
+      style="padding-bottom: var(--mobile-nav-h);"
+    >
+      {#if $currentPage === 'dashboard'}
+        <Dashboard />
+      {:else if $currentPage === 'recommendations'}
+        <Recommendations />
+      {:else if $currentPage === 'playlists'}
+        <Playlists />
+      {:else if $currentPage === 'new-playlist'}
+        <NewPlaylist />
+      {:else if $currentPage === 'clusters'}
+        <Clusters />
+      {:else if $currentPage === 'analysis-library'}
+        <AnalysisLibrary />
+      {:else if $currentPage === 'downloads'}
+        <Downloads />
+      {:else if $currentPage === 'logs'}
+        <Logs />
+      {:else if $currentPage === 'plex-status'}
+        <PlexStatus />
+      {:else}
+        <Dashboard />
+      {/if}
+    </main>
 
-  <ToastContainer />
-</div>
+    <BottomNav />
+    <ToastContainer />
+  </div>
+
+{:else}
+  <!-- ── Desktop layout ──────────────────────────────────── -->
+  <div class="flex h-screen w-full overflow-hidden bg-bg text-white">
+    <Sidebar />
+
+    <main class="flex-1 overflow-y-auto" id="main-content">
+      {#if $currentPage === 'dashboard'}
+        <Dashboard />
+      {:else if $currentPage === 'recommendations'}
+        <Recommendations />
+      {:else if $currentPage === 'playlists'}
+        <Playlists />
+      {:else if $currentPage === 'new-playlist'}
+        <NewPlaylist />
+      {:else if $currentPage === 'clusters'}
+        <Clusters />
+      {:else if $currentPage === 'analysis-library'}
+        <AnalysisLibrary />
+      {:else if $currentPage === 'downloads'}
+        <Downloads />
+      {:else if $currentPage === 'logs'}
+        <Logs />
+      {:else if $currentPage === 'plex-status'}
+        <PlexStatus />
+      {:else}
+        <Dashboard />
+      {/if}
+    </main>
+
+    <ToastContainer />
+  </div>
+{/if}
