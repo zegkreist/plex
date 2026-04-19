@@ -725,6 +725,75 @@
     .cl-progress-wrap { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
     .cl-progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .4s ease; }
 
+    /* ── Insights page ── */
+    .ins-metric-card {
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .ins-metric-num {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .ins-metric-lbl {
+      font-size: .7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .ins-mood-tag {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .74rem;
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid var(--accent-dim);
+    }
+    .ins-fact-card {
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      border: 1px solid var(--border);
+      transition: border-color var(--transition);
+    }
+    .ins-fact-card:hover { border-color: var(--accent-dim); }
+    .ins-fact-icon { font-size: 1.4rem; line-height: 1; flex-shrink: 0; margin-top: 1px; }
+    .ins-fact-text { font-size: .84rem; color: var(--text); line-height: 1.4; }
+    .ins-history-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .ins-history-row:last-child { border-bottom: none; }
+    .ins-history-info { flex: 1; min-width: 0; }
+    .ins-history-title { font-size: .88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ins-history-sub   { font-size: .76rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ins-history-time  { font-size: .74rem; color: var(--text-dim); flex-shrink: 0; }
+    .ins-history-plays { font-size: .74rem; color: var(--text-muted); flex-shrink: 0; }
+    .ins-discovery-card {
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      transition: border-color var(--transition);
+    }
+    .ins-discovery-card:hover { border-color: var(--accent-dim); }
+    .ins-discovery-title { font-size: .86rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ins-discovery-sub   { font-size: .76rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; }
+    .ins-discovery-tags  { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px; }
+    .ins-discovery-tag   { font-size: .7rem; padding: 2px 8px; border-radius: 12px; background: var(--surface3); color: var(--text-dim); }
+
     .cl-two-panel {
       display: grid;
       grid-template-columns: 1fr 300px;
@@ -908,6 +977,9 @@
       <a href="#" class="nav-link active" data-page="dashboard">
         <span class="nav-icon">📊</span> Dashboard
       </a>
+      <a href="#" class="nav-link" data-page="insights">
+        <span class="nav-icon">💡</span> Insights
+      </a>
       <a href="#" class="nav-link" data-page="recommendations">
         <span class="nav-icon">✨</span> Recomendações
       </a>
@@ -1032,6 +1104,83 @@
             <div class="section-box-body" id="mtr-genres-list"></div>
           </div>
         </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ────────── INSIGHTS ────────── -->
+  <section id="page-insights" class="page">
+    <div class="page-header">
+      <h1>💡 Insights</h1>
+      <p class="subtitle">Seu histórico de escuta, o mood do período e curiosidades da sua biblioteca.</p>
+    </div>
+    <div class="page-content">
+
+      <!-- Mood cards row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+
+        <!-- Mood de Hoje -->
+        <div class="section-box" id="ins-mood-day-box">
+          <div class="sb-title" style="margin-bottom:12px">Mood de Hoje</div>
+          <div id="ins-mood-day-loading" style="color:var(--text-muted);font-size:.85rem">Carregando…</div>
+          <div id="ins-mood-day" style="display:none">
+            <div style="font-size:2rem;font-weight:800;color:var(--accent);letter-spacing:-.5px;margin-bottom:10px" id="ins-mood-day-label"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+              <div class="ins-metric-card"><span class="ins-metric-num" id="ins-day-energy">—</span><span class="ins-metric-lbl">Energia</span></div>
+              <div class="ins-metric-card"><span class="ins-metric-num" id="ins-day-valence">—</span><span class="ins-metric-lbl">Valência</span></div>
+              <div class="ins-metric-card"><span class="ins-metric-num" id="ins-day-dance">—</span><span class="ins-metric-lbl">Dançabilidade</span></div>
+              <div class="ins-metric-card"><span class="ins-metric-num" id="ins-day-bpm">—</span><span class="ins-metric-lbl">BPM médio</span></div>
+            </div>
+            <div style="font-size:.78rem;color:var(--text-muted)">Artista do dia: <span id="ins-day-artist" style="color:var(--text);font-weight:600">—</span></div>
+            <div style="font-size:.76rem;color:var(--text-muted);margin-top:4px"><span id="ins-day-tracks">0</span> faixas analisadas</div>
+            <div id="ins-mood-day-moods" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px"></div>
+          </div>
+          <div id="ins-mood-day-empty" style="display:none;color:var(--text-muted);font-size:.84rem">Nenhuma faixa escutada hoje.</div>
+        </div>
+
+        <!-- Mood do Mês -->
+        <div class="section-box" id="ins-mood-month-box">
+          <div class="sb-title" style="margin-bottom:12px">Mood do Mês</div>
+          <div id="ins-mood-month-loading" style="color:var(--text-muted);font-size:.85rem">Carregando…</div>
+          <div id="ins-mood-month" style="display:none">
+            <div style="font-size:2rem;font-weight:800;color:var(--accent);letter-spacing:-.5px;margin-bottom:10px" id="ins-mood-month-label"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+              <div class="ins-metric-card"><span class="ins-metric-num" id="ins-month-energy">—</span><span class="ins-metric-lbl">Energia</span></div>
+              <div class="ins-metric-card"><span class="ins-metric-num" id="ins-month-valence">—</span><span class="ins-metric-lbl">Valência</span></div>
+              <div class="ins-metric-card"><span class="ins-metric-num" id="ins-month-dance">—</span><span class="ins-metric-lbl">Dançabilidade</span></div>
+              <div class="ins-metric-card"><span class="ins-metric-num" id="ins-month-bpm">—</span><span class="ins-metric-lbl">BPM médio</span></div>
+            </div>
+            <div style="font-size:.78rem;color:var(--text-muted)">Artista do mês: <span id="ins-month-artist" style="color:var(--text);font-weight:600">—</span></div>
+            <div style="font-size:.76rem;color:var(--text-muted);margin-top:4px"><span id="ins-month-tracks">0</span> faixas analisadas</div>
+            <div id="ins-mood-month-moods" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px"></div>
+          </div>
+          <div id="ins-mood-month-empty" style="display:none;color:var(--text-muted);font-size:.84rem">Nenhuma faixa escutada este mês.</div>
+        </div>
+      </div>
+
+      <!-- Curiosidades -->
+      <div class="section-box">
+        <div class="sb-title" style="margin-bottom:14px">Curiosidades da Biblioteca</div>
+        <div id="ins-facts-loading" style="color:var(--text-muted);font-size:.85rem">Carregando…</div>
+        <div id="ins-facts-grid" style="display:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px"></div>
+      </div>
+
+      <!-- Histórico Recente -->
+      <div class="section-box">
+        <div class="sb-title" style="margin-bottom:12px">Histórico Recente</div>
+        <div id="ins-history-loading" style="color:var(--text-muted);font-size:.85rem">Carregando…</div>
+        <div id="ins-history-empty" style="display:none;color:var(--text-muted);font-size:.84rem">Nenhuma reprodução encontrada.</div>
+        <div id="ins-history-list" style="display:none;max-height:420px;overflow-y:auto"></div>
+      </div>
+
+      <!-- Descobertas: faixas analisadas mas nunca ouvidas -->
+      <div class="section-box">
+        <div class="sb-title" style="margin-bottom:4px">Descobertas</div>
+        <p class="sb-subtitle" style="margin-bottom:14px">Faixas analisadas que você ainda não ouviu.</p>
+        <div id="ins-discoveries-loading" style="color:var(--text-muted);font-size:.85rem">Carregando…</div>
+        <div id="ins-discoveries-empty" style="display:none;color:var(--text-muted);font-size:.84rem">Nenhuma — você conhece bem a sua biblioteca! 🎉</div>
+        <div id="ins-discoveries-grid" style="display:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px"></div>
       </div>
 
     </div>
@@ -2607,6 +2756,162 @@ const CL = {
   animFrameId: null,
   orbit: null,
 };
+
+/* ────── INSIGHTS PAGE ────── */
+
+/* Carrega todos os dados da página Insights quando o nav é clicado */
+async function insLoadAll() {
+  insLoadMood('day');
+  insLoadMood('month');
+  insLoadFacts();
+  insLoadHistory();
+  insLoadDiscoveries();
+}
+
+/* ── Mood ── */
+async function insLoadMood(period) {
+  const prefix  = period === 'day' ? 'ins-mood-day' : 'ins-mood-month';
+  const loading = document.getElementById(`${prefix}-loading`);
+  const wrap    = document.getElementById(prefix);
+  const empty   = document.getElementById(`${prefix}-empty`);
+  try {
+    const d = await api('GET', `/library/mood?period=${period}`);
+    loading.style.display = 'none';
+    if (!d.tracksAnalyzed && !d.totalPlayed) {
+      empty.style.display = '';
+      return;
+    }
+    wrap.style.display = '';
+    document.getElementById(`${prefix}-label`).textContent = d.moodLabel || '—';
+
+    const sfx = period === 'day' ? 'day' : 'month';
+    document.getElementById(`ins-${sfx}-energy`).textContent  = d.avgEnergy    != null ? d.avgEnergy    + '/10' : '—';
+    document.getElementById(`ins-${sfx}-valence`).textContent = d.avgValence   != null ? d.avgValence   + '/10' : '—';
+    document.getElementById(`ins-${sfx}-dance`).textContent   = d.avgDanceability != null ? d.avgDanceability + '/10' : '—';
+    document.getElementById(`ins-${sfx}-bpm`).textContent     = d.avgBpm       != null ? d.avgBpm            : '—';
+
+    document.getElementById(`ins-${sfx}-artist`).textContent = d.artistOfPeriod || '—';
+    document.getElementById(`ins-${sfx}-tracks`).textContent = d.tracksAnalyzed || 0;
+
+    const moodsWrap = document.getElementById(`${prefix}-moods`);
+    moodsWrap.innerHTML = '';
+    (d.topMoods || []).forEach(m => {
+      const span = document.createElement('span');
+      span.className = 'ins-mood-tag';
+      span.textContent = m;
+      moodsWrap.appendChild(span);
+    });
+  } catch (err) {
+    loading.textContent = 'Erro: ' + err.message;
+  }
+}
+
+/* ── Curiosidades ── */
+async function insLoadFacts() {
+  const loading = document.getElementById('ins-facts-loading');
+  const grid    = document.getElementById('ins-facts-grid');
+  try {
+    const d = await api('GET', '/library/curiosidades');
+    loading.style.display = 'none';
+    grid.style.display = 'grid';
+    grid.innerHTML = '';
+    (d.facts || []).forEach(f => {
+      const card = document.createElement('div');
+      card.className = 'ins-fact-card';
+      card.innerHTML = `<div class="ins-fact-icon">${escHtml(f.icon)}</div><div class="ins-fact-text">${escHtml(f.text)}</div>`;
+      grid.appendChild(card);
+    });
+  } catch (err) {
+    loading.textContent = 'Erro: ' + err.message;
+  }
+}
+
+/* ── Histórico ── */
+async function insLoadHistory() {
+  const loading = document.getElementById('ins-history-loading');
+  const listEl  = document.getElementById('ins-history-list');
+  const empty   = document.getElementById('ins-history-empty');
+  try {
+    const d = await api('GET', '/library/recently-played?limit=50');
+    loading.style.display = 'none';
+    const tracks = d.tracks || [];
+    if (!tracks.length) { empty.style.display = ''; return; }
+    listEl.style.display = '';
+    listEl.innerHTML = '';
+    tracks.forEach(t => {
+      const row = document.createElement('div');
+      row.className = 'ins-history-row';
+      const when = t.playedAt ? insRelTime(t.playedAt) : '—';
+      row.innerHTML = `
+        <div class="ins-history-info">
+          <div class="ins-history-title">${escHtml(t.title || '—')}</div>
+          <div class="ins-history-sub">${escHtml(t.artist || '')}${t.album ? ' · ' + escHtml(t.album) : ''}</div>
+        </div>
+        <span class="ins-history-plays">${t.playCount}×</span>
+        <span class="ins-history-time">${escHtml(when)}</span>`;
+      listEl.appendChild(row);
+    });
+  } catch (err) {
+    loading.textContent = 'Erro: ' + err.message;
+  }
+}
+
+/* ── Descobertas (faixas analisadas, nunca ouvidas) ── */
+async function insLoadDiscoveries() {
+  const loading = document.getElementById('ins-discoveries-loading');
+  const grid    = document.getElementById('ins-discoveries-grid');
+  const empty   = document.getElementById('ins-discoveries-empty');
+  try {
+    // Pega faixas ordenadas por viewCount=0 da cache de análise via clusters-by-analysis não: usamos recently-played com limit grande e depois filtramos do analysis-cache.
+    // Estratégia: pedir o máximo de recently-played (0 plays não aparecem), então
+    // buscar nunca-ouvidas via /audio/analysis-cache comparando playCount = 0.
+    const d = await api('GET', '/library/recently-played?limit=500');
+    const playedKeys = new Set((d.tracks || []).map(t => t.ratingKey));
+
+    // Busca analysis-cache
+    const cache = await api('GET', '/audio/analysis-cache');
+    const entries = Object.values(cache.tracks || {});
+    const unheard = entries.filter(e => !playedKeys.has(e.ratingKey) && e.analysis).slice(0, 30);
+
+    loading.style.display = 'none';
+    if (!unheard.length) { empty.style.display = ''; return; }
+    grid.style.display = 'grid';
+    grid.innerHTML = '';
+    unheard.forEach(e => {
+      const a = e.analysis || {};
+      const card = document.createElement('div');
+      card.className = 'ins-discovery-card';
+      const tags = [a.genre, a.mood, a.era].filter(Boolean);
+      card.innerHTML = `
+        <div class="ins-discovery-title">${escHtml(e.title || '—')}</div>
+        <div class="ins-discovery-sub">${escHtml(e.artist || '')}${e.album ? ' · ' + escHtml(e.album) : ''}</div>
+        ${tags.length ? `<div class="ins-discovery-tags">${tags.map(t => `<span class="ins-discovery-tag">${escHtml(t)}</span>`).join('')}</div>` : ''}`;
+      grid.appendChild(card);
+    });
+  } catch (err) {
+    loading.textContent = 'Erro: ' + err.message;
+  }
+}
+
+/* Helper: formata timestamp Unix (segundos) como tempo relativo */
+function insRelTime(ts) {
+  const diff = Math.floor(Date.now() / 1000) - ts;
+  if (diff <    60) return 'agora';
+  if (diff <  3600) return `há ${Math.floor(diff / 60)}min`;
+  if (diff < 86400) return `há ${Math.floor(diff / 3600)}h`;
+  const days = Math.floor(diff / 86400);
+  if (days === 1)   return 'ontem';
+  if (days <   30)  return `há ${days} dias`;
+  const months = Math.floor(days / 30);
+  return months === 1 ? 'há 1 mês' : `há ${months} meses`;
+}
+
+/* Hook no nav para carregar ao abrir a página */
+document.querySelectorAll('.nav-link').forEach(a => {
+  if (a.dataset.page === 'insights') {
+    a.addEventListener('click', insLoadAll);
+  }
+});
 
 /* ────── Compute clusters & render ────── */
 document.getElementById('btn-cl-compute').addEventListener('click', clComputeClusters);

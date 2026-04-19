@@ -40,7 +40,7 @@ export function createServer({ libraryScanner, historyService, recommendationEng
   });
 
   healthRouter(router);
-  libraryRouter(router, { libraryScanner, historyService, metricsService, audioAnalyzer });
+  libraryRouter(router, { libraryScanner, historyService, metricsService, audioAnalyzer, analysisCache });
   recommendationsRouter(router, { recommendationEngine });
   playlistsRouter(router, { playlistBuilder, plexService, analysisCache });
   embeddingsRouter(router, { embeddingService, clusteringService, playlistBuilder, analysisCache });

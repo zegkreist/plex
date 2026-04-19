@@ -49,6 +49,7 @@ export class HistoryService {
       );
       const items = res.data?.MediaContainer?.Metadata || [];
       return items.map((item) => ({
+        ratingKey: item.ratingKey,
         title:    item.title,
         artist:   item.grandparentTitle,
         album:    item.parentTitle,
@@ -59,6 +60,52 @@ export class HistoryService {
       console.warn("[HistoryService] Erro ao obter histórico:", err.message);
       return [];
     }
+  }
+
+  /**
+   * Retorna todas as faixas com qualquer play, ordenadas por lastViewedAt desc.
+   * Inclui ratingKey para cross-ref com analysisCache.
+   * @param {number} limit
+   * @returns {Promise<Array<{ratingKey,title,artist,album,playedAt,playCount,duration}>>}
+   */
+  async getRecentlyPlayedFull(limit = 500) {
+    try {
+      await this._findMusicSection();
+      const res = await this.axios.get(
+        `${this.plexUrl}/library/sections/${this._musicKey}/all`,
+        {
+          headers: this._headers,
+          params: { type: 10, sort: "lastViewedAt:desc", limit },
+        }
+      );
+      const items = res.data?.MediaContainer?.Metadata || [];
+      return items
+        .filter((item) => (item.viewCount || 0) > 0)
+        .map((item) => ({
+          ratingKey: item.ratingKey,
+          title:     item.title,
+          artist:    item.grandparentTitle,
+          album:     item.parentTitle,
+          playedAt:  item.lastViewedAt,   // Unix timestamp (seconds)
+          playCount: item.viewCount || 0,
+          duration:  item.duration || 0,  // milliseconds
+        }));
+    } catch (err) {
+      console.warn("[HistoryService] Erro ao obter histórico completo:", err.message);
+      return [];
+    }
+  }
+
+  /**
+   * Retorna faixas com lastViewedAt no intervalo dado (timestamps em segundos).
+   * Útil para calcular mood de um período específico.
+   * @param {number} fromTs  — Unix timestamp início (segundos)
+   * @param {number} limit
+   * @returns {Promise<Array>}
+   */
+  async getPlayedSince(fromTs, limit = 500) {
+    const all = await this.getRecentlyPlayedFull(limit);
+    return all.filter((t) => t.playedAt >= fromTs);
   }
 
   /**
