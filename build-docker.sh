@@ -13,7 +13,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MUSICSAGE_DIR="$SCRIPT_DIR/agents/MusicSage"
+MUSICSAGE_DIR="$SCRIPT_DIR/musicsage"
 
 # ── Defaults ─────────────────────────────────────────────────────────────────
 IMAGE_NAME="musicsage"
@@ -56,7 +56,7 @@ docker build \
   $NO_CACHE \
   --tag "$FULL_TAG" \
   --file "$MUSICSAGE_DIR/Dockerfile" \
-  "$MUSICSAGE_DIR"
+  "$SCRIPT_DIR"
 
 echo ""
 echo "✅ Imagem construída: $FULL_TAG"
@@ -77,8 +77,9 @@ echo ""
 echo "  docker run -d \\"
 echo "    --name musicsage \\"
 echo "    -p 3002:3002 \\"
-echo "    --env-file agents/MusicSage/.env \\"
-echo "    -v \$(pwd)/music:/music:ro \\"
-echo "    -v \$(pwd)/mediasage:/app/mediasage \\"
+echo "    --env-file musicsage/.env \\"
+echo "    -e PLEX_TOKEN=seu_token \\"
+echo "    -v /nas/musicsage-data:/data \\"
+echo "    -v /nas/music:/media/music:ro \\"
 echo "    $FULL_TAG"
 echo "══════════════════════════════════════════════"

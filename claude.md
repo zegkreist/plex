@@ -36,6 +36,7 @@ plex_server/
 ├── tv/                       # Séries (mapeado para /tv no container)
 ├── movies/                   # Filmes (mapeado para /movies no container)
 ├── music/                    # Músicas (mapeado para /music no container)
+├── musicsage/               # Frontend SPA + webserver de recomendações musicais (porta 3002)
 ├── tests/                    # Testes de integração da raiz
 └── agents/
     ├── AllFather/             # Biblioteca de IA — wrapper para Ollama
@@ -44,7 +45,6 @@ plex_server/
     ├── Stormbringer/          # Agente de torrent — busca, download e organização no Plex
     ├── TideCaller/            # Download de alta qualidade via Tidal (streamrip, Dockerizado)
     └── Transporter/           # Utilitários compartilhados de filesystem, strings e áudio
-    └── MusicSage/             # Webserver de recomendações musicais + construtor de playlists
 ```
 
 ---
@@ -114,7 +114,7 @@ Webserver Express.js de recomendações musicais com **frontend SPA** integrado.
 node plex-cli.js musicsage:start
 
 # Ou direto
-cd agents/MusicSage && node index.js
+cd musicsage && node index.js
 
 # Build Docker
 ./build-docker.sh              # tag musicsage:latest
@@ -125,15 +125,14 @@ cd agents/MusicSage && node index.js
 xdg-open http://localhost:3002
 ```
 
-**Variáveis de ambiente necessárias (veja `agents/MusicSage/.env.example`):**
+**Variáveis de ambiente necessárias (veja `musicsage/.env.example`):**
 ```env
 PLEX_URL=http://localhost:32400       # URL do servidor Plex
 PLEX_TOKEN=<token-do-plex>            # Token API do Plex
 OLLAMA_URL=http://localhost:11434     # LLM local
 OLLAMA_DEFAULT_MODEL=gemma4:e4b       # Modelo de geração
 EMBEDDING_MODEL=nomic-embed-text      # Modelo de embeddings (Ollama)
-PLEX_MEDIA_ROOT=/path/to/music        # Caminho host para os arquivos de música
-PLEX_PATH_PREFIX=/music               # Prefixo de path do Plex (mapeado para PLEX_MEDIA_ROOT)
+PLEX_MEDIA_PATH=/path/to/media        # Raiz local de mídia (ex: /media). Plex paths são concatenados diretamente: /media + /music/... → /media/music/...
 MUSICSAGE_PORT=3002                   # Porta HTTP (padrão 3002)
 LASTFM_API_KEY=<chave>                # Opcional — artistas semelhantes via Last.fm
 MUSICSAGE_DEBUG=1                     # Opcional — logs verbosos
