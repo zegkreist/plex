@@ -10,16 +10,28 @@
   let loading    = $state(true);
   let reloading  = $state(false);
 
-  onMount(() => { checkStatus(); });
+  let fetchError = $state(null);
+
+  onMount(() => {
+    console.log('[PlexStatus] onMount — chamando checkStatus()');
+    checkStatus();
+  });
 
   async function checkStatus() {
     loading = true;
+    fetchError = null;
+    console.log('[PlexStatus] checkStatus() iniciado');
     try {
-      status = await api('GET', '/plex/status');
+      const data = await api('GET', '/plex/status');
+      console.log('[PlexStatus] resposta recebida:', data);
+      status = data;
     } catch (e) {
+      console.error('[PlexStatus] erro na chamada:', e);
+      fetchError = e.message;
       toast.error(`Erro ao verificar Plex: ${e.message}`);
     } finally {
       loading = false;
+      console.log('[PlexStatus] checkStatus() finalizado — loading=false, status=', status);
     }
   }
 
@@ -70,8 +82,18 @@
   </div>
 
   {#if loading && !status}
-    <div class="flex items-center justify-center py-16">
+    <div class="flex items-center justify-center py-16 flex-col gap-3">
       <Spinner size="lg" />
+      <p class="text-xs text-muted">Verificando conexão com o Plex...</p>
+    </div>
+
+  {:else if fetchError && !status}
+    <div class="px-4 py-5 rounded-xl text-sm" style="background:#1f0d0d; border:1px solid #4a1a1a;">
+      <div class="font-semibold" style="color:#f87171">Erro ao carregar</div>
+      <div class="text-muted text-xs mt-1">{fetchError}</div>
+      <div class="mt-3">
+        <Button variant="danger" size="sm" onclick={checkStatus}>Tentar novamente</Button>
+      </div>
     </div>
 
   {:else if status}
@@ -117,13 +139,9 @@
       <!-- Configuração atual -->
       <Card title="Configuração">
         <div class="space-y-3">
-          <Row label="URL do Plex" value={status.url} mono />
-          <Row label="Token" value={status.tokenMasked} mono />
-          <Row
-            label="Token válido"
-            value={status.valid ? 'Sim' : 'Não'}
-            color={status.valid ? '#1db954' : '#f87171'}
-          />
+          {@render InfoRow('URL do Plex', status.url, true)}
+          {@render InfoRow('Token', status.tokenMasked, true)}
+          {@render InfoRow('Token válido', status.valid ? 'Sim' : 'Não', false, status.valid ? '#1db954' : '#f87171')}
         </div>
       </Card>
 
@@ -131,10 +149,10 @@
       {#if status.valid && status.serverInfo}
         <Card title="Servidor Plex">
           <div class="space-y-3">
-            <Row label="Nome"     value={status.serverInfo.name} />
-            <Row label="Versão"   value={status.serverInfo.version} mono />
-            <Row label="Platform" value={[status.serverInfo.platform, status.serverInfo.platformVersion].filter(Boolean).join(' ')} />
-            <Row label="Machine ID" value={status.serverInfo.machineIdentifier} mono truncate />
+            {@render InfoRow('Nome', status.serverInfo.name)}
+            {@render InfoRow('Versão', status.serverInfo.version, true)}
+            {@render InfoRow('Platform', [status.serverInfo.platform, status.serverInfo.platformVersion].filter(Boolean).join(' '))}
+            {@render InfoRow('Machine ID', status.serverInfo.machineIdentifier, true, null, true)}
           </div>
         </Card>
       {/if}
@@ -156,8 +174,8 @@
   {/if}
 </div>
 
-<!-- ── Helper component ─────────────────────────────────── -->
-{#snippet Row({ label, value, mono = false, color = null, truncate = false })}
+<!-- ── Helper snippet ─────────────────────────────────── -->
+{#snippet InfoRow(label, value, mono = false, color = null, truncate = false)}
   <div class="flex items-start justify-between gap-3 text-xs">
     <span class="text-muted shrink-0">{label}</span>
     <span
