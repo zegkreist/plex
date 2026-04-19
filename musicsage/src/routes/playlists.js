@@ -98,12 +98,25 @@ export function playlistsRouter(router, { playlistBuilder, plexService, analysis
   // POST /api/playlists/from-cache-track — gera playlist "Radio" a partir de uma faixa analisada
   router.post("/playlists/from-cache-track", async (req, res) => {
     if (!analysisCache) return res.status(503).json({ error: "AnalysisCacheService não disponível" });
-    const { ratingKey, size, name, maxPerArtist, discoveryRatio } = req.body || {};
+    const { ratingKey, title, size, name, maxPerArtist, discoveryRatio } = req.body || {};
     if (!ratingKey) return res.status(400).json({ error: "Campo 'ratingKey' é obrigatório" });
 
     const cached = analysisCache.get(String(ratingKey));
     if (!cached) {
-      return res.status(404).json({ error: "Faixa não encontrada no cache — analise-a primeiro na página 'Análise da Biblioteca'." });
+      return res.status(404).json({ error: `Faixa ratingKey=${ratingKey} não encontrada no cache — analise-a primeiro na página 'Análise da Biblioteca'.` });
+    }
+
+    // Validação: detecta mismatch de cache importado (mesmo ratingKey, música diferente)
+    if (title && cached.title) {
+      const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (normalize(cached.title) !== normalize(title)) {
+        import('../logger.js').then(({ logger }) =>
+          logger.warn('PLAYLIST', `Cache mismatch ratingKey=${ratingKey}: cache="${cached.title}" solicitado="${title}" — cache provavelmente importado de outra biblioteca`)
+        );
+        return res.status(409).json({
+          error: `Cache desatualizado: o ratingKey ${ratingKey} está associado a "${cached.title}" no cache, mas a faixa selecionada é "${title}". Re-analise a faixa primeiro.`,
+        });
+      }
     }
     const opts = {
       size:           size           ? parseInt(size, 10) : 15,

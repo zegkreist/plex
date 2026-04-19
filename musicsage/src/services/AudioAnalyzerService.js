@@ -20,6 +20,7 @@
 import { execFile as _execFile } from "child_process";
 import { promisify } from "util";
 import { existsSync } from "fs";
+import { join as pathJoin } from "path";
 import { logger } from "../logger.js";
 import { buildGenreContext } from "../genreVocabulary.js";
 
@@ -205,7 +206,7 @@ export class AudioAnalyzerService {
     if (!this._plexMediaRoot) return plexPath;
     // plexPath já contém a subpasta de mídia (ex: /music/Artist/song.flac).
     // Basta concatenar com a raiz local: /media + /music/Artist/song.flac → /media/music/Artist/song.flac
-    return path.join(this._plexMediaRoot, plexPath);
+    return pathJoin(this._plexMediaRoot, plexPath);
   }
 
   // ─── ffprobe — formato + tags ─────────────────────────────────────────────

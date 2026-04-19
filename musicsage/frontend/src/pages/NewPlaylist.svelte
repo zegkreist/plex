@@ -43,13 +43,15 @@
   }
 
   // ─── Por Música ──────────────────────────────────────────
-  let trackQuery    = $state('');
-  let trackResults  = $state([]);
-  let selectedTrack = $state(null);
-  let searching     = $state(false);
-  let genTrack      = $state(false);
-  let trackResult   = $state(null);
-  let trackError    = $state('');
+  let trackQuery      = $state('');
+  let trackResults    = $state([]);
+  let selectedTrack   = $state(null);
+  let searching       = $state(false);
+  let genTrack        = $state(false);
+  let trackResult     = $state(null);
+  let trackError      = $state('');
+  let trackLimit      = $state(30);
+  let trackMaxPerArtist = $state(3);
 
   const searchTracks = debounce(async (q) => {
     if (!q.trim() || q.length < 2) { trackResults = []; return; }
@@ -76,8 +78,10 @@
     trackResult = null;
     try {
       trackResult = await api('POST', '/playlists/from-cache-track', {
-        ratingKey: selectedTrack.ratingKey,
-        limit: 30,
+        ratingKey:    selectedTrack.ratingKey,
+        title:        selectedTrack.title,
+        size:         trackLimit,
+        maxPerArtist: trackMaxPerArtist,
       });
       toast.success(`Playlist "${trackResult.title ?? trackResult.name}" criada!`);
     } catch (e) {
@@ -242,6 +246,25 @@
             <span class="ml-1" style="color:#5a5a78">— {selectedTrack.artist}</span>
           </div>
         {/if}
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="track-limit" class="block text-2xs font-medium mb-1.5" style="color:#5a5a78">Tamanho da playlist</label>
+            <input id="track-limit" type="number" bind:value={trackLimit} min="5" max="100"
+              class="w-full rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none"
+              style="background:#16161f;border:1px solid #1e1e2e"
+              onfocus={e => e.currentTarget.style.borderColor='rgba(124,106,245,0.4)'}
+              onblur={e => e.currentTarget.style.borderColor='#1e1e2e'} />
+          </div>
+          <div>
+            <label for="track-max-per-artist" class="block text-2xs font-medium mb-1.5" style="color:#5a5a78">Máx. faixas por artista</label>
+            <input id="track-max-per-artist" type="number" bind:value={trackMaxPerArtist} min="1" max="20"
+              class="w-full rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none"
+              style="background:#16161f;border:1px solid #1e1e2e"
+              onfocus={e => e.currentTarget.style.borderColor='rgba(124,106,245,0.4)'}
+              onblur={e => e.currentTarget.style.borderColor='#1e1e2e'} />
+          </div>
+        </div>
 
         {#if trackError}
           <div class="rounded-xl px-4 py-3 text-sm border" style="background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.2);color:#ef4444">

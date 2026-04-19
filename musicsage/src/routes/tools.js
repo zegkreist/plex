@@ -335,7 +335,8 @@ export function toolsRouter(router) {
   router.post("/tools/tidecaller/token/start-oauth", (req, res) => {
     const { force = false } = req.body || {};
     const sessionId = randomUUID();
-    const args = ["scripts/refresh_token.sh"];
+    // --json: Python emite JSON lines em vez de texto/OSC8
+    const args = ["scripts/refresh_token.sh", "--json"];
     if (force) args.push("--force");
 
     const proc = spawn("bash", args, { cwd: TIDECALLER_DIR });
@@ -345,28 +346,29 @@ export function toolsRouter(router) {
     let responded = false;
     const respond = (data) => { if (!responded) { responded = true; res.json(data); } };
 
+    let lineBuf = "";
     proc.stdout.on("data", chunk => {
-      const text = chunk.toString();
-      session.output += text;
-
-      if (!session.url) {
-        // URL fica dentro da sequência OSC 8: \x1b]8;;<URL>\x1b\\
-        const oscMatch = text.match(/\x1b\]8;;(https?:\/\/[^\x1b]+)\x1b/);
-        if (oscMatch) session.url = oscMatch[1].trim();
-        // Fallback: URL plain no texto
-        if (!session.url) {
-          const plainMatch = text.match(/https:\/\/[^\s\x1b]+/);
-          if (plainMatch) session.url = plainMatch[0].trim();
-        }
-      }
-
-      if (!session.userCode) {
-        const codeMatch = text.match(/C[oó]digo:\s*([A-Z0-9][A-Z0-9-]+)/i);
-        if (codeMatch) session.userCode = codeMatch[1].trim();
-      }
-
-      if (session.url && session.userCode) {
-        respond({ sessionId, url: session.url, userCode: session.userCode });
+      lineBuf += chunk.toString();
+      const lines = lineBuf.split("\n");
+      lineBuf = lines.pop(); // guarda linha incompleta para o próximo chunk
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        session.output += trimmed + "\n";
+        try {
+          const msg = JSON.parse(trimmed);
+          if (msg.type === "oauth_url") {
+            session.url      = msg.url;
+            session.userCode = msg.user_code;
+            respond({ sessionId, url: msg.url, userCode: msg.user_code });
+          } else if (msg.type === "done") {
+            session.status = "done";
+            respond({ sessionId, url: session.url, userCode: session.userCode, status: "done" });
+          } else if (msg.type === "error") {
+            session.status = "error";
+            respond({ sessionId, error: msg.message, status: "error" });
+          }
+        } catch {} // linhas não-JSON (banner shell, debug) são ignoradas silenciosamente
       }
     });
 
@@ -374,7 +376,7 @@ export function toolsRouter(router) {
 
     proc.on("close", code => {
       session.status = code === 0 ? "done" : "error";
-      // Auto-refresh sem OAuth: processo terminou sem mostrar URL
+      // Auto-refresh sem OAuth: processo terminou sem emitir oauth_url
       respond({ sessionId, url: session.url, userCode: session.userCode, status: session.status });
       setTimeout(() => _oauthSessions.delete(sessionId), 5 * 60 * 1000);
     });
@@ -384,8 +386,8 @@ export function toolsRouter(router) {
       respond({ error: err.message });
     });
 
-    // Timeout de segurança: responde após 12s mesmo que nada seja detectado
-    setTimeout(() => respond({ sessionId, url: session.url, userCode: session.userCode, status: "timeout" }), 12000);
+    // Timeout de segurança: responde após 30s caso Python não emita JSON esperado
+    setTimeout(() => respond({ sessionId, url: session.url, userCode: session.userCode, status: "timeout" }), 30000);
   });
 
   // ── GET /api/tools/tidecaller/token/status/:sessionId ────────────────────

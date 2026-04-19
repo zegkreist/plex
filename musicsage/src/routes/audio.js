@@ -233,6 +233,61 @@ export function audioRouter(router, { analyzer, embeddingService, audioAnalyzer,
     res.json(analysisCache.toJSON());
   });
 
+  // ─── POST /api/audio/analysis-cache/remap-ids ─────────────────────────────
+  // Corrige ratingKeys do cache comparando title+artist com a biblioteca Plex atual.
+  // Útil quando o cache foi importado de outra instância do Plex (IDs diferentes).
+  router.post("/audio/analysis-cache/remap-ids", async (_req, res) => {
+    if (!analysisCache) return res.status(503).json({ error: "AnalysisCacheService não disponível" });
+    if (!libraryScanner) return res.status(503).json({ error: "LibraryScanner não disponível" });
+
+    try {
+      const { tracks } = await libraryScanner.scan();
+
+      // Mapa: normalize(title|artist) → ratingKey atual do Plex
+      const normalize = s => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const plexMap = new Map();
+      for (const t of tracks) {
+        const key = normalize(t.title) + "|" + normalize(t.grandparentTitle);
+        // Mantém o primeiro match (evita colisão de covers/remixes do mesmo artista)
+        if (!plexMap.has(key)) plexMap.set(key, String(t.ratingKey));
+      }
+
+      let remapped = 0;
+      let notFound = 0;
+      let unchanged = 0;
+      const details = [];
+
+      for (const entry of analysisCache.getAll()) {
+        const lookupKey = normalize(entry.title) + "|" + normalize(entry.artist);
+        const currentKey = plexMap.get(lookupKey);
+
+        if (!currentKey) {
+          notFound++;
+          details.push({ title: entry.title, artist: entry.artist, status: "not_found", oldKey: entry.ratingKey });
+          continue;
+        }
+
+        if (currentKey === String(entry.ratingKey)) {
+          unchanged++;
+          continue;
+        }
+
+        // Remapeia: remove oldKey, insere newKey
+        analysisCache.remap(String(entry.ratingKey), currentKey);
+        remapped++;
+        details.push({ title: entry.title, artist: entry.artist, status: "remapped", oldKey: entry.ratingKey, newKey: currentKey });
+      }
+
+      await analysisCache.flush();
+
+      logger.info("ANALYSIS_CACHE", `Remap concluído: ${remapped} corrigidos, ${unchanged} inalterados, ${notFound} não encontrados`);
+      res.json({ remapped, unchanged, notFound, total: remapped + unchanged + notFound, details });
+    } catch (err) {
+      logger.error("ANALYSIS_CACHE", `Falha em remap-ids: ${err.message}`);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ─── DELETE /api/audio/analysis-cache ────────────────────────────────────
 
   router.delete("/audio/analysis-cache", async (_req, res) => {

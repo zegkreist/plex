@@ -12,6 +12,7 @@ Após obter tokens, substitui automaticamente os valores no config.toml.
 
 import sys
 import re
+import json
 import time
 from pathlib import Path
 
@@ -158,50 +159,63 @@ def clickable_link(url: str, text: str = None) -> str:
     return f"\033]8;;{url}\033\\{label}\033]8;;\033\\"
 
 
-def oauth_login() -> "tidalapi.Session":
+def json_emit(obj: dict):
+    """Emite um objeto JSON numa linha — lido pelo Node.js em modo --json."""
+    print(json.dumps(obj), flush=True)
+
+
+def oauth_login(json_mode: bool = False) -> "tidalapi.Session":
     """Inicia fluxo OAuth interativo. Requer que o usuário abra o link."""
-    import subprocess, os
     session = tidalapi.Session()
-    print()
-    print("🔐 Iniciando autenticação OAuth2...")
-    print()
+
+    if not json_mode:
+        print()
+        print("🔐 Iniciando autenticação OAuth2...")
+        print()
 
     login, future = session.login_oauth()
 
     url = f"https://{login.verification_uri_complete}"
+    user_code = login.user_code
 
-    print("━" * 60)
-    print(f"  👉  {clickable_link(url)}  ← clique aqui ou copie o link")
-    print()
-    print(f"  Código: {login.user_code}")
-    print("━" * 60)
-    print()
-
-    # Tentar abrir o browser automaticamente
-    try:
-        if subprocess.call(["xdg-open", url],
-                           stdout=subprocess.DEVNULL,
-                           stderr=subprocess.DEVNULL) == 0:
-            print("🌐 Browser aberto automaticamente.")
-        else:
-            print("⚠️  Não foi possível abrir o browser. Abra o link manualmente.")
-    except FileNotFoundError:
-        print("⚠️  xdg-open não encontrado. Abra o link manualmente.")
-
-    print()
-    print("⏳ Aguardando autorização no browser...")
+    if json_mode:
+        # Node.js vai parsear esta linha e responder ao frontend imediatamente
+        json_emit({"type": "oauth_url", "url": url, "user_code": user_code})
+    else:
+        print("─" * 60)
+        print(f"  👉  {clickable_link(url)}  ← clique aqui ou copie o link")
+        print()
+        print(f"  Código: {user_code}")
+        print("─" * 60)
+        print()
+        # Tentar abrir o browser automaticamente (falha silenciosamente no container)
+        try:
+            import subprocess
+            subprocess.call(["xdg-open", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+        print()
+        print("⏳ Aguardando autorização no browser...")
 
     try:
         future.result()
     except Exception as e:
-        print(f"\n❌ Erro durante autenticação: {e}")
+        if json_mode:
+            json_emit({"type": "error", "message": str(e)})
+        else:
+            print(f"\n❌ Erro durante autenticação: {e}")
         sys.exit(1)
 
     if not session.check_login():
-        print("\n❌ Falha no login. Tente novamente.")
+        if json_mode:
+            json_emit({"type": "error", "message": "check_login() falhou após autorização"})
+        else:
+            print("\n❌ Falha no login. Tente novamente.")
         sys.exit(1)
 
-    print("\n✅ Login OAuth concluído!")
+    if not json_mode:
+        print("\n✅ Login OAuth concluído!")
+
     return session
 
 
@@ -235,12 +249,14 @@ def apply_tokens(session: "tidalapi.Session"):
 def main():
     args = sys.argv[1:]
     force_oauth = "--force" in args
-    check_only = "--check" in args
+    check_only  = "--check" in args
+    json_mode   = "--json"  in args
 
-    print("=" * 60)
-    print("  TideCaller — Gerenciamento de Tokens Tidal")
-    print("=" * 60)
-    print()
+    if not json_mode:
+        print("=" * 60)
+        print("  TideCaller — Gerenciamento de Tokens Tidal")
+        print("=" * 60)
+        print()
 
     # Modo --check: só verifica, não renova
     if check_only:
@@ -251,7 +267,10 @@ def main():
     expired = is_token_expired()
 
     if not force_oauth and not expired:
-        print("ℹ️  Token ainda válido. Use --force para forçar novo login OAuth.")
+        if not json_mode:
+            print("ℹ️  Token ainda válido. Use --force para forçar novo login OAuth.")
+        else:
+            json_emit({"type": "done", "refreshed": False})
         sys.exit(0)
 
     # Tentar refresh automático sem login (se não for --force)
@@ -261,13 +280,16 @@ def main():
 
     # Fallback: login OAuth interativo
     if session is None:
-        session = oauth_login()
+        session = oauth_login(json_mode=json_mode)
 
     apply_tokens(session)
 
-    print()
-    print("🎵 Pronto! streamrip já pode usar os novos tokens.")
-    print()
+    if json_mode:
+        json_emit({"type": "done", "refreshed": True})
+    else:
+        print()
+        print("🎵 Pronto! streamrip já pode usar os novos tokens.")
+        print()
 
 
 if __name__ == "__main__":

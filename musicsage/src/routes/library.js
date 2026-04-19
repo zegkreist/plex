@@ -8,6 +8,8 @@
  *  GET /api/library/mood     — mood do período (day|month) calculado via analysisCache
  *  GET /api/library/curiosidades — fatos curiosos sobre a biblioteca
  */
+import { logger } from "../logger.js";
+
 export function libraryRouter(router, { libraryScanner, historyService, metricsService, audioAnalyzer, analysisCache, playlistBuilder, plexService }) {
   router.get("/library/stats", (_req, res) => {
     const stats = libraryScanner.getLibraryStats();
@@ -16,14 +18,27 @@ export function libraryRouter(router, { libraryScanner, historyService, metricsS
   });
 
   /**
-   * GET /api/library/tracks
-   * Retorna lista resumida de todas as faixas para uso em autocomplete.
+   * GET /api/library/tracks?q=QUERY&limit=N
+   * Retorna lista resumida de faixas filtradas para uso em autocomplete.
    * Response: { tracks: [{ ratingKey, title, artist, album, filePath }] }
    */
-  router.get("/library/tracks", async (_req, res) => {
+  router.get("/library/tracks", async (req, res) => {
     try {
+      const q     = (req.query.q     || "").toLowerCase().trim();
+      const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
+
       const { tracks } = await libraryScanner.scan();
-      const summary = tracks.map(t => {
+
+      let filtered = tracks;
+      if (q) {
+        filtered = tracks.filter(t =>
+          (t.title            || "").toLowerCase().includes(q) ||
+          (t.grandparentTitle || "").toLowerCase().includes(q) ||
+          (t.parentTitle      || "").toLowerCase().includes(q)
+        );
+      }
+
+      const summary = filtered.slice(0, limit).map(t => {
         const plexPath = t.Media?.[0]?.Part?.[0]?.file || "";
         const filePath = audioAnalyzer ? audioAnalyzer._resolvePath(plexPath) || plexPath : plexPath;
         return {
@@ -36,6 +51,7 @@ export function libraryRouter(router, { libraryScanner, historyService, metricsS
       });
       res.json({ tracks: summary });
     } catch (err) {
+      logger.error("LIBRARY_TRACKS", `Erro ao listar faixas: ${err.message}\n${err.stack}`);
       res.status(500).json({ error: err.message });
     }
   });

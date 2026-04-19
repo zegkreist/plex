@@ -56,22 +56,33 @@ RUN cd /agents/Stormbringer && \
 # ─── Stage 3 — Production server ─────────────────────────────────────────────
 FROM node:20-alpine AS prod
 
-# Sistema: ffmpeg (análise de áudio), python3 + pip (TideCaller/tidalapi), bash
+# Sistema: ffmpeg, bash, Python com dependências de compilação para streamrip
 RUN apk add --no-cache \
         ffmpeg \
         bash \
         python3 \
         py3-pip \
-    && pip3 install --no-cache-dir --break-system-packages tidalapi \
-    && rm -rf /root/.cache/pip
+        gcc \
+        musl-dev \
+        python3-dev \
+        libffi-dev \
+        openssl-dev \
+        cargo \
+        rust \
+    && pip3 install --no-cache-dir --break-system-packages \
+        tidalapi \
+        streamrip \
+    && apk del gcc musl-dev python3-dev libffi-dev openssl-dev cargo rust \
+    && rm -rf /root/.cache/pip /root/.cargo
 
 # ── Agents já com deps instaladas ────────────────────────────────────────────
 COPY --from=agents-builder /agents/AllFather    /agents/AllFather
 COPY --from=agents-builder /agents/Stormbringer /agents/Stormbringer
 COPY --from=agents-builder /agents/Transporter  /agents/Transporter
 
-# TideCaller: só scripts Python e config (sem deps extra além de tidalapi já instalado)
+# TideCaller: scripts Python, setup e config
 COPY agents/TideCaller/scripts  /agents/TideCaller/scripts
+COPY agents/TideCaller/setup    /agents/TideCaller/setup
 COPY agents/TideCaller/config   /agents/TideCaller/config
 # Atenção: o token OAuth do Tidal fica em /agents/TideCaller/config/.config
 # Monte um volume ou passe via env para persistência: -v tidal-config:/agents/TideCaller/config

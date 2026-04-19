@@ -117,6 +117,24 @@ export class AnalysisCacheService {
     return [...this._cache.values()];
   }
 
+  /**
+   * Move uma entrada de oldKey para newKey, atualizando o campo ratingKey interno.
+   * Usado para corrigir mismatch de cache importado de outra biblioteca.
+   * @param {string} oldKey
+   * @param {string} newKey
+   * @returns {object|null}  — a entrada remapeada, ou null se oldKey não existia
+   */
+  remap(oldKey, newKey) {
+    const entry = this._cache.get(String(oldKey));
+    if (!entry) return null;
+    const updated = { ...entry, ratingKey: String(newKey) };
+    this._cache.delete(String(oldKey));
+    this._cache.set(String(newKey), updated);
+    this._dirty = true;
+    this._scheduleSave();
+    return updated;
+  }
+
   /** Total de faixas analisadas. */
   size() {
     return this._cache.size;
