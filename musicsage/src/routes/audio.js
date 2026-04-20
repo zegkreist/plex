@@ -228,8 +228,9 @@ export function audioRouter(router, { analyzer, embeddingService, audioAnalyzer,
 
   // ─── GET /api/audio/analysis-cache ───────────────────────────────────────
 
-  router.get("/audio/analysis-cache", (_req, res) => {
+  router.get("/audio/analysis-cache", async (_req, res) => {
     if (!analysisCache) return res.status(503).json({ error: "AnalysisCacheService não disponível" });
+    await analysisCache.load(); // lazy load: no-op se já carregado
     res.json(analysisCache.toJSON());
   });
 
@@ -241,6 +242,7 @@ export function audioRouter(router, { analyzer, embeddingService, audioAnalyzer,
     if (!libraryScanner) return res.status(503).json({ error: "LibraryScanner não disponível" });
 
     try {
+      await analysisCache.load(); // lazy load: no-op se já carregado
       const { tracks } = await libraryScanner.scan();
 
       // Mapa: normalize(title|artist) → ratingKey atual do Plex
@@ -262,8 +264,10 @@ export function audioRouter(router, { analyzer, embeddingService, audioAnalyzer,
         const currentKey = plexMap.get(lookupKey);
 
         if (!currentKey) {
+          // Faixa não existe na biblioteca atual — remove do cache
+          analysisCache.delete(String(entry.ratingKey));
           notFound++;
-          details.push({ title: entry.title, artist: entry.artist, status: "not_found", oldKey: entry.ratingKey });
+          details.push({ title: entry.title, artist: entry.artist, status: "deleted", oldKey: entry.ratingKey });
           continue;
         }
 
@@ -280,7 +284,7 @@ export function audioRouter(router, { analyzer, embeddingService, audioAnalyzer,
 
       await analysisCache.flush();
 
-      logger.info("ANALYSIS_CACHE", `Remap concluído: ${remapped} corrigidos, ${unchanged} inalterados, ${notFound} não encontrados`);
+      logger.info("ANALYSIS_CACHE", `Remap concluído: ${remapped} corrigidos, ${unchanged} inalterados, ${notFound} deletados (não encontrados na biblioteca)`);
       res.json({ remapped, unchanged, notFound, total: remapped + unchanged + notFound, details });
     } catch (err) {
       logger.error("ANALYSIS_CACHE", `Falha em remap-ids: ${err.message}`);

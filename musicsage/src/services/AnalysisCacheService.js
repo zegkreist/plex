@@ -135,6 +135,20 @@ export class AnalysisCacheService {
     return updated;
   }
 
+  /**
+   * Remove uma entrada do cache pelo ratingKey.
+   * @param {string} ratingKey
+   * @returns {boolean} true se a entrada existia e foi removida
+   */
+  delete(ratingKey) {
+    const existed = this._cache.delete(String(ratingKey));
+    if (existed) {
+      this._dirty = true;
+      this._scheduleSave();
+    }
+    return existed;
+  }
+
   /** Total de faixas analisadas. */
   size() {
     return this._cache.size;

@@ -211,7 +211,7 @@
           </div>
           <div class="rounded-lg py-2" style="background:#16161f">
             <div class="text-lg font-bold" style="color:#f59e0b">{remapResult.notFound}</div>
-            <div class="text-2xs text-muted">Não encontrados</div>
+            <div class="text-2xs text-muted">Deletados</div>
           </div>
         </div>
         {#if remapResult.details?.filter(d => d.status === 'remapped').length > 0}
@@ -223,6 +223,20 @@
                   <span class="text-white">{d.title}</span>
                   <span class="text-muted ml-1">— {d.artist}</span>
                   <span class="ml-1 font-mono" style="color:#5a5a78">{d.oldKey} → {d.newKey}</span>
+                </div>
+              {/each}
+            </div>
+          </details>
+        {/if}
+        {#if remapResult.details?.filter(d => d.status === 'deleted').length > 0}
+          <details class="mt-1">
+            <summary class="text-2xs text-muted cursor-pointer">Ver faixas deletadas do cache</summary>
+            <div class="mt-2 space-y-1 max-h-48 overflow-y-auto">
+              {#each remapResult.details.filter(d => d.status === 'deleted') as d}
+                <div class="text-2xs px-2 py-1 rounded" style="background:#1a1a28">
+                  <span class="text-white">{d.title}</span>
+                  <span class="text-muted ml-1">— {d.artist}</span>
+                  <span class="ml-1 font-mono" style="color:#f59e0b">{d.oldKey}</span>
                 </div>
               {/each}
             </div>

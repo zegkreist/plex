@@ -14,7 +14,7 @@
   let pollId      = $state(null);
 
   // Batch options
-  let maxSecs     = $state(30);
+  let maxSecs     = $state(60);
   let skipExisting = $state(true);
 
   let loadingCache = $state(true);
@@ -27,7 +27,10 @@
   async function loadCacheStats() {
     loadingCache = true;
     try {
-      const data = await api('GET', '/audio/analysis-cache');
+      const [data, stats] = await Promise.all([
+        api('GET', '/audio/analysis-cache'),
+        api('GET', '/library/stats').catch(() => null),
+      ]);
       // tracks is { ratingKey: { ratingKey, title, artist, analysis: {...} } } — convert to array
       const tracksArr = Object.values(data?.tracks ?? {});
       // Normalize for display: flatten analysis fields one level up
@@ -37,11 +40,14 @@
         energy: t.analysis?.energy ?? null,
         bpm:    t.analysis?.bpm    ?? null,
       }));
+      const analyzedCount = data.size ?? tracksArr.length;
+      const totalTracks   = stats?.totalTracks ?? analyzedCount;
+      const coverage      = totalTracks > 0 ? (analyzedCount / totalTracks) * 100 : 0;
       cacheStats = {
-        analyzedCount: data.size ?? tracksArr.length,
-        totalTracks:   data.size ?? tracksArr.length,
-        coverage:      100,
-        cacheSize:     data.size ?? tracksArr.length,
+        analyzedCount,
+        totalTracks,
+        coverage,
+        cacheSize: analyzedCount,
       };
     } catch (e) { errorMsg = e.message; }
     finally { loadingCache = false; }
@@ -81,8 +87,10 @@
         skipExisting,
       });
       toast('Análise iniciada…');
-      await loadProgress();
+      // Força o progresso aparecer imediatamente com estado "iniciando"
+      if (!progress) progress = { running: true, total: 0, processed: 0, done: 0, failed: 0, pct: 0, current: '' };
       startPolling();
+      await loadProgress();
     } catch (e) { errorMsg = e.message; }
   }
 

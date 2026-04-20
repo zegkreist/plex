@@ -40,9 +40,10 @@ export class AudioAnalyzerService {
    *   ffmpegBin?: string,
    * }} config
    *
-   * plexMediaRoot — raiz local onde toda a mídia está montada (ex: "/media").
-   *                 Os paths vindos do Plex já incluem a subpasta correta
-   *                 (/music/..., /movies/...) e são simplesmente concatenados.
+   * plexMediaRoot — raiz local onde a mídia está montada (ex: "/media").
+   *                 O Plex às vezes retorna paths que repetem o nome da pasta raiz
+   *                 com capitalização diferente (ex: plexPath=/Media/music/...,
+   *                 root=/media). _resolvePath detecta e strip automaticamente.
    */
   constructor({
     plexMediaRoot = process.env.PLEX_MEDIA_PATH || "",
@@ -199,14 +200,31 @@ export class AudioAnalyzerService {
 
   /**
    * Converte o path do Plex para o path local real.
-   * Ex: "/music/3/Track.flac" → "/home/.../plex_server/music/3/Track.flac"
+   *
+   * Casos suportados (PLEX_MEDIA_PATH=/media):
+   *   /music/Artist/song.flac        → /media/music/Artist/song.flac  (sem prefixo)
+   *   /Media/music/Artist/song.flac  → /media/music/Artist/song.flac  (prefixo auto-detectado)
+   *
+   * A detecção funciona comparando o primeiro segmento do plexPath (case-insensitive)
+   * com o basename de plexMediaRoot. Se coincidir, o segmento é removido.
    */
   _resolvePath(plexPath) {
     if (!plexPath) return null;
     if (!this._plexMediaRoot) return plexPath;
-    // plexPath já contém a subpasta de mídia (ex: /music/Artist/song.flac).
-    // Basta concatenar com a raiz local: /media + /music/Artist/song.flac → /media/music/Artist/song.flac
-    return pathJoin(this._plexMediaRoot, plexPath);
+
+    // basename de plexMediaRoot, ex: "/media" → "media"
+    const rootBase = this._plexMediaRoot.replace(/\/$/, "").split("/").pop().toLowerCase();
+    // primeiro segmento do plexPath, ex: "/Media/music/..." → "Media"
+    const firstSeg = plexPath.replace(/^\//, "").split("/")[0].toLowerCase();
+
+    let relative = plexPath;
+    if (rootBase && firstSeg === rootBase) {
+      // Strip o primeiro segmento duplicado
+      relative = plexPath.slice(firstSeg.length + 1) || "/";
+      if (!relative.startsWith("/")) relative = "/" + relative;
+    }
+
+    return pathJoin(this._plexMediaRoot, relative);
   }
 
   // ─── ffprobe — formato + tags ─────────────────────────────────────────────
