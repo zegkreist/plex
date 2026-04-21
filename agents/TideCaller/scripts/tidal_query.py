@@ -22,6 +22,84 @@ SCRIPT_DIR  = Path(__file__).parent.absolute()
 AGENT_DIR   = SCRIPT_DIR.parent
 CONFIG_TOML = AGENT_DIR / "config" / ".config" / "streamrip" / "config.toml"
 
+# Qualidade alvo para Tidal: 1 = HIGH (320kbps AAC) — funciona em qualquer plano
+_TARGET_TIDAL_QUALITY = 3
+
+
+def _patch_config_quality():
+    """
+    Garante que o config.toml do streamrip tem quality=1 para Tidal.
+    NÃO altera o campo version — deixar o rip gerenciar isso normalmente.
+    """
+    if not CONFIG_TOML.exists():
+        return
+    try:
+        text = CONFIG_TOML.read_text(encoding="utf-8")
+        original = text
+
+        # Forçar qualidade=1 na seção [tidal] apenas
+        def set_tidal_quality(m):
+            return re.sub(r'(?m)^(quality\s*=\s*)\d+', rf'\g<1>{_TARGET_TIDAL_QUALITY}', m.group(0), count=1)
+        text = re.sub(r'(?ms)^\[tidal\].*?(?=^\[|\Z)', set_tidal_quality, text)
+
+        if text != original:
+            CONFIG_TOML.write_text(text, encoding="utf-8")
+    except Exception:
+        pass  # Não bloquear o download por falha de patch
+
+
+def _refresh_and_save_tokens() -> bool:
+    """
+    Carrega sessão tidalapi, deixa o refresh automático acontecer se necessário,
+    e sobrescreve access_token/token_expiry no config.toml com os valores atualizados.
+    Retorna True se a sessão está válida, False em caso de falha.
+    """
+    if not CONFIG_TOML.exists():
+        return False
+    try:
+        import tidalapi
+        from datetime import datetime, timezone
+
+        content = CONFIG_TOML.read_text(encoding="utf-8")
+
+        def _ex(key):
+            m = re.search(rf'^{re.escape(key)}\s*=\s*"?([^"\n\s]+)"?', content, re.MULTILINE)
+            return m.group(1) if m else ""
+
+        access_token  = _ex("access_token")
+        refresh_token = _ex("refresh_token")
+        token_expiry  = _ex("token_expiry")
+
+        if not refresh_token:
+            return False
+
+        session = tidalapi.Session()
+        expiry_dt = datetime.fromtimestamp(int(float(token_expiry or 0)), tz=timezone.utc) if token_expiry else None
+        session.load_oauth_session("Bearer", access_token, refresh_token, expiry_dt)
+
+        if not session.check_login():
+            return False
+
+        # Salvar tokens atualizados (tidalapi pode ter feito refresh automático)
+        new_access  = getattr(session, "access_token",  None) or access_token
+        # Definir expiry como agora+7d para que o streamrip NÃO tente renovar
+        # com as próprias credenciais (client_id diferente → 403)
+        import time as _time
+        fake_expiry_ts = str(int(_time.time()) + 7 * 24 * 3600)
+
+        updated = content
+        updated = re.sub(r'(?m)^(access_token\s*=\s*).*$',
+                         f'access_token = "{new_access}"', updated)
+        updated = re.sub(r'(?m)^(token_expiry\s*=\s*).*$',
+                         f'token_expiry = "{fake_expiry_ts}"', updated)
+        if updated != content:
+            CONFIG_TOML.write_text(updated, encoding="utf-8")
+
+        return True
+    except Exception as e:
+        sys.stderr.write(f"[WARN] _refresh_and_save_tokens: {e}\n")
+        return False
+
 
 # ── Sessão ────────────────────────────────────────────────────────────────────
 
@@ -130,28 +208,88 @@ def cmd_list_albums(artist_id: str):
     _out(out)
 
 
+def _rip_major_version(rip_bin: str) -> int:
+    """Retorna a versão major do rip (1 ou 2). Default 1 em caso de erro."""
+    try:
+        r = subprocess.run([rip_bin, "--version"], capture_output=True, text=True, timeout=5)
+        out = r.stdout + r.stderr
+        m = re.search(r"(\d+)\.\d+", out)
+        return int(m.group(1)) if m else 1
+    except Exception:
+        return 1
+
+
+def _rip_url(rip_bin: str, url: str, quality: int, env: dict, major_ver: int,
+             download_dir: str) -> subprocess.CompletedProcess:
+    """Executa 'rip url [...] <url>' e retorna o CompletedProcess."""
+    if major_ver == 1:
+        # v1.x: suporta --max-quality, --ignore-db, --directory
+        cmd = [rip_bin, "url", "--ignore-db",
+               "--max-quality", str(quality),
+               "--directory", download_dir, url]
+    else:
+        # v2.x: qualidade e pasta via config.toml; não suporta --ignore-db
+        cmd = [rip_bin, "url", url]
+    return subprocess.run(cmd, cwd=str(AGENT_DIR), env=env, capture_output=True, text=True)
+
+
 def cmd_download_albums(album_ids: list[str]):
+    _patch_config_quality()  # garantir quality=1
+    # Refrescar o access_token antes de rodar o rip (token expira a cada ~7 dias)
+    token_ok = _refresh_and_save_tokens()
+    if not token_ok:
+        for aid in album_ids:
+            print(json.dumps({"albumId": aid, "ok": False,
+                              "error": "Token Tidal inválido ou expirado. Refaça o login OAuth."}),
+                  flush=True)
+        _out({"done": True, "results": []})
+        return
     # Prefere o binário do venv; cai para o rip do sistema se não existir
     _venv_rip = AGENT_DIR / ".venv_tidal" / "bin" / "rip"
     rip_bin = str(_venv_rip) if _venv_rip.exists() else "rip"
+    major_ver = _rip_major_version(rip_bin)
+    # Pasta de destino: env var TIDECALLER_DOWNLOADS ou valor do config.toml
+    download_dir = os.environ.get("TIDECALLER_DOWNLOADS") or str(AGENT_DIR / "downloads")
     env = {
         **os.environ,
         "XDG_CONFIG_HOME": str(AGENT_DIR / "config" / ".config"),
     }
+    # Qualidades Tidal: 3=HiFi+ (MQA), 2=LOSSLESS (FLAC), 1=HIGH (320kbps AAC), 0=LOW (96kbps AAC)
+    # v1.x: tenta do melhor para o pior via --max-quality
+    # v2.x: qualidade definida no config.toml (não aceita flag CLI)
+    QUALITY_FALLBACKS = [3, 2, 1, 0] if major_ver == 1 else [1]
+
     results = []
     for aid in album_ids:
         url = f"https://tidal.com/browse/album/{aid}"
         try:
-            r = subprocess.run(
-                [rip_bin, "url", url],
-                cwd=str(AGENT_DIR),
-                env=env,
-                capture_output=True,
-                text=True,
-            )
-            ok = r.returncode == 0
-            results.append({"albumId": aid, "ok": ok, "url": url,
-                             "error": r.stderr.strip()[-300:] if not ok and r.stderr else None})
+            last_combined = ""
+            ok = False
+            used_quality = None
+            for q in QUALITY_FALLBACKS:
+                r = _rip_url(rip_bin, url, q, env, major_ver, download_dir)
+                combined = (r.stderr.strip() + "\n" + r.stdout.strip()).strip()
+                last_combined = combined
+                if r.returncode == 0:
+                    ok = True
+                    used_quality = q
+                    break
+                if major_ver == 1:
+                    # Continua para próxima qualidade se erro sugere tier indisponível
+                    low = combined.lower()
+                    if not any(kw in low for kw in ("quality", "unavailable", "not available",
+                                                     "401", "403", "tier", "subscription",
+                                                     "not found", "no tracks")):
+                        break  # Erro diferente — não tenta fallback
+                # v2.x: uma única tentativa (qualidade via config)
+
+            err_msg = last_combined[-500:] if last_combined else None
+            results.append({
+                "albumId": aid, "ok": ok, "url": url,
+                "quality": used_quality,
+                "error": None if ok else err_msg,
+                "output": last_combined[-300:] if ok else None,
+            })
         except Exception as e:
             results.append({"albumId": aid, "ok": False, "error": str(e), "url": url})
         # Flush uma linha por vez para que o chamador acompanhe o progresso

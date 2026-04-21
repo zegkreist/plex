@@ -35,6 +35,8 @@ import { MovieOrganizer } from "./movieOrganizer.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PLEX_ROOT = path.resolve(__dirname, "../../..");
+const DOWNLOADS_DIR  = process.env.DOWNLOADS_DIR  || "/downloads";
+const PLEX_MEDIA_PATH = process.env.PLEX_MEDIA_PATH || "/media";
 
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run") || args.includes("-d");
@@ -73,17 +75,17 @@ async function runMusic() {
   console.log(`${C.bold}${C.cyan}🚚 Transporter → Música (Tidal + Torrent → library)${C.reset}`);
   console.log(`${C.dim}${"─".repeat(70)}${C.reset}`);
 
-  const organizer = new MusicOrganizer(path.join(PLEX_ROOT, "music"), { dryRun, verbose });
+  const organizer = new MusicOrganizer(path.join(PLEX_MEDIA_PATH, "music"), { dryRun, verbose });
 
   // Fonte 1: TideCaller (Tidal — já mais organizado)
   await organizer.processSource(
-    path.join(PLEX_ROOT, "agents", "TideCaller", "downloads"),
+    path.join(DOWNLOADS_DIR, "tidecaller"),
     "TideCaller"
   );
 
   // Fonte 2: Stormbringer (torrent — vários formatos de pasta)
   await organizer.processSource(
-    path.join(PLEX_ROOT, "downloads", "musicas"),
+    path.join(DOWNLOADS_DIR, "stormbringer", "musicas"),
     "Stormbringer"
   );
 
@@ -95,13 +97,13 @@ async function runMovies() {
   console.log(`${C.bold}${C.cyan}🚚 Transporter → Filmes (Torrent → library)${C.reset}`);
   console.log(`${C.dim}${"─".repeat(70)}${C.reset}`);
 
-  const organizer = new MovieOrganizer(path.join(PLEX_ROOT, "movies"), {
+  const organizer = new MovieOrganizer(path.join(PLEX_MEDIA_PATH, "movies"), {
     dryRun,
     verbose,
   });
 
   organizer.processSource(
-    path.join(PLEX_ROOT, "agents", "Stormbringer", "downloads", "filmes"),
+    path.join(DOWNLOADS_DIR, "stormbringer", "filmes"),
     "Stormbringer"
   );
 
@@ -110,14 +112,14 @@ async function runMovies() {
 
 async function runSeries() {
   const extraArgs = dryRun ? ["--dry-run"] : ["--yes", "--series-only"];
-  const stormbringerDir = path.join(PLEX_ROOT, "agents", "Stormbringer");
+  const stormbringerDir = process.env.STORMBRINGER_DIR || path.join(path.resolve(__dirname, "../../.."), "agents", "Stormbringer");
   await spawnAsync("node", ["src/plexOrganizer.js", ...extraArgs], stormbringerDir, "Séries (Torrent → library)");
 }
 
 // Legado: mantido para compatibilidade com chamadas diretas --video
 async function runVideo() {
   const extraArgs = dryRun ? ["--dry-run"] : ["--yes"];
-  const stormbringerDir = path.join(PLEX_ROOT, "agents", "Stormbringer");
+  const stormbringerDir = process.env.STORMBRINGER_DIR || path.join(path.resolve(__dirname, "../../.."), "agents", "Stormbringer");
   await spawnAsync("node", ["src/plexOrganizer.js", ...extraArgs], stormbringerDir, "Vídeo — filmes e séries (Torrent → library)");
 }
 

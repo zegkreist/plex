@@ -113,11 +113,32 @@ function tidalQuery(args, timeoutMs = 20000) {
 }
 
 /** Inicia processo detached (fire-and-forget). */
-function spawnDetached(cmd, args, cwd) {
+function spawnDetached(cmd, args, cwd, opts = {}) {
   return new Promise((resolve, reject) => {
     logger.debug("SERVER", `spawn: ${cmd} ${args.join(" ")}`, { cwd });
-    const proc = spawn(cmd, args, { cwd, detached: true, stdio: "ignore" });
+    const proc = spawn(cmd, args, { cwd, detached: true, stdio: ["ignore", "pipe", "pipe"], ...opts });
     proc.unref();
+    // Pipe output to logger so it appears in log file
+    if (proc.stdout) {
+      let buf = "";
+      proc.stdout.on("data", chunk => {
+        buf += chunk.toString();
+        const lines = buf.split("\n");
+        buf = lines.pop();
+        lines.forEach(l => { if (l.trim()) logger.info("TRANSPORTER", l.trim()); });
+      });
+      proc.stdout.on("end", () => { if (buf.trim()) logger.info("TRANSPORTER", buf.trim()); });
+    }
+    if (proc.stderr) {
+      let ebuf = "";
+      proc.stderr.on("data", chunk => {
+        ebuf += chunk.toString();
+        const lines = ebuf.split("\n");
+        ebuf = lines.pop();
+        lines.forEach(l => { if (l.trim()) logger.warn("TRANSPORTER", l.trim()); });
+      });
+      proc.stderr.on("end", () => { if (ebuf.trim()) logger.warn("TRANSPORTER", ebuf.trim()); });
+    }
     proc.on("error", reject);
     resolve({ status: "started", pid: proc.pid });
   });
@@ -468,7 +489,13 @@ export function toolsRouter(router) {
     const label = artistName ? `${artistName} (${ids.length} álbuns)` : `${ids.length} álbuns`;
     logger.info("SERVER", `TideCaller download iniciado — jobId=${jobId} ${label}`);
 
-    const env = { ...process.env, XDG_CONFIG_HOME: join(TIDECALLER_DIR, "config", ".config") };
+    const _tcDownloads = join(process.env.DOWNLOADS_DIR || "/downloads", "tidecaller");
+    const env = {
+      ...process.env,
+      XDG_CONFIG_HOME: join(TIDECALLER_DIR, "config", ".config"),
+      TIDECALLER_DOWNLOADS: _tcDownloads,
+    };
+    logger.info("SERVER", `TideCaller download dir: ${_tcDownloads}`);
     const proc = spawn(TC_PYTHON, [TC_QUERY, "download-albums", ...ids], {
       cwd: TIDECALLER_DIR, env, stdio: ["ignore", "pipe", "pipe"],
     });
@@ -487,8 +514,12 @@ export function toolsRouter(router) {
             const entry = job.albums.find(a => a.id === parsed.albumId);
             if (entry) {
               entry.status = parsed.ok ? "done" : "error";
+              if (parsed.error) entry.lastError = parsed.error;
               const icon = parsed.ok ? "✓" : "✗";
-              logger.info("SERVER", `TideCaller [${icon}] álbum jobId=${jobId} id=${parsed.albumId} "${entry.name}"`);
+              const qualityNote = parsed.quality != null ? ` (q=${parsed.quality})` : "";
+              logger.info("SERVER", `TideCaller [${icon}] álbum jobId=${jobId} id=${parsed.albumId} "${entry.name}"${qualityNote}`);
+              if (!parsed.ok && parsed.error) logger.warn("SERVER", `TideCaller erro álbum ${parsed.albumId}: ${parsed.error}`);
+              if (parsed.ok && parsed.output)  logger.info("SERVER", `TideCaller saida álbum ${parsed.albumId}: ${parsed.output}`);
             }
           } else if (parsed.done) {
             job.status = "done";
@@ -496,7 +527,8 @@ export function toolsRouter(router) {
         } catch { /* non-JSON line — ignore */ }
       }
     });
-    proc.stderr.on("data", chunk => { job.lastError = chunk.toString().slice(-300); });
+    let _stderrBuf = "";
+    proc.stderr.on("data", chunk => { _stderrBuf += chunk.toString(); job.lastError = _stderrBuf.slice(-500); });
     proc.on("close", code => {
       job.finishedAt = new Date().toISOString();
       job.status = job.status === "running" ? (code === 0 ? "done" : "error") : job.status;
@@ -553,10 +585,13 @@ export function toolsRouter(router) {
     const { type = "music" } = req.body || {};
     const flagMap = { music: ["--music"], movies: ["--movies"], series: ["--series"], all: [] };
     const flags = flagMap[type] ?? ["--music"];
+    const _dl = process.env.DOWNLOADS_DIR || "/downloads";
+    const _media = process.env.PLEX_MEDIA_PATH || "/media";
+    logger.info("SERVER", `Transporter (${type}) — origem: ${_dl} → destino: ${_media}`);
 
     try {
       const result = await spawnDetached("node", ["src/run.js", ...flags], TRANSPORTER_DIR);
-      logger.info("SERVER", `Transporter iniciado (${type})`);
+      logger.info("SERVER", `Transporter iniciado (${type}) pid=${result.pid}`);
       res.json({ ...result, message: `Transporter iniciado — movendo ${type}` });
     } catch (err) {
       logger.error("SERVER", `Transporter error: ${err.message}`);
@@ -566,11 +601,12 @@ export function toolsRouter(router) {
 
   // ── GET /api/tools/transporter/pending ──────────────────────────────────────
   router.get("/tools/transporter/pending", (_req, res) => {
+    const _dl = process.env.DOWNLOADS_DIR || "/downloads";
     const sources = [
-      { name: "TideCaller (Tidal)",     type: "music",  icon: "🌊", path: join(TIDECALLER_DIR, "downloads") },
-      { name: "Stormbringer (música)",  type: "music",  icon: "⚡", path: join(STORMBRINGER_DIR, "downloads", "musicas") },
-      { name: "Stormbringer (filmes)",  type: "movies", icon: "🎬", path: join(STORMBRINGER_DIR, "downloads", "filmes") },
-      { name: "Stormbringer (séries)", type: "tv",     icon: "📺", path: join(STORMBRINGER_DIR, "downloads", "series") },
+      { name: "TideCaller (Tidal)",     type: "music",  icon: "🌊", path: join(_dl, "tidecaller") },
+      { name: "Stormbringer (música)",  type: "music",  icon: "⚡", path: join(_dl, "stormbringer", "musicas") },
+      { name: "Stormbringer (filmes)",  type: "movies", icon: "🎬", path: join(_dl, "stormbringer", "filmes") },
+      { name: "Stormbringer (séries)", type: "tv",     icon: "📺", path: join(_dl, "stormbringer", "series") },
     ];
     const result = sources.map(src => {
       let items = [];

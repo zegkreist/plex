@@ -258,10 +258,39 @@ def main():
         print("=" * 60)
         print()
 
-    # Modo --check: só verifica, não renova
+    # Modo --check: verifica via API (não só o timestamp)
     if check_only:
-        expired = is_token_expired()
-        sys.exit(1 if expired else 0)
+        try:
+            import tidalapi
+            from datetime import datetime, timezone
+            content = CONFIG_TOML.read_text(encoding="utf-8") if CONFIG_TOML.exists() else ""
+
+            def _extract(key):
+                m = re.search(rf'^{re.escape(key)}\s*=\s*"([^"]*)"', content, re.MULTILINE)
+                if m: return m.group(1)
+                m = re.search(rf'^{re.escape(key)}\s*=\s*(\S+)', content, re.MULTILINE)
+                return m.group(1) if m else ""
+
+            access_token  = _extract("access_token")
+            refresh_token = _extract("refresh_token")
+            token_expiry  = _extract("token_expiry")
+
+            if not access_token or not refresh_token:
+                print("❌ Nenhum token encontrado no config.")
+                sys.exit(1)
+
+            session = tidalapi.Session()
+            expiry_dt = datetime.fromtimestamp(int(token_expiry or 0), tz=timezone.utc) if token_expiry else None
+            session.load_oauth_session("Bearer", access_token, refresh_token, expiry_dt)
+            if session.check_login():
+                print("✅ Token válido (verificado via API Tidal).")
+                sys.exit(0)
+            else:
+                print("❌ Token inválido (check_login() retornou False).")
+                sys.exit(1)
+        except Exception as e:
+            print(f"❌ Erro ao verificar token: {e}")
+            sys.exit(1)
 
     # Verificar expiração
     expired = is_token_expired()

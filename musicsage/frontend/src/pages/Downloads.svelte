@@ -45,9 +45,17 @@
   // ─── STORMBRINGER ────────────────────────────────────────
   let sbQuery    = $state('');
   let sbType     = $state('music');  // music | movie | series
+  let sbYear     = $state('');
+  let sbSeason   = $state('');
+  let sbEpisode  = $state('');
   let sbResults  = $state([]);
   let sbLoading  = $state(false);
   let sbError    = $state('');
+
+  function sbClearTypeFields() {
+    sbYear = ''; sbSeason = ''; sbEpisode = '';
+    sbResults = []; sbError = '';
+  }
 
   async function sbSearch() {
     if (!sbQuery.trim()) return;
@@ -55,8 +63,22 @@
     sbError   = '';
     sbResults = [];
     try {
-      const pathMap = { music: '/tools/stormbringer/search', movie: '/tools/stormbringer/search/movie', series: '/tools/stormbringer/search/series' };
-      sbResults = await api('POST', pathMap[sbType] ?? pathMap.music, { query: sbQuery.trim() });
+      let body, path;
+      if (sbType === 'movie') {
+        path = '/tools/stormbringer/search/movie';
+        body = { title: sbQuery.trim(), year: sbYear ? parseInt(sbYear) : null };
+      } else if (sbType === 'series') {
+        path = '/tools/stormbringer/search/series';
+        body = {
+          title:   sbQuery.trim(),
+          season:  sbSeason  ? parseInt(sbSeason)  : null,
+          episode: sbEpisode ? parseInt(sbEpisode) : null,
+        };
+      } else {
+        path = '/tools/stormbringer/search';
+        body = { query: sbQuery.trim() };
+      }
+      sbResults = await api('POST', path, body);
       if (!Array.isArray(sbResults)) sbResults = sbResults?.results ?? [];
     } catch (e) { sbError = e.message; }
     finally { sbLoading = false; }
@@ -64,7 +86,11 @@
 
   async function sbDownload(torrent) {
     try {
-      await api('POST', '/tools/stormbringer/download', { magnet: torrent.magnet ?? torrent.link ?? torrent });
+      const magnet = torrent.magnet ?? torrent.link ?? torrent;
+      const endpoint = sbType === 'music'
+        ? '/tools/stormbringer/download'
+        : '/tools/stormbringer/download/media';
+      await api('POST', endpoint, { magnet });
       toast.success(`Download iniciado: ${torrent.title ?? torrent.name}`);
       await loadDownloads();
     } catch (e) { toast.error(e.message); }
@@ -369,30 +395,88 @@
       </div>
       <div class="px-5 py-4 space-y-4">
         <!-- Search row -->
-        <div class="flex gap-2 flex-wrap">
-          <div class="flex gap-1 p-1 rounded-lg" style="background:#0a0a0f">
-            {#each [['music','Música'],['movie','Filme'],['series','Série']] as [t, l]}
-              <button
-                class="px-3 py-1 rounded-md text-2xs font-semibold transition-all"
-                style={sbType === t
-                  ? 'background:rgba(124,106,245,0.18);color:#9d8eff'
-                  : 'color:#5a5a78'}
-                onclick={() => sbType = t}
-              >{l}</button>
-            {/each}
+        <div class="space-y-2">
+          <!-- Type selector + main query -->
+          <div class="flex gap-2 flex-wrap">
+            <div class="flex gap-1 p-1 rounded-lg shrink-0" style="background:#0a0a0f">
+              {#each [['music','Música'],['movie','Filme'],['series','Série']] as [t, l]}
+                <button
+                  class="px-3 py-1 rounded-md text-2xs font-semibold transition-all"
+                  style={sbType === t
+                    ? 'background:rgba(124,106,245,0.18);color:#9d8eff'
+                    : 'color:#5a5a78'}
+                  onclick={() => { sbType = t; sbClearTypeFields(); }}
+                >{l}</button>
+              {/each}
+            </div>
+            <input
+              type="text"
+              bind:value={sbQuery}
+              placeholder={sbType === 'music' ? 'Artista, álbum…' : sbType === 'movie' ? 'Título do filme…' : 'Nome da série…'}
+              class="flex-1 min-w-48 rounded-lg px-3 py-1.5 text-sm text-white transition-colors
+                     placeholder:text-[#5a5a78] focus:outline-none"
+              style="background:#16161f;border:1px solid #1e1e2e"
+              onfocus={e => e.currentTarget.style.borderColor='rgba(124,106,245,0.4)'}
+              onblur={e => e.currentTarget.style.borderColor='#1e1e2e'}
+              onkeydown={e => e.key === 'Enter' && sbSearch()}
+            />
+            <Button onclick={sbSearch} loading={sbLoading} size="sm">Buscar</Button>
           </div>
-          <input
-            type="text"
-            bind:value={sbQuery}
-            placeholder="Buscar torrent…"
-            class="flex-1 min-w-48 rounded-lg px-3 py-1.5 text-sm text-white transition-colors
-                   placeholder:text-[#5a5a78] focus:outline-none"
-            style="background:#16161f;border:1px solid #1e1e2e"
-            onfocus={e => e.currentTarget.style.borderColor='rgba(124,106,245,0.4)'}
-            onblur={e => e.currentTarget.style.borderColor='#1e1e2e'}
-            onkeydown={e => e.key === 'Enter' && sbSearch()}
-          />
-          <Button onclick={sbSearch} loading={sbLoading} size="sm">Buscar</Button>
+
+          <!-- Extra fields: year (movie) or season/episode (series) -->
+          {#if sbType === 'movie'}
+            <div class="flex gap-2 items-center">
+              <span class="text-2xs shrink-0" style="color:#5a5a78">Ano (opcional)</span>
+              <input
+                type="number"
+                bind:value={sbYear}
+                placeholder="Ex: 2024"
+                min="1900" max="2099"
+                class="w-28 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none
+                       placeholder:text-[#5a5a78]"
+                style="background:#16161f;border:1px solid #1e1e2e"
+                onfocus={e => e.currentTarget.style.borderColor='rgba(124,106,245,0.4)'}
+                onblur={e => e.currentTarget.style.borderColor='#1e1e2e'}
+                onkeydown={e => e.key === 'Enter' && sbSearch()}
+              />
+            </div>
+          {:else if sbType === 'series'}
+            <div class="flex gap-3 items-center flex-wrap">
+              <span class="text-2xs shrink-0" style="color:#5a5a78">Filtros (opcional)</span>
+              <div class="flex gap-2">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-2xs" style="color:#5a5a78">Temp.</span>
+                  <input
+                    type="number"
+                    bind:value={sbSeason}
+                    placeholder="1"
+                    min="1"
+                    class="w-16 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none
+                           placeholder:text-[#5a5a78]"
+                    style="background:#16161f;border:1px solid #1e1e2e"
+                    onfocus={e => e.currentTarget.style.borderColor='rgba(124,106,245,0.4)'}
+                    onblur={e => e.currentTarget.style.borderColor='#1e1e2e'}
+                    onkeydown={e => e.key === 'Enter' && sbSearch()}
+                  />
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-2xs" style="color:#5a5a78">Ep.</span>
+                  <input
+                    type="number"
+                    bind:value={sbEpisode}
+                    placeholder="1"
+                    min="1"
+                    class="w-16 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none
+                           placeholder:text-[#5a5a78]"
+                    style="background:#16161f;border:1px solid #1e1e2e"
+                    onfocus={e => e.currentTarget.style.borderColor='rgba(124,106,245,0.4)'}
+                    onblur={e => e.currentTarget.style.borderColor='#1e1e2e'}
+                    onkeydown={e => e.key === 'Enter' && sbSearch()}
+                  />
+                </div>
+              </div>
+            </div>
+          {/if}
         </div>
 
         {#if sbError}

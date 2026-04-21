@@ -47,9 +47,10 @@ class PlexOrganizer {
 
     // Resolver paths de destino relativamente ao REPO_ROOT
     const plex = config.plex || {};
-    this.destMovies = plex.movies ? path.resolve(REPO_ROOT, plex.movies) : (process.env.MOVIES_PATH || path.join(REPO_ROOT, "movies"));
-    this.destSeries = plex.series ? path.resolve(REPO_ROOT, plex.series) : (process.env.SERIES_PATH || path.join(REPO_ROOT, "tv"));
-    this.destMusic = plex.music ? path.resolve(REPO_ROOT, plex.music) : (process.env.MUSIC_PATH || path.join(REPO_ROOT, "music"));
+    const _mediaRoot = process.env.PLEX_MEDIA_PATH || "/media";
+    this.destMovies = plex.movies ? path.resolve(REPO_ROOT, plex.movies) : (process.env.MOVIES_PATH || path.join(_mediaRoot, "movies"));
+    this.destSeries = plex.series ? path.resolve(REPO_ROOT, plex.series) : (process.env.SERIES_PATH || path.join(_mediaRoot, "tv"));
+    this.destMusic = plex.music ? path.resolve(REPO_ROOT, plex.music) : (process.env.MUSIC_PATH || path.join(_mediaRoot, "music"));
 
     // Extensões de vídeo suportadas (Stormbringer-specific)
     this.videoExtensions = [".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".mpg", ".mpeg"];

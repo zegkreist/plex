@@ -88,6 +88,10 @@ COPY agents/TideCaller/config   /agents/TideCaller/config
 # Isso garante que TC_PYTHON (.venv_tidal/bin/python3) exista no container.
 RUN python3 -m venv /agents/TideCaller/.venv_tidal \
     && /agents/TideCaller/.venv_tidal/bin/pip install --no-cache-dir tidalapi streamrip
+# Patch: lyrics 401 não deve abortar o download (streamrip issue #959).
+# A versão do PyPI só captura TypeError; alargamos para Exception.
+RUN sed -i 's/except TypeError as e:/except Exception as e:/' \
+    /agents/TideCaller/.venv_tidal/lib/python3.*/site-packages/streamrip/client/tidal.py
 # Atenção: o token OAuth do Tidal fica em /agents/TideCaller/config/.config
 # Monte um volume ou passe via env para persistência: -v tidal-config:/agents/TideCaller/config
 

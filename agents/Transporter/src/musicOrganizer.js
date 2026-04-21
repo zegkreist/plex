@@ -201,7 +201,9 @@ export class MusicOrganizer {
   _cleanResidualFolder(folderPath, folderName, logPrefix = "") {
     const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
     const files = fs.readdirSync(folderPath);
-    const hasOnlyImages = files.length > 0 && files.every((f) => IMAGE_EXTENSIONS.includes(path.extname(f).toLowerCase()));
+    // Considera apenas arquivos (não diretórios) para decidir se é pasta residual
+    const nonDirFiles = files.filter(f => fs.statSync(path.join(folderPath, f)).isFile());
+    const hasOnlyImages = nonDirFiles.length > 0 && nonDirFiles.every((f) => IMAGE_EXTENSIONS.includes(path.extname(f).toLowerCase()));
 
     if (!hasOnlyImages) return; // Tem outros arquivos, não mexer
 
@@ -220,36 +222,48 @@ export class MusicOrganizer {
   }
 
   /**
-   * Move imagens de capa da pasta de origem para o destino.
-   * Prioriza: folder.jpg > cover.jpg > front.jpg > qualquer imagem encontrada.
-   * Não sobrescreve se já existir — mas SEMPRE limpa o arquivo de origem.
+   * Move TODAS as imagens da pasta de origem (e subpastas de disco) para o destino.
+   * Mantém os nomes originais. Não sobrescreve arquivos existentes.
    * @private
    */
   _moveImages(sourceDir, destDir, extensions) {
-    const PRIORITY = ["folder.jpg", "folder.jpeg", "folder.png", "cover.jpg", "cover.jpeg", "cover.png", "front.jpg", "front.jpeg", "front.png"];
+    this._moveImagesFromDir(sourceDir, destDir, extensions);
+    // Também processar subpastas de disco (CD 1, Disc 2, etc.)
+    if (fs.existsSync(sourceDir)) {
+      for (const sub of fs.readdirSync(sourceDir)) {
+        const subp = path.join(sourceDir, sub);
+        try {
+          if (fs.statSync(subp).isDirectory() && isDiscFolder(sub)) {
+            this._moveImagesFromDir(subp, destDir, extensions);
+          }
+        } catch { /* ignorar */ }
+      }
+    }
+  }
+
+  /**
+   * Move todas as imagens de um único diretório para o destino.
+   * @private
+   */
+  _moveImagesFromDir(sourceDir, destDir, extensions) {
+    if (!fs.existsSync(sourceDir)) return;
     const files = fs.readdirSync(sourceDir).filter((f) => extensions.includes(path.extname(f).toLowerCase()));
     if (files.length === 0) return;
 
-    // Escolher a imagem com maior prioridade; fallback para a primeira encontrada
-    const chosen = PRIORITY.find((p) => files.map(f => f.toLowerCase()).includes(p)) || files[0];
-    const dest = path.join(destDir, "folder.jpg");
-
-    if (!fs.existsSync(dest)) {
-      try {
-        moveFile(path.join(sourceDir, chosen), dest);
-        if (this.verbose) console.log(`   🖼️  cover → folder.jpg`);
-      } catch (err) {
-        console.error(`   ✗ cover: ${err.message}`);
-      }
-    }
-
-    // Remover TODAS as imagens da origem (incluindo o chosen se não foi movido)
     for (const f of files) {
-      const fp = path.join(sourceDir, f);
-      if (!fs.existsSync(fp)) continue; // já foi movido via moveFile (rename/unlink)
+      const src = path.join(sourceDir, f);
+      const dest = path.join(destDir, f);
+      if (fs.existsSync(dest)) {
+        // Já existe no destino — apenas remove da origem
+        try { fs.unlinkSync(src); } catch { /* ignorar */ }
+        continue;
+      }
       try {
-        fs.unlinkSync(fp);
-      } catch { /* ignorar */ }
+        moveFile(src, dest);
+        if (this.verbose) console.log(`   🖼️  ${f}`);
+      } catch (err) {
+        console.error(`   ✗ imagem ${f}: ${err.message}`);
+      }
     }
   }
 
