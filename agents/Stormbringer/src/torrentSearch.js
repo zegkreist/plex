@@ -111,6 +111,26 @@ class TorrentSearch {
     const indexers = data?.Indexers ?? [];
     const activeIndexers = indexers.filter(i => i.Results > 0 || i.Status === 0).length;
     this._log("info", `Jackett retornou ${items.length} resultados para "${query}" (${indexers.length} indexers, ${activeIndexers} com resultado)`);
+
+    // Jackett retorna links de download com o host que ele mesmo usa internamente
+    // (pode ser localhost/127.0.0.1). Reescrevemos para o jackettUrl configurado
+    // para que o container consiga acessar.
+    const _fixLink = (url) => {
+      if (!url) return null;
+      try {
+        const u = new URL(url);
+        if (u.hostname === "localhost" || u.hostname === "127.0.0.1") {
+          u.hostname = new URL(this.jackettUrl).hostname;
+          u.port     = new URL(this.jackettUrl).port;
+        }
+        // Jackett exige apikey no link de download do .torrent
+        if (!u.searchParams.has("apikey") && !u.searchParams.has("apiKey")) {
+          u.searchParams.set("apikey", this.jackettApiKey);
+        }
+        return u.toString();
+      } catch { return url; }
+    };
+
     return items.map(r => ({
       title:    r.Title    || "",
       size:     r.Size     ? this._bytesToHuman(r.Size) : "–",
@@ -118,7 +138,8 @@ class TorrentSearch {
       peers:    r.Peers    ?? 0,
       provider: r.Tracker  || "Jackett",
       magnet:   r.MagnetUri || null,
-      link:     r.Link      || null,
+      // Só expõe link .torrent se não tiver magnet — e corrige o host
+      link:     r.MagnetUri ? null : _fixLink(r.Link),
     }));
   }
 

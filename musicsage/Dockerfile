@@ -17,7 +17,7 @@
 
 
 # ─── Stage 1 — Build Svelte frontend ─────────────────────────────────────────
-FROM node:20-alpine AS frontend-builder
+FROM node:20-slim AS frontend-builder
 
 WORKDIR /build/frontend
 COPY musicsage/frontend/package*.json ./
@@ -27,7 +27,7 @@ RUN npm run build
 
 
 # ─── Stage 2 — Instala deps Node dos agents ──────────────────────────────────
-FROM node:20-alpine AS agents-builder
+FROM node:20-slim AS agents-builder
 
 # AllFather e Transporter primeiro (mudam raramente)
 COPY agents/AllFather/   /agents/AllFather/
@@ -48,26 +48,26 @@ RUN cd /agents/Stormbringer && \
 
 
 # ─── Stage 3 — Production server ─────────────────────────────────────────────
-FROM node:20-alpine AS prod
+FROM node:20-slim AS prod
 
 # 1. Sistema: ffmpeg, bash, Python (lento, estável)
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
         ffmpeg \
-        bash \
         python3 \
-        py3-pip \
+        python3-pip \
+        python3-venv \
         gcc \
-        musl-dev \
         python3-dev \
         libffi-dev \
-        openssl-dev \
+        libssl-dev \
         cargo \
-        rust \
+        curl \
     && pip3 install --no-cache-dir --break-system-packages \
         tidalapi \
         streamrip \
-    && apk del gcc musl-dev python3-dev libffi-dev openssl-dev cargo rust \
-    && rm -rf /root/.cache/pip /root/.cargo
+    && apt-get remove -y gcc python3-dev libffi-dev libssl-dev cargo \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/* /root/.cache/pip /root/.cargo
 
 # 2. Venv do TideCaller (lento, estável — não depende de nenhum source copiado)
 RUN python3 -m venv /agents/TideCaller/.venv_tidal \
@@ -142,6 +142,6 @@ VOLUME ["/data", "/media", "/downloads"]
 EXPOSE 3002
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD wget -qO- http://localhost:3002/api/health || exit 1
+  CMD curl -sf http://localhost:3002/api/health || exit 1
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

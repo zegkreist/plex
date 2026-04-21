@@ -307,25 +307,31 @@
       {#each sbDownloads.slice(0,5) as t}
         {@const pct = torrentPct(t)}
         {@const color = torrentStatusColor(t)}
+        {@const hasName = t.name && t.name !== 'null'}
         <div class="flex items-center gap-3">
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between gap-2 mb-1">
-              <span class="text-xs text-white truncate">{t.name ?? t.title}</span>
+              <span class="text-xs text-white truncate">
+                {#if hasName}{t.name}{:else}<span style="color:#5a5a78">Aguardando metadados…</span>{/if}
+              </span>
               <span class="text-2xs font-semibold shrink-0" style="color:{color}">{pct}%</span>
             </div>
             <div class="progress-bar">
               <div class="progress-fill" style="width:{pct}%;background:{color}"></div>
             </div>
             <div class="flex gap-3 mt-1">
-              <span class="text-2xs" style="color:#5a5a78">
-                {#if t.downloadSpeed && pct < 100}{fmtBytes(t.downloadSpeed)}/s{/if}
-              </span>
+              {#if t.downloadSpeed && pct < 100}
+                <span class="text-2xs" style="color:#5a5a78">{fmtBytes(t.downloadSpeed)}/s</span>
+              {/if}
+              {#if t.peers != null}
+                <span class="text-2xs" style="color:#5a5a78">{t.peers} peers</span>
+              {/if}
               <span class="text-2xs" style="color:{color}">
                 {pct >= 100 ? 'Concluído' : (t.status ?? 'Baixando')}
               </span>
             </div>
           </div>
-          <Button size="xs" variant="danger" onclick={() => sbRemove(t.infoHash)}>✕</Button>
+          <Button size="xs" variant="danger" onclick={() => sbRemove(t.infoHash, true)}>✕</Button>
         </div>
       {/each}
 
@@ -551,7 +557,7 @@
                 {#each sbResults as r}
                   <tr class="list-row">
                     <td class="py-2.5 px-3 text-white max-w-xs truncate">{r.title ?? r.name ?? '?'}</td>
-                    <td class="py-2.5 px-3 whitespace-nowrap text-2xs" style="color:#5a5a78">{r.size ? fmtBytes(r.size) : '?'}</td>
+                    <td class="py-2.5 px-3 whitespace-nowrap text-2xs" style="color:#5a5a78">{r.size || '?'}</td>
                     <td class="py-2.5 px-3 text-2xs font-semibold" style="color:#1db954">{r.seeders ?? r.seeds ?? '?'}</td>
                     <td class="py-2.5 px-3">
                       <Button size="xs" onclick={() => sbDownload(r)}>↓ Download</Button>

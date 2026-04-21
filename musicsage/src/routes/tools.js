@@ -18,7 +18,70 @@ import { readFileSync, readdirSync, existsSync } from "fs";
 import { dirname, join, resolve } from "path";
 import { fileURLToPath } from "url";
 import { spawn, execFile } from "child_process";
+import http from "http";
+import https from "https";
 import { logger } from "../logger.js";
+import axios from "axios";
+
+const _httpsAgent = new https.Agent({ rejectUnauthorized: false });
+
+/**
+ * Faz um GET seguindo redirects manualmente.
+ * Se o redirect aponta para magnet:, retorna { magnet }.
+ * Caso contrário, retorna o Buffer do corpo da resposta final.
+ */
+function _httpGetFollowMagnet(url, redirectsLeft = 5) {
+  return new Promise((resolve, reject) => {
+    if (redirectsLeft < 0) return reject(new Error("Too many redirects"));
+    const lib = url.startsWith("https") ? https : http;
+    const opts = url.startsWith("https") ? { rejectUnauthorized: false } : {};
+    const req = lib.get(url, opts, (res) => {
+      const { statusCode, headers } = res;
+      if (statusCode >= 300 && statusCode < 400 && headers.location) {
+        const loc = headers.location;
+        res.destroy();
+        logger.info("SERVER", `Redirect ${statusCode} → ${loc.slice(0, 120)}`);
+        if (loc.startsWith("magnet:")) return resolve({ magnet: loc });
+        // Redirect relativo → absoluto
+        const next = loc.startsWith("http") ? loc : new URL(loc, url).toString();
+        return resolve(_httpGetFollowMagnet(next, redirectsLeft - 1));
+      }
+      if (statusCode < 200 || statusCode >= 300) {
+        res.destroy();
+        return reject(new Error(`HTTP ${statusCode}`));
+      }
+      const chunks = [];
+      res.on("data", c => chunks.push(c));
+      res.on("end", () => resolve({ buffer: Buffer.concat(chunks) }));
+      res.on("error", reject);
+    });
+    req.setTimeout(10_000, () => { req.destroy(new Error("timeout")); });
+    req.on("error", reject);
+  });
+}
+
+// Resolve um torrent id: magnet links passam direto;
+// URLs de .torrent são baixadas server-side com controle de redirect para magnet:.
+async function resolveTorrentId(id) {
+  if (!id) return id;
+  const s = id.trim();
+  if (s.startsWith("magnet:")) return s;
+  if (s.startsWith("http://") || s.startsWith("https://")) {
+    logger.info("SERVER", `Resolvendo .torrent via URL: ${s.slice(0, 120)}`);
+    try {
+      const result = await _httpGetFollowMagnet(s);
+      if (result.magnet) {
+        logger.info("SERVER", `Jackett retornou magnet via redirect`);
+        return result.magnet;
+      }
+      logger.info("SERVER", `Buffer .torrent obtido: ${result.buffer.byteLength} bytes`);
+      return result.buffer;
+    } catch (e) {
+      throw new Error(`Falha ao baixar .torrent (${e.message}) — ${s.slice(0, 120)}`);
+    }
+  }
+  return s;
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Caminhos absolutos para os agents irmãos no monorepo
@@ -79,6 +142,7 @@ async function getDmInstance() {
   }
   if (!_dmInstance) {
     _dmInstance = new _DownloadManagerClass(loadStormbringerConfig());
+    _dmInstance.setLogger((level, msg) => logger[level]("STORMBRINGER", msg));
   }
   return _dmInstance;
 }
@@ -309,16 +373,20 @@ export function toolsRouter(router) {
   router.post("/tools/stormbringer/download", async (req, res) => {
     const { magnet, artist, album } = req.body || {};
     if (!magnet?.trim()) return res.status(400).json({ error: "'magnet' é obrigatório" });
+    logger.info("SERVER", `Stormbringer download recebido — tipo=${typeof magnet} valor=${String(magnet).slice(0, 120)}`);
     try {
+      const torrentId = await resolveTorrentId(magnet.trim());
       const dm = await getDmInstance();
-      dm.addTorrent(magnet.trim(), "music", {
+      dm.addTorrent(torrentId, "music", {
         artist: artist?.trim() || "Unknown",
         album:  album?.trim()  || "Unknown",
       }).catch(err => logger.error("SERVER", `Stormbringer DL error: ${err.message}`));
       res.json({ ok: true, status: "downloading", magnet: magnet.trim() });
     } catch (err) {
-      logger.error("SERVER", `Stormbringer download error: ${err.message}`);
-      res.status(500).json({ error: err.message });
+      const cause = err.cause ?? err;
+      const detail = cause?.code ?? cause?.message ?? String(cause);
+      logger.error("SERVER", `Stormbringer download error: ${detail} | magnet_start=${String(magnet).slice(0,80)}`);
+      res.status(500).json({ error: detail });
     }
   });
 
@@ -330,8 +398,9 @@ export function toolsRouter(router) {
     if (!type || !['movie','series'].includes(type)) return res.status(400).json({ error: "'type' deve ser 'movie' ou 'series'" });
     try {
       logger.info("SERVER", `Stormbringer download media: type=${type} title="${title || ""}"`);
+      const torrentId = await resolveTorrentId(magnet.trim());
       const dm = await getDmInstance();
-      dm.addTorrent(magnet.trim(), type, {
+      dm.addTorrent(torrentId, type, {
         title: title?.trim() || "Unknown",
       }).catch(err => logger.error("SERVER", `Stormbringer media DL error: ${err.message}`));
       res.json({ ok: true, status: "downloading", type, magnet: magnet.trim() });
@@ -440,8 +509,26 @@ export function toolsRouter(router) {
   });
 
   // ── GET /api/tools/stormbringer/downloads ────────────────────────────────
-  router.get("/tools/stormbringer/downloads", (_req, res) => {
+  router.get("/tools/stormbringer/downloads", async (_req, res) => {
     try {
+      // Se o DM já estiver iniciado, retorna dados em memória (tempo real)
+      if (_dmInstance) {
+        const torrents = _dmInstance.getActiveTorrents().map(t => ({
+          infoHash:      t.infoHash,
+          name:          t.name,
+          type:          t.type,
+          status:        t.status,
+          progress:      t.progress,
+          downloaded:    t.downloaded,
+          total:         t.total,
+          downloadSpeed: t.downloadSpeed,
+          uploadSpeed:   t.uploadSpeed,
+          peers:         t.peers,
+          startTime:     t.startTime,
+        }));
+        return res.json({ torrents, lastUpdate: Date.now() });
+      }
+      // Fallback: lê do arquivo de estado (DM ainda não iniciado)
       if (!existsSync(SB_STATE_FILE)) return res.json({ torrents: [], lastUpdate: null });
       const raw = JSON.parse(readFileSync(SB_STATE_FILE, "utf8"));
       res.json(raw);

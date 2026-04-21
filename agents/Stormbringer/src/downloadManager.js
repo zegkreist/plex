@@ -15,7 +15,24 @@ class DownloadManager extends EventEmitter {
     // natUpnp/natPmp desabilitados: em ambiente Docker/servidor o UPnP não está
     // disponível e cada torrent adicionado chamaria ssdp.search() concorrentemente,
     // acumulando listeners na mesma instância Ssdp e disparando MaxListenersExceededWarning.
-    this.client = new WebTorrent({ natUpnp: false, natPmp: false });
+    this.client = new WebTorrent({
+      natUpnp: false,
+      natPmp: false,
+      dht: {
+        bootstrap: [
+          "router.bittorrent.com:6881",
+          "dht.transmissionbt.com:6881",
+          "router.utorrent.com:6881",
+        ],
+      },
+    });
+    // Sem handler de 'error' num EventEmitter o Node crasharia com uncaughtException.
+    this.client.on("error", (err) => {
+      console.error(`[DownloadManager] WebTorrent client error: ${err.message}`);
+    });
+    // Mesmo para o próprio DownloadManager (extends EventEmitter)
+    this.on("error", () => {});
+    this._log = (level, msg) => console.log(`[${level.toUpperCase()}] ${msg}`);
     this.activeTorrents = new Map();
     this.metadataEnricher = new MetadataEnricher(config);
     this.stateFile = config.downloads?.stateFile || path.join(__dirname, "../.download-state.json");
@@ -65,6 +82,33 @@ class DownloadManager extends EventEmitter {
     }
   }
 
+  // Lista de trackers públicos bem conhecidos para augmentar magnets fracos
+  static EXTRA_TRACKERS = [
+    "udp://tracker.opentrackr.org:1337/announce",
+    "udp://open.stealth.si:80/announce",
+    "udp://tracker.openbittorrent.com:6969/announce",
+    "udp://tracker.torrent.eu.org:451/announce",
+    "udp://open.demonii.com:1337/announce",
+    "udp://exodus.desync.com:6969/announce",
+    "https://tracker.gbitt.info/announce",
+  ];
+
+  setLogger(fn) { this._log = fn; }
+
+  _augmentMagnet(magnet) {
+    if (!magnet || !magnet.startsWith("magnet:")) return magnet;
+    // Não usar new URL() — searchParams.append() codifica ":" em xt=urn:btih:HASH
+    // corrompendo o identificador. Manipulação por string é mais segura.
+    const existing = new Set(
+      [...magnet.matchAll(/[?&]tr=([^&]+)/g)].map(m => decodeURIComponent(m[1]))
+    );
+    let result = magnet.endsWith("&") ? magnet : magnet + "&";
+    for (const tr of DownloadManager.EXTRA_TRACKERS) {
+      if (!existing.has(tr)) result += `tr=${encodeURIComponent(tr)}&`;
+    }
+    return result;
+  }
+
   /**
    * Adiciona um torrent para download
    */
@@ -72,7 +116,12 @@ class DownloadManager extends EventEmitter {
     return new Promise((resolve, reject) => {
       const downloadPath = this.getDownloadPath(type);
 
-      const torrent = this.client.add(torrentId, {
+      // Se for magnet, augmenta com trackers públicos
+      const resolvedId = (typeof torrentId === "string" && torrentId.startsWith("magnet:"))
+        ? this._augmentMagnet(torrentId)
+        : torrentId;
+
+      const torrent = this.client.add(resolvedId, {
         path: downloadPath,
       });
 
@@ -96,6 +145,7 @@ class DownloadManager extends EventEmitter {
       torrent.on("infoHash", () => {
         torrentInfo.infoHash = torrent.infoHash;
         this.activeTorrents.set(torrent.infoHash, torrentInfo);
+        this._log("info", `Torrent adicionado — infoHash=${torrent.infoHash} aguardando metadados/peers...`);
         this.emit("added", torrentInfo);
         this.saveState();
       });
@@ -103,12 +153,15 @@ class DownloadManager extends EventEmitter {
       torrent.on("metadata", () => {
         torrentInfo.name = torrent.name;
         torrentInfo.total = torrent.length;
-        console.log(`\n📦 Metadados recebidos: ${torrent.name}`);
-        console.log(`📏 Tamanho: ${this.formatBytes(torrent.length)}`);
+        torrentInfo.status = "downloading";
+        this._log("info", `Metadados recebidos: "${torrent.name}" (${this.formatBytes(torrent.length)})`);
         this.saveState();
         resolve(torrentInfo);
       });
 
+      // Log periódico de progresso (a cada 10% ou 30s)
+      let _lastLogPct = -1;
+      let _lastLogTime = 0;
       torrent.on("download", () => {
         torrentInfo.progress = Math.round(torrent.progress * 100 * 100) / 100;
         torrentInfo.downloaded = torrent.downloaded;
@@ -117,14 +170,27 @@ class DownloadManager extends EventEmitter {
         torrentInfo.peers = torrent.numPeers;
         torrentInfo.ratio = torrent.uploaded / torrent.downloaded || 0;
 
+        const pct = Math.floor(torrentInfo.progress);
+        const now = Date.now();
+        if (pct >= _lastLogPct + 10 || now - _lastLogTime > 30_000) {
+          _lastLogPct = pct;
+          _lastLogTime = now;
+          this._log("info", `Download ${pct}% — ${this.formatBytes(torrentInfo.downloadSpeed)}/s — peers=${torrentInfo.peers} — "${torrentInfo.name ?? torrentInfo.infoHash}"`);
+        }
         this.emit("progress", torrentInfo);
+      });
+
+      torrent.on("wire", () => {
+        torrentInfo.peers = torrent.numPeers;
+        if (torrent.numPeers === 1) {
+          this._log("info", `Primeiro peer conectado para "${torrentInfo.name ?? torrentInfo.infoHash}"`);
+        }
       });
 
       torrent.on("done", async () => {
         torrentInfo.status = "completed";
         torrentInfo.progress = 100;
-        console.log(`\n✅ Download completo: ${torrent.name}`);
-        console.log(`📁 Salvo em: ${downloadPath}`);
+        this._log("info", `Download concluído: "${torrent.name}" → ${downloadPath}`);
 
         // Processar metadados e organizar arquivos
         if (this.config.metadata?.enabled) {
@@ -264,15 +330,20 @@ class DownloadManager extends EventEmitter {
   removeTorrent(infoHash, deleteFiles = false) {
     const torrentInfo = this.activeTorrents.get(infoHash);
     if (torrentInfo && torrentInfo.torrent) {
-      torrentInfo.torrent.destroy({ destroyStore: deleteFiles }, (err) => {
-        if (err) {
-          console.error("Erro ao remover torrent:", err);
-        } else {
+      torrentInfo.torrent.destroy({ destroyStore: deleteFiles })
+        .then(() => {
           this.activeTorrents.delete(infoHash);
           this.emit("removed", infoHash);
-          console.log(`🗑️ Torrent removido: ${torrentInfo.name}`);
-        }
-      });
+          this._log("info", `Torrent removido: ${torrentInfo.name || infoHash}`);
+        })
+        .catch((err) => {
+          this._log("warn", `Erro ao remover torrent ${infoHash}: ${err.message}`);
+          // Remove da memória mesmo se destroy falhar
+          this.activeTorrents.delete(infoHash);
+        });
+    } else {
+      // Não está ativo em memória — remove só do estado salvo
+      this.activeTorrents.delete(infoHash);
     }
   }
 
