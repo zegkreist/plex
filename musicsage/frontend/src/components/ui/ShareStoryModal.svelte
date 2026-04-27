@@ -436,15 +436,48 @@
     }
   }
 
+  let downloadHint = $state('');
+
   function download() {
     if (!canvas) return;
     const names = { artists: 'top-artistas', tracks: 'top-faixas', curiosidades: 'curiosidades' };
-    canvas.toBlob(blob => {
+    const filename = `musicsage-${names[tab] ?? tab}-${Date.now()}.png`;
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+
+      // 1. Web Share API (iOS 15+, Android, alguns WebViews)
+      if (navigator.canShare?.({ files: [new File([blob], filename, { type: 'image/png' })] })) {
+        try {
+          await navigator.share({
+            files: [new File([blob], filename, { type: 'image/png' })],
+            title: 'MusicSage Story',
+          });
+          return;
+        } catch (e) {
+          if (e?.name === 'AbortError') return; // usuário cancelou — não fazer mais nada
+          // Falhou por outra razão — continua para o próximo método
+        }
+      }
+
       const url = URL.createObjectURL(blob);
+
+      // 2. <a download> — funciona em desktop e alguns Android
       const a = document.createElement('a');
-      a.href = url; a.download = `musicsage-${names[tab] ?? tab}-${Date.now()}.png`;
-      document.body.appendChild(a); a.click();
-      document.body.removeChild(a); URL.revokeObjectURL(url);
+      if (typeof a.download !== 'undefined') {
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        return;
+      }
+
+      // 3. Fallback mobile: abre a imagem em nova aba — usuário salva com long-press
+      window.open(url, '_blank');
+      downloadHint = 'Pressione e segure a imagem para salvar.';
+      setTimeout(() => { URL.revokeObjectURL(url); downloadHint = ''; }, 30000);
     }, 'image/png');
   }
 
@@ -500,6 +533,12 @@
           style="padding:11px 18px;border-radius:13px;background:#1e1e2e;color:#8888aa;font-size:14px;border:none;cursor:pointer"
         >Fechar</button>
       </div>
+
+      {#if downloadHint}
+        <div style="font-size:12px;color:#f59e0b;padding:4px 12px;background:rgba(245,158,11,0.1);border-radius:10px;border:1px solid rgba(245,158,11,0.2);text-align:center">
+          {downloadHint}
+        </div>
+      {/if}
 
       <div style="font-size:11px;color:#3a3a58;padding-bottom:4px;text-align:center">
         Salve o PNG e publique nos Stories do Instagram (9:16)

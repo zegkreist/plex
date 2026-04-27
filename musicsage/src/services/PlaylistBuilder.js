@@ -948,6 +948,82 @@ Example: [1234, 5678, 9012]`;
   // ── Cache-based playlist generation ──────────────────────────────────────
 
   /**
+   * Aplica filtros numéricos duros (BPM, energy, danceability) sobre o pool de candidatos.
+   * Se os filtros forem muito restritivos (< minSize*2 resultados) faz fallback para o pool original.
+   * @private
+   */
+  _applyHardFilters(entries, { bpm_min, bpm_max, energy_min, energy_max, danceability_min, danceability_max } = {}, minSize = 10) {
+    const hasFilter = [bpm_min, bpm_max, energy_min, energy_max, danceability_min, danceability_max].some(v => v != null);
+    if (!hasFilter) return entries;
+
+    const filtered = entries.filter(e => {
+      const a = e.analysis || {};
+      if (bpm_min          != null && a.bpm          != null && a.bpm          < bpm_min)          return false;
+      if (bpm_max          != null && a.bpm          != null && a.bpm          > bpm_max)          return false;
+      if (energy_min       != null && a.energy       != null && a.energy       < energy_min)       return false;
+      if (energy_max       != null && a.energy       != null && a.energy       > energy_max)       return false;
+      if (danceability_min != null && a.danceability != null && a.danceability < danceability_min) return false;
+      if (danceability_max != null && a.danceability != null && a.danceability > danceability_max) return false;
+      return true;
+    });
+
+    if (filtered.length < minSize * 2) {
+      logger.warn('PLAYLIST', `Hard filter muito restritivo: ${filtered.length} resultados — usando pool completo como fallback`);
+      return entries;
+    }
+
+    logger.info('PLAYLIST', `Hard filter: ${entries.length} → ${filtered.length} entradas`);
+    return filtered;
+  }
+
+  /**
+   * Usa o LLM para classificar em batches quais faixas pertencem ao(s) gênero(s) pedido(s).
+   * Envia apenas ID|genre|subgenre por linha (payload mínimo), roda os batches em paralelo.
+   * Retorna null se o resultado for insuficiente (sinal para usar fallback score-based).
+   * @private
+   */
+  async _llmGenreFilter(entries, genreRequest, size) {
+    const BATCH = 120;
+    const batches = [];
+    for (let i = 0; i < entries.length; i += BATCH) {
+      batches.push(entries.slice(i, i + BATCH));
+    }
+
+    const results = await Promise.allSettled(batches.map(async (batch) => {
+      const lines = batch.map((e, idx) => {
+        const a = e.analysis || {};
+        return `${idx}|${a.genre || '?'}|${a.subgenre || ''}`;
+      }).join('\n');
+      const prompt =
+        `Genre filter task. The user wants: "${genreRequest}"\n` +
+        `\n` +
+        `For each track below (format: index|genre|subgenre), return the 0-based indices of tracks\n` +
+        `that match or are closely related to the requested genre(s).\n` +
+        `Be INCLUSIVE — accept subgenres, variants, and stylistically adjacent genres.\n` +
+        `Example: for "doom metal or sludge metal" → accept doom metal, sludge metal, funeral doom,\n` +
+        `drone metal, stoner doom, post-metal, death-doom, gothic doom, sludge, etc.\n` +
+        `\n` +
+        `Tracks:\n${lines}\n` +
+        `\n` +
+        `Return ONLY a JSON array of matching indices. Example: [0, 3, 7]`;
+
+      const indices = await this.allfather.askForJSON(prompt, { temperature: 0 });
+      return Array.isArray(indices)
+        ? indices.filter(i => Number.isInteger(i) && i >= 0 && i < batch.length).map(i => batch[i])
+        : [];
+    }));
+
+    const kept = results.flatMap(r => r.status === 'fulfilled' ? r.value : []);
+    const MIN  = Math.max(size * 2, 30);
+    if (kept.length < MIN) {
+      logger.warn('PLAYLIST', `LLM genre filter: ${kept.length} resultados — insuficiente, usando fallback`);
+      return null;
+    }
+    logger.info('PLAYLIST', `LLM genre filter: ${entries.length} → ${kept.length} faixas`);
+    return kept;
+  }
+
+  /**
    * Converte uma entrada do AnalysisCacheService para linha compacta de perfil de áudio.
    * Formato: ID|Título|Artista|Gênero/Subgênero|Mood|E:{energy}|V:{valence}|D:{danceability}|A:{acousticness}|{tempo}|{era}|{emotionalTags}
    * @private
@@ -990,12 +1066,24 @@ Example: [1234, 5678, 9012]`;
 
   /** @private */
   _buildCacheSelectionPrompt({ criteria, trackLines, size }) {
-    return `You are a DJ. Select exactly ${size} tracks that best match: ${criteria}.
+    return `You are a music curation expert. Your task is to select EXACTLY ${size} tracks from the list below that precisely match the user's request.
 
-Tracks (ID|Title|Artist|Genre|Mood|E:Energy/10|V:Valence/10|D:Danceability/10|A:Acousticness/10|C:Complexity/10|BPM|Key|Tempo|RhythmPattern|Timbre|Dynamics|Texture|VocalStyle|ProductionStyle|Era|Characteristics|Instruments|EmotionalTags):
+${criteria}
+
+STRICT RULES:
+1. Genre matching is NON-NEGOTIABLE. If a genre is specified (e.g. "doom metal"), ONLY select tracks whose Genre/Subgenre column contains that genre. Tracks from unrelated genres must be excluded even if the list is short.
+2. Numeric fields are ground truth. Use E:Energy, BPM, V:Valence, D:Danceability, A:Acousticness to enforce any numeric or tempo constraints precisely. Do not guess — read the values from the data.
+3. If the request asks for extremes ("lowest BPM", "most energetic"), rank candidates by that column and pick the most extreme values available in this batch.
+4. When constraints appear in the CRITERIA section above, they override your general knowledge about genres or moods.
+5. Return fewer than ${size} tracks only if there are genuinely not enough matching tracks. Do not pad with off-topic tracks.
+
+Audio profile schema (pipe-separated columns):
+ID | Title | Artist | Genre/Subgenre | Mood | E:Energy(1-10) | V:Valence(1-10) | D:Danceability(1-10) | A:Acousticness(1-10) | C:Complexity(1-10) | BPM | Key | Tempo | RhythmPattern | Timbre | Dynamics | Texture | VocalStyle | ProductionStyle | Era | Characteristics | Instruments | EmotionalTags
+
+Tracks:
 ${trackLines.join('\n')}
 
-Return ONLY a JSON array of the numeric track IDs of the ${size} selected tracks. Example: [1234, 5678]`;
+Return ONLY a JSON array of the numeric track IDs of the selected tracks. Example: [1234, 5678]`;
   }
 
   /**
@@ -1070,21 +1158,26 @@ Return ONLY a JSON array of the numeric track IDs of the ${size} selected tracks
    * o pool antes do torneio. Mantém diversidade misturando correspondências + aleatórios.
    * @private
    */
-  _preFilterCacheEntries(entries, { genre, mood, energy, size = 15 } = {}) {
+  _preFilterCacheEntries(entries, { genre, genreTerms, mood, energy, size = 15 } = {}) {
     const MAX = Math.max(size * 10, 150);
-    if (!genre && !mood && energy == null) {
+    if (!genre && !genreTerms?.length && !mood && energy == null) {
       return [...entries].sort(() => Math.random() - 0.5).slice(0, MAX);
     }
 
-    const genreLow = genre?.toLowerCase();
+    // Normalise all genre keywords to match against
+    const genreKeys = [];
+    if (genre)       genreKeys.push(genre.toLowerCase());
+    if (genreTerms?.length) genreTerms.forEach(t => t && genreKeys.push(t.toLowerCase()));
     const moodLow  = mood?.toLowerCase();
 
     const scored = entries.map(e => {
       const a = e.analysis || {};
       let score = 0;
-      if (genreLow) {
-        const g = `${a.genre || ''} ${a.subgenre || ''}`.toLowerCase();
-        if (g.includes(genreLow)) score += 2;
+      if (genreKeys.length) {
+        const g = `${a.genre || ''} ${a.subgenre || ''} ${(a.emotionalTags || []).join(' ')}`.toLowerCase();
+        for (const key of genreKeys) {
+          if (g.includes(key)) { score += 2; break; }  // match any keyword = score
+        }
       }
       if (moodLow && (a.mood || '').toLowerCase().includes(moodLow)) score += 2;
       if (energy != null && a.energy != null) {
@@ -1118,33 +1211,158 @@ Return ONLY a JSON array of the numeric track IDs of the ${size} selected tracks
    * @param {object} analysisCache    — instância de AnalysisCacheService
    * @returns {Promise<object>}        playlist com id, name, tracks[], createdAt, prompt
    */
-  async generateFromCacheWithPrompt(prompt, analysisCache, { maxPerArtist = 3, discoveryRatio = 0 } = {}) {
-    logger.info('PLAYLIST', `generateFromCacheWithPrompt()`, { prompt, maxPerArtist, discoveryRatio });
+  async generateFromCacheWithPrompt(prompt, analysisCache, { maxPerArtist = 3, discoveryRatio = 0, size: sizeOverride = null } = {}) {
+    logger.info('PLAYLIST', `generateFromCacheWithPrompt()`, { prompt, maxPerArtist, discoveryRatio, sizeOverride });
 
     const allEntries = analysisCache.getAll();
     if (!allEntries.length) {
       throw new Error('Nenhuma faixa analisada no cache. Execute a análise da biblioteca primeiro.');
     }
 
-    // Extrai parâmetros do prompt para pré-filtro e nome
-    let params = { name: null, genre: null, mood: null, energy: null, size: 10 };
+    // ── Extração de parâmetros enriquecida (multilingual + constraints numéricas + sort intent) ──
+    let params = {
+      name: null, genre: null, genre_terms: null, mood: null,
+      energy_min: null, energy_max: null,
+      bpm_min: null, bpm_max: null,
+      danceability_min: null, danceability_max: null,
+      sort_by: null, sort_order: null,
+      size: 10,
+    };
     try {
-      params = { ...params, ...(await this.allfather.askForJSON(
-        `Extract playlist parameters from this user request: "${prompt}"
-Return JSON with: name (string or null), genre (string or null), mood (string or null), energy (integer 1-10 or null), size (integer, default 10)`,
-        { temperature: 0.2 }
-      )) };
+      const extractionPrompt = [
+        'You are a music assistant. The user request below may be in any language (Portuguese, English, Spanish, etc.).',
+        'Interpret the intent and extract playlist parameters.',
+        '',
+        `User request: "${prompt}"`,
+        '',
+        'Return a JSON object with these fields (use null for any field not explicitly or implicitly mentioned):',
+        '{',
+        '  "name": "descriptive playlist name reflecting the request, or null",',
+        '  "genre": "primary genre in English (e.g. doom metal, samba, jazz, progressive rock) or null",',
+        '  "genre_terms": array of related genre/subgenre keywords the pre-filter should match (lowercase English).',
+        '    Always include the primary genre + all closely related subgenres/variants.',
+        '    Examples:',
+        '      doom metal -> ["doom metal","sludge metal","funeral doom","stoner doom","drone metal","doom/sludge","post-metal"]',
+        '      black metal -> ["black metal","raw black metal","atmospheric black metal","blackgaze","pagan metal"]',
+        '      jazz         -> ["jazz","jazz fusion","bebop","cool jazz","hard bop","free jazz","soul jazz"]',
+        '      progressive rock -> ["progressive rock","prog rock","prog metal","art rock","krautrock","symphonic rock"]',
+        '    If the user mentions multiple genres (e.g. "doom or sludge"), merge all their terms into the array.',
+        '    Return null if no genre is specified.',
+        '  "genre_terms": string[] | null,',
+        '  "mood": "one-word mood in English (e.g. melancholic, energetic, calm, dark, romantic) or null",',
+        '  "energy_min": integer 1-10 or null  (e.g. agitadas/intensas/aceleradas -> 7; heavy/pesadas alone does NOT imply high energy — see genre table below),',
+        '  "energy_max": integer 1-10 or null  (e.g. calmas/relaxantes/suaves -> 4, devagar/lento -> 3; doom/sludge/ambient -> see genre table),',
+        '  "bpm_min": integer minimum BPM or null,',
+        '  "bpm_max": integer maximum BPM or null,',
+        '  "danceability_min": integer 1-10 or null,',
+        '  "danceability_max": integer 1-10 or null,',
+        '  "sort_by": one of bpm/energy/danceability/valence/acousticness or null',
+        '    set this when user wants tracks ranked/sorted by a metric.',
+        '    Examples: menores bpms/mais lentas/batida mais devagar -> bpm | mais energeticas/agitadas -> energy | mais dancantes -> danceability,',
+        '  "sort_order": "asc" or "desc" or null',
+        '    asc = lowest first (menores bpms, mais calmas, mais lentas)',
+        '    desc = highest first (maiores bpms, mais energeticas, mais agitadas),',
+        '  "size": integer number of tracks requested (default 10)',
+        '}',
+        '',
+        'Examples of sort_by/sort_order inference:',
+        '  os menores bpms / musicas mais lentas / batida bem devagar -> sort_by:bpm, sort_order:asc',
+        '  os maiores bpms / musicas mais agitadas / mais energeticas -> sort_by:energy, sort_order:desc',
+        '  musicas mais calmas / relaxantes / suaves -> energy_max:3, sort_by:energy, sort_order:asc',
+        '  mais dancantes / para dancar -> sort_by:danceability, sort_order:desc',
+        '  mais acusticas / instrumental acustico -> sort_by:acousticness, sort_order:desc',
+        '',
+        'GENRE KNOWLEDGE BASE — use these typical ranges to fill bpm_min/bpm_max/energy_min/energy_max',
+        'when the genre is identified, UNLESS the user explicitly overrides:',
+        '  doom metal / sludge metal / funeral doom / drone metal:',
+        '    bpm_max:100, energy_max:6  (slow, crushing, oppressive — NOT high energy despite being heavy)',
+        '  black metal / raw black metal:',
+        '    bpm_min:140, energy_min:8',
+        '  thrash metal / death metal / grindcore:',
+        '    bpm_min:150, energy_min:8',
+        '  power metal / speed metal:',
+        '    bpm_min:130, energy_min:7',
+        '  heavy metal / traditional metal:',
+        '    bpm_min:100, bpm_max:160, energy_min:6',
+        '  progressive metal / prog rock:',
+        '    (no BPM constraint — wide tempo variation is part of the genre)',
+        '  stoner rock / post-metal:',
+        '    bpm_max:120, energy_max:7',
+        '  ambient / dark ambient / atmospheric:',
+        '    bpm_max:90, energy_max:3',
+        '  jazz / jazz fusion:',
+        '    bpm_min:70, bpm_max:200, energy_min:3, energy_max:7',
+        '  bossa nova:',
+        '    bpm_min:90, bpm_max:140, energy_max:5',
+        '  samba / pagode:',
+        '    bpm_min:90, bpm_max:140, energy_min:6',
+        '  funk / soul:',
+        '    bpm_min:90, bpm_max:130, energy_min:6',
+        '  hip-hop / rap:',
+        '    bpm_min:70, bpm_max:110',
+        '  techno / EDM / drum and bass:',
+        '    bpm_min:120, energy_min:8',
+        '  classical / orchestral:',
+        '    (no BPM constraint)',
+        '  indie rock / alternative rock:',
+        '    bpm_min:90, bpm_max:150, energy_min:4, energy_max:7',
+      ].join('\n');
+      params = { ...params, ...(await this.allfather.askForJSON(extractionPrompt, { temperature: 0.1 })) };
     } catch { /* usa defaults */ }
-    const size = typeof params.size === 'number' && params.size > 0 ? params.size : 10;
-    logger.info('PLAYLIST', `Parâmetros extraídos do prompt`, params);
+    const sizeFromPrompt = typeof params.size === 'number' && params.size > 0 ? params.size : 10;
+    // opts.size (do request body) tem prioridade sobre o extraído do prompt
+    const size = sizeOverride != null && sizeOverride > 0 ? sizeOverride : sizeFromPrompt;
+    logger.info('PLAYLIST', `Parâmetros extraídos do prompt`, { ...params, size });
 
-    // Pré-filtra para reduzir pool antes do torneio
-    const candidates = this._preFilterCacheEntries(allEntries, {
-      genre: params.genre, mood: params.mood, energy: params.energy, size,
+    // ── Pré-filtro score-based (rede larga: score por gênero/mood + aleatórios) ──────
+    let candidates = this._preFilterCacheEntries(allEntries, {
+      genre: params.genre, genreTerms: Array.isArray(params.genre_terms) ? params.genre_terms : null,
+      mood: params.mood, energy: null, size,
     });
+
+    // ── LLM genre filter — refina semanticamente o pool por gênero (batches paralelos) ─
+    if (params.genre) {
+      const genreLabel = [params.genre, ...(Array.isArray(params.genre_terms) ? params.genre_terms : [])]
+        .filter(Boolean).join(', ');
+      const llmFiltered = await this._llmGenreFilter(candidates, genreLabel, size);
+      if (llmFiltered) candidates = llmFiltered;
+    }
+
+    // ── Filtros numéricos duros (BPM, energy, danceability ranges) ────────────────────
+    candidates = this._applyHardFilters(candidates, params, size);
+
+    // ── Sort pela métrica primária pedida (LLM vê os mais relevantes primeiro) ────────
+    if (params.sort_by) {
+      const field = params.sort_by;
+      const asc   = params.sort_order !== 'desc';
+      candidates = [...candidates].sort((a, b) => {
+        const va = a.analysis?.[field] ?? (asc ? Infinity : -Infinity);
+        const vb = b.analysis?.[field] ?? (asc ? Infinity : -Infinity);
+        return asc ? va - vb : vb - va;
+      });
+      logger.info('PLAYLIST', `Candidatos ordenados por ${field} ${asc ? 'ASC' : 'DESC'}`);
+    }
+
     logger.info('PLAYLIST', `Cache pré-filtro: ${allEntries.length} → ${candidates.length} candidatos`);
 
-    const criteria  = `user request: "${prompt}"${params.genre ? `, genre: ${params.genre}` : ''}${params.mood ? `, mood: ${params.mood}` : ''}${params.energy ? `, energy: ${params.energy}/10` : ''}`;
+    // ── Monta criteria com constraints explícitas para o LLM de seleção ────────────
+    const constraintParts = [];
+    if (params.genre)
+      constraintParts.push(`genre: "${params.genre}" — select ONLY tracks of this genre`);
+    if (params.mood)
+      constraintParts.push(`mood: ${params.mood}`);
+    if (params.bpm_min != null || params.bpm_max != null)
+      constraintParts.push(`BPM: ${params.bpm_min ?? 0}–${params.bpm_max ?? 'any'} (enforce strictly using the BPM column)`);
+    if (params.energy_min != null || params.energy_max != null)
+      constraintParts.push(`energy: ${params.energy_min ?? 1}–${params.energy_max ?? 10}/10 (E: column)`);
+    if (params.danceability_min != null || params.danceability_max != null)
+      constraintParts.push(`danceability: ${params.danceability_min ?? 1}–${params.danceability_max ?? 10}/10`);
+    if (params.sort_by)
+      constraintParts.push(`rank by ${params.sort_by} ${params.sort_order === 'desc' ? 'descending (highest first)' : 'ascending (lowest first)'}`);
+
+    const criteria = `USER REQUEST: "${prompt}"` +
+      (constraintParts.length ? `\nCONSTRAINTS (MANDATORY): ${constraintParts.join(' | ')}` : '');
+
     const BATCH     = 25;
     const t0        = Date.now();
     let selected    = candidates.length <= BATCH
@@ -1164,13 +1382,22 @@ Return JSON with: name (string or null), genre (string or null), mood (string or
       selected = this._ensureDiscoveryCacheEntries(enrichedSelected, enrichedCandidates, size, discoveryRatio);
     }
 
+    // ── Top-up: garante que chegamos a `size` mesmo após filtragens pós-seleção ──
+    if (selected.length < size) {
+      const selectedKeys = new Set(selected.map(e => String(e.ratingKey)));
+      const extras = candidates.filter(e => !selectedKeys.has(String(e.ratingKey)));
+      const needed = size - selected.length;
+      selected = [...selected, ...extras.slice(0, needed)];
+      if (needed > 0) logger.info('PLAYLIST', `Top-up: adicionadas ${Math.min(needed, extras.length)} faixas para atingir ${size}`);
+    }
+
     const playlist = {
       id:        randomUUID(),
       name:      params.name || this._autoName({ mood: params.mood, genre: params.genre }),
       mood:      params.mood   || null,
       genre:     params.genre  || null,
       energy:    params.energy || null,
-      tracks:    selected.map(e => this._cachedEntryToTrack(e)),
+      tracks:    selected.slice(0, size).map(e => this._cachedEntryToTrack(e)),
       createdAt: new Date().toISOString(),
       prompt,
       source:    'cache-prompt',
@@ -1192,7 +1419,7 @@ Return JSON with: name (string or null), genre (string or null), mood (string or
    * @param {{ size?: number, name?: string }} options
    * @returns {Promise<object>}
    */
-  async generateFromCacheWithTrack(referenceAnalysis, referenceTitle, referenceRatingKey, analysisCache, { size = 15, name, maxPerArtist = 3, discoveryRatio = 0 } = {}) {
+  async generateFromCacheWithTrack(referenceAnalysis, referenceTitle, referenceRatingKey, analysisCache, { size = 15, name, maxPerArtist = 3, discoveryRatio = 0.3 } = {}) {
     logger.info('PLAYLIST', `generateFromCacheWithTrack()`, { referenceTitle, size, maxPerArtist, discoveryRatio });
 
     const allEntries = analysisCache.getAll();
@@ -1203,35 +1430,62 @@ Return JSON with: name (string or null), genre (string or null), mood (string or
     // Exclui a faixa de referência dos candidatos
     const allCandidates = allEntries.filter(e => String(e.ratingKey) !== String(referenceRatingKey));
 
-    // Pré-filtra por gênero similar
-    const candidates = this._preFilterCacheEntries(allCandidates, {
-      genre:  referenceAnalysis.genre !== 'Unknown' ? referenceAnalysis.genre : null,
-      mood:   referenceAnalysis.mood  !== 'unknown' ? referenceAnalysis.mood  : null,
-      energy: referenceAnalysis.energy,
-      size,
+    const a = referenceAnalysis;
+    const refGenre = a.genre && a.genre !== 'Unknown' ? a.genre : null;
+    const refMood  = a.mood  && a.mood  !== 'unknown' ? a.mood  : null;
+
+    // Pré-filtra por gênero/mood/energia similar
+    let candidates = this._preFilterCacheEntries(allCandidates, {
+      genre: refGenre, mood: refMood, energy: a.energy, size,
     });
+
+    // Filtro LLM de gênero
+    if (refGenre) {
+      const genreLabel = a.subgenre && a.subgenre !== 'unknown'
+        ? `${refGenre}, ${a.subgenre}` : refGenre;
+      const llmFiltered = await this._llmGenreFilter(candidates, genreLabel, size);
+      if (llmFiltered) candidates = llmFiltered;
+    }
+
     logger.info('PLAYLIST', `Radio pré-filtro: ${allCandidates.length} → ${candidates.length} candidatos`);
 
-    // Monta critério rico a partir do perfil da faixa de referência
-    const a = referenceAnalysis;
-    const criteriaLines = [
-      `Find tracks sonically similar to "${referenceTitle}".`,
-      `Reference audio profile: genre=${a.genre}${a.subgenre && a.subgenre !== 'unknown' ? '/' + a.subgenre : ''}`,
-      `mood=${a.mood}, energy=${a.energy}/10`,
-      a.valence    != null ? `valence=${a.valence}/10`       : null,
-      a.danceability != null ? `danceability=${a.danceability}/10` : null,
-      a.acousticness != null ? `acousticness=${a.acousticness}/10` : null,
-      a.tempo  && a.tempo  !== 'unknown' ? `tempo=${a.tempo}${a.bpm ? ` ~${a.bpm}BPM` : ''}` : null,
-      a.era    && a.era    !== 'unknown' ? `era=${a.era}` : null,
-      a.timbre && a.timbre !== 'unknown' ? `timbre=${a.timbre}` : null,
-      a.emotionalTags?.length ? `emotional feel: ${a.emotionalTags.join(', ')}` : null,
-    ].filter(Boolean).join(', ');
+    // Critério rico a partir do perfil completo da faixa de referência
+    const refProfile = [
+      `genre: ${refGenre || '?'}${a.subgenre && a.subgenre !== 'unknown' ? '/' + a.subgenre : ''}`,
+      `mood: ${refMood || '?'}`,
+      `energy: ${a.energy ?? '?'}/10`,
+      a.valence      != null ? `valence: ${a.valence}/10`         : null,
+      a.danceability != null ? `danceability: ${a.danceability}/10` : null,
+      a.acousticness != null ? `acousticness: ${a.acousticness}/10` : null,
+      a.complexity   != null ? `complexity: ${a.complexity}/10`   : null,
+      a.bpm          != null ? `BPM: ~${a.bpm}`                    : null,
+      a.key          && a.key     !== 'unknown' ? `key: ${a.key}`             : null,
+      a.tempo        && a.tempo   !== 'unknown' ? `tempo: ${a.tempo}`         : null,
+      a.timbre       && a.timbre  !== 'unknown' ? `timbre: ${a.timbre}`       : null,
+      a.dynamics     && a.dynamics !== 'unknown' ? `dynamics: ${a.dynamics}`  : null,
+      a.texture      && a.texture !== 'unknown' ? `texture: ${a.texture}`     : null,
+      a.rhythmPattern && a.rhythmPattern !== 'unknown' ? `rhythm: ${a.rhythmPattern}` : null,
+      a.vocalStyle   && a.vocalStyle !== 'unknown' ? `vocals: ${a.vocalStyle}` : null,
+      a.era          && a.era     !== 'unknown' ? `era: ${a.era}`             : null,
+      a.emotionalTags?.length ? `feel: ${a.emotionalTags.join(', ')}`         : null,
+      a.instruments?.length   ? `instruments: ${a.instruments.slice(0, 5).join(', ')}` : null,
+    ].filter(Boolean).join(' | ');
 
-    const BATCH    = 25;
-    const t0       = Date.now();
-    let selected   = candidates.length <= BATCH
-      ? await this._selectCachedTracksOllama(candidates, criteriaLines, size)
-      : await this._selectCachedTracksTournament(candidates, criteriaLines, size, BATCH);
+    const criteria =
+      `REFERENCE TRACK: "${referenceTitle}"\n` +
+      `AUDIO PROFILE: ${refProfile}\n` +
+      `CONSTRAINTS (MANDATORY):\n` +
+      `  - Select tracks sonically similar to the reference — same genre family, compatible mood and energy\n` +
+      `  - Use the numeric columns (E:, V:, D:, A:, BPM) to judge similarity quantitatively\n` +
+      `  - Prioritize tracks within ±2 of the reference energy (${a.energy ?? '?'}/10)` +
+        (a.bpm != null ? ` and ±20 BPM (${a.bpm} BPM)` : '') + `\n` +
+      `  - Genre match is most important; mood + energy second; BPM closeness third`;
+
+    const BATCH = 25;
+    const t0    = Date.now();
+    let selected = candidates.length <= BATCH
+      ? await this._selectCachedTracksOllama(candidates, criteria, size)
+      : await this._selectCachedTracksTournament(candidates, criteria, size, BATCH);
     logger.debug('OLLAMA', `Radio cache seleção em ${Date.now() - t0}ms`);
 
     // Pós-processamento: max por artista
@@ -1246,16 +1500,26 @@ Return JSON with: name (string or null), genre (string or null), mood (string or
       selected = this._ensureDiscoveryCacheEntries(enrichedSelected, enrichedCandidates, size, discoveryRatio);
     }
 
+    // Top-up: garante que a playlist atinja o tamanho solicitado
+    if (selected.length < size) {
+      const selectedKeys = new Set(selected.map(e => String(e.ratingKey)));
+      const extras = candidates.filter(e => !selectedKeys.has(String(e.ratingKey)));
+      const needed = size - selected.length;
+      selected = [...selected, ...extras.slice(0, needed)];
+      if (needed > 0) logger.info('PLAYLIST', `Radio top-up: adicionadas ${Math.min(needed, extras.length)} faixas para atingir ${size}`);
+    }
+
+    const refEntry = analysisCache.get(String(referenceRatingKey));
     const playlist = {
       id:             randomUUID(),
       name:           name || `Radio ${referenceTitle}`,
       mood:           a.mood   || null,
       genre:          a.genre  || null,
       energy:         a.energy || null,
-      tracks:         [
+      tracks: [
         // A música de referência é sempre a primeira faixa
-        this._cachedEntryToTrack(analysisCache.get(String(referenceRatingKey))),
-        ...selected.map(e => this._cachedEntryToTrack(e)),
+        ...(refEntry ? [this._cachedEntryToTrack(refEntry)] : []),
+        ...selected.slice(0, size).map(e => this._cachedEntryToTrack(e)),
       ],
       analysis:       referenceAnalysis,
       createdAt:      new Date().toISOString(),

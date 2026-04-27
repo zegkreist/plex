@@ -76,13 +76,14 @@ export function playlistsRouter(router, { playlistBuilder, plexService, analysis
   // POST /api/playlists/from-cache-prompt — gera playlist via LLM usando perfis de áudio do cache
   router.post("/playlists/from-cache-prompt", async (req, res) => {
     if (!analysisCache) return res.status(503).json({ error: "AnalysisCacheService não disponível" });
-    const { prompt, maxPerArtist, discoveryRatio } = req.body || {};
+    const { prompt, maxPerArtist, discoveryRatio, size } = req.body || {};
     if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
       return res.status(400).json({ error: "Campo 'prompt' é obrigatório" });
     }
     const opts = {
-      maxPerArtist:  maxPerArtist  != null ? Math.max(1, parseInt(maxPerArtist,  10)) : 3,
+      maxPerArtist:   maxPerArtist  != null ? Math.max(1, parseInt(maxPerArtist,  10)) : 3,
       discoveryRatio: discoveryRatio != null ? Math.min(1, Math.max(0, parseFloat(discoveryRatio))) : 0,
+      size:           size           != null ? Math.max(1, parseInt(size, 10)) : null,
     };
     try {
       const playlist = await playlistBuilder.generateFromCacheWithPrompt(prompt.trim(), analysisCache, opts);
@@ -122,7 +123,7 @@ export function playlistsRouter(router, { playlistBuilder, plexService, analysis
       size:           size           ? parseInt(size, 10) : 15,
       name,
       maxPerArtist:  maxPerArtist  != null ? Math.max(1, parseInt(maxPerArtist,  10)) : 3,
-      discoveryRatio: discoveryRatio != null ? Math.min(1, Math.max(0, parseFloat(discoveryRatio))) : 0,
+      discoveryRatio: discoveryRatio != null ? Math.min(1, Math.max(0, parseFloat(discoveryRatio))) : 0.3,
     };
     try {
       const playlist = await playlistBuilder.generateFromCacheWithTrack(
@@ -143,9 +144,11 @@ export function playlistsRouter(router, { playlistBuilder, plexService, analysis
 
   // PATCH /api/playlists/:id — atualiza localmente e sincroniza com Plex se já estiver lá
   router.patch("/playlists/:id", async (req, res) => {
-    const { name, tracks } = req.body || {};
-    if (name === undefined && tracks === undefined) {
-      return res.status(400).json({ error: "Informe ao menos 'name' ou 'tracks' para atualizar" });
+    // Accept both 'name' and 'title' (frontend sends 'title'); also handle 'removeTrack'
+    const { name: nameField, title, tracks, removeTrack } = req.body || {};
+    const name = nameField ?? title;
+    if (name === undefined && tracks === undefined && removeTrack === undefined) {
+      return res.status(400).json({ error: "Informe ao menos 'name'/'title', 'tracks' ou 'removeTrack' para atualizar" });
     }
 
     const existing = playlistBuilder.get(req.params.id);
@@ -154,6 +157,9 @@ export function playlistsRouter(router, { playlistBuilder, plexService, analysis
     const fields = {};
     if (name !== undefined) fields.name = name;
     if (tracks !== undefined) fields.tracks = tracks;
+    if (removeTrack !== undefined) {
+      fields.tracks = (existing.tracks ?? []).filter(t => String(t.ratingKey) !== String(removeTrack));
+    }
     const updated = playlistBuilder.update(req.params.id, fields);
 
     // Sincroniza com Plex em background se a playlist já foi enviada ao Plex

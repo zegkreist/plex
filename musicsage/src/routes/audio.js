@@ -234,6 +234,29 @@ export function audioRouter(router, { analyzer, embeddingService, audioAnalyzer,
     res.json(analysisCache.toJSON());
   });
 
+  // ─── GET /api/audio/artists ──────────────────────────────────────────────
+  // Retorna lista de artistas únicos para autocomplete.
+  // Preferencialmente da biblioteca Plex (via libraryScanner); fallback para o cache.
+
+  router.get("/audio/artists", async (_req, res) => {
+    try {
+      let names;
+      if (libraryScanner) {
+        const { artists } = await libraryScanner.scan();
+        names = [...new Set(artists.map((a) => a.title).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+      } else if (analysisCache) {
+        await analysisCache.load();
+        names = [...new Set(analysisCache.getAll().map((e) => e.artist).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+      } else {
+        return res.status(503).json({ error: "Nenhuma fonte de artistas disponível" });
+      }
+      res.json({ artists: names });
+    } catch (err) {
+      logger.error("AUDIO", "Falha em /audio/artists", { err: err.message });
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ─── POST /api/audio/analysis-cache/remap-ids ─────────────────────────────
   // Corrige ratingKeys do cache comparando title+artist com a biblioteca Plex atual.
   // Útil quando o cache foi importado de outra instância do Plex (IDs diferentes).

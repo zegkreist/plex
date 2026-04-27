@@ -226,9 +226,13 @@ Return a JSON object with EXACTLY these fields (no extras, no omissions):
 }`;
 
     try {
+      const maxAudioSecs = options.maxAudioSecs ?? 30;
+      // Escala o timeout: overhead fixo de 60s + 2s por segundo de áudio (para inferência)
+      const inferenceTimeout = Math.max(120_000, (maxAudioSecs * 2 + 60) * 1000);
       const result = await this.allfather.askForJSONWithAudio(prompt, localPath, {
         temperature:   0.3,
-        maxAudioSecs:  options.maxAudioSecs ?? 30,
+        maxAudioSecs,
+        timeout:       inferenceTimeout,
       });
       if (!result || typeof result !== "object") {
         console.error(`[MusicAnalyzer] Resposta inválida (não-objeto) para "${localPath}":`, result);

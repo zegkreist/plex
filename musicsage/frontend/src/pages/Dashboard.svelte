@@ -35,12 +35,44 @@
 
   const periodLabel = { week: '7 dias', month: '30 dias', year: '12 meses' };
 
+  // Mapa de cores para tags de mood vindo da análise
+  const MOOD_COLORS = {
+    upbeat: '#1db954', energetic: '#f59e0b', aggressive: '#ef4444', intense: '#f97316',
+    dark: '#7c6af5', melancholic: '#60a5fa', sad: '#5b8dd9', romantic: '#ec4899',
+    tender: '#f472b6', introspective: '#8b5cf6', contemplative: '#a78bfa',
+    peaceful: '#34d399', calm: '#2dd4bf', relaxed: '#6ee7b7', groovy: '#fbbf24',
+    happy: '#fde047', playful: '#fb923c', dreamy: '#c4b5fd', mysterious: '#818cf8',
+    ethereal: '#a5f3fc', tense: '#f87171', melancholy: '#5b8dd9', angry: '#ef4444',
+    nostalgic: '#fb923c', sensual: '#f472b6', rebellious: '#ef4444',
+  };
+  function moodColor(m) {
+    return MOOD_COLORS[(m ?? '').toLowerCase()] ?? '#8888a8';
+  }
+
+  // Curiosidades do período — derivadas de metrics (Spotify Wrapped style)
+  function buildPeriodFacts(m, p) {
+    if (!m) return [];
+    const periodStr = { week: 'essa semana', month: 'esse mês', year: 'esse ano' }[p] ?? 'no período';
+    const facts = [];
+    if ((m.summary?.totalHours ?? 0) > 0)
+      facts.push({ icon: '⏱', color: '#7c6af5', label: 'Você ouviu', value: `${(+m.summary.totalHours).toFixed(1)} horas`, sub: `${m.summary.totalPlays} reproduções · ${m.summary.uniqueTracks} faixas` });
+    const t0 = m.topTracks?.[0];
+    if (t0) facts.push({ icon: '♪', color: '#1db954', label: 'Faixa mais tocada', value: t0.title, sub: `${t0.artist} · ${t0.playCount}x` });
+    const a0 = m.topArtists?.[0];
+    if (a0) facts.push({ icon: '◈', color: '#38bdf8', label: 'Artista favorito', value: a0.artist, sub: `${a0.playCount} plays · ${a0.totalMinutes ?? 0} min` });
+    const g0 = m.topAnalysisGenres?.[0] ?? m.topGenres?.[0];
+    if (g0) facts.push({ icon: '◆', color: '#f59e0b', label: 'Gênero predominante', value: g0.genre ?? g0.name, sub: `${g0.playCount ?? 0} plays ${periodStr}` });
+    if ((m.summary?.uniqueArtists ?? 0) > 1)
+      facts.push({ icon: '✦', color: '#e879f9', label: 'Diversidade', value: `${m.summary.uniqueArtists} artistas`, sub: `${m.summary.uniqueTracks} faixas diferentes` });
+    return facts;
+  }
+  const periodFacts = $derived(buildPeriodFacts(metrics, period));
+
   // ─── Bootstrap ───────────────────────────────────────────
   onMount(async () => {
     await Promise.allSettled([
       loadStats(),
       loadMood(),
-      loadHistory(),
       loadDiscoveries(),
       loadUsers(),
     ]);
@@ -145,7 +177,7 @@
 
 <div class="p-6 w-full min-h-full space-y-7 animate-fade-in">
 
-  <!-- ── Header ──────────────────────────────────────────── -->
+  <!-- ── 1. Header + usuário Plex ────────────────────────── -->
   <div class="flex items-end justify-between gap-4 flex-wrap">
     <div>
       <h1 class="text-2xl font-extrabold text-white tracking-tight">
@@ -154,7 +186,6 @@
       <p class="text-sm mt-0.5" style="color:#5a5a78">Visão geral da sua biblioteca no Plex</p>
     </div>
     <div class="flex items-center gap-3 flex-wrap">
-      <!-- User selector -->
       {#if $users.length > 1}
         <div class="flex items-center gap-2">
           <span class="text-2xs" style="color:#5a5a78">Usuário:</span>
@@ -180,112 +211,19 @@
     </div>
   </div>
 
-  <!-- ── Hero stats ──────────────────────────────────────── -->
+  <!-- ── 2. Resumo da biblioteca ──────────────────────────── -->
   {#if loadingStats}
     <div class="flex gap-3 items-center h-24"><Spinner /><span class="text-sm" style="color:#5a5a78">Carregando biblioteca…</span></div>
   {:else if stats}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <StatCard label="Artistas"  value={fmt(stats.totalArtists)}        icon="◈"  accent />
-      <StatCard label="Álbuns"    value={fmt(stats.totalAlbums)}          icon="⬡" />
-      <StatCard label="Faixas"    value={fmt(stats.totalTracks)}          icon="♪" />
-      <StatCard label="Playlists" value={fmt(stats.totalPlaylists ?? 0)}  icon="≡" />
+      <StatCard label="Artistas"  value={fmt(stats.totalArtists)}       icon="◈" accent />
+      <StatCard label="Álbuns"    value={fmt(stats.totalAlbums)}         icon="⬡" />
+      <StatCard label="Faixas"    value={fmt(stats.totalTracks)}         icon="♪" />
+      <StatCard label="Playlists" value={fmt(stats.totalPlaylists ?? 0)} icon="≡" />
     </div>
   {/if}
 
-  <!-- ── Curiosidades (prominente) ──────────────────────── -->
-  {#if curiosidades.length > 0}
-    <section>
-      <div class="flex items-center justify-between mb-3">
-        <div>
-          <h2 class="text-sm font-semibold text-white">Curiosidades</h2>
-          <p class="text-2xs mt-0.5" style="color:#5a5a78">Fatos sobre o seu gosto musical</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button
-            onclick={() => { shareTab = 'curiosidades'; showShare = true; }}
-            title="Compartilhar nos Stories"
-            style="background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:8px;
-                   color:#5a5a78;font-size:13px;line-height:1;transition:color .15s"
-            onmouseenter={(e) => e.currentTarget.style.color='#1db954'}
-            onmouseleave={(e) => e.currentTarget.style.color='#5a5a78'}
-          >⬆ Story</button>
-          <span class="text-2xs font-medium px-2 py-0.5 rounded-full"
-                style="background:rgba(124,106,245,0.12);color:#9d8eff;border:1px solid rgba(124,106,245,0.2)">
-            {curiosidades.length} insights
-          </span>
-        </div>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {#each curiosidades as fact, i}
-          {@const isAccent = i < 2}
-          {@const accentColor = i === 0 ? '#7c6af5' : i === 1 ? '#1db954' : i === 2 ? '#38bdf8' : '#5a5a78'}
-          <div
-            class="relative rounded-2xl p-4 border transition-all duration-200 cursor-default overflow-hidden"
-            style="background:#111118;border-color:{isAccent ? accentColor + '33' : '#1e1e2e'}"
-          >
-            <!-- subtle corner glow for first 3 -->
-            {#if i < 3}
-              <div class="absolute top-0 right-0 w-28 h-28 rounded-full pointer-events-none"
-                   style="background:radial-gradient(circle, {accentColor}18 0%, transparent 70%);transform:translate(30%,-30%)"></div>
-            {/if}
-
-            {#if fact.type === 'pct'}
-              <!-- PCT card: large % number + mini bar -->
-              <div class="flex items-start justify-between gap-2 mb-3">
-                <span class="text-xl leading-none">{fact.icon ?? '✦'}</span>
-                <span class="text-2xl font-extrabold leading-none" style="color:{accentColor}">{fact.value}</span>
-              </div>
-              <div class="w-full h-1 rounded-full mb-2" style="background:#1c1c28">
-                <div class="h-full rounded-full transition-all duration-700"
-                     style="width:{fact.pct ?? 0}%;background:{accentColor};box-shadow:0 0 6px {accentColor}44"></div>
-              </div>
-              <div class="text-xs font-medium text-white leading-snug">{fact.label}</div>
-              {#if fact.sub}<div class="text-2xs mt-0.5" style="color:#5a5a78">{fact.sub}</div>{/if}
-
-            {:else if fact.type === 'track'}
-              <!-- TRACK card: label small, title prominent -->
-              <div class="text-xl mb-2 leading-none">{fact.icon ?? '✦'}</div>
-              <div class="text-2xs font-semibold uppercase tracking-wider mb-1.5" style="color:{accentColor}">{fact.label}</div>
-              <div class="text-sm font-bold text-white leading-snug truncate">{fact.value ?? '—'}</div>
-              {#if fact.sub}
-                <div class="text-2xs mt-1 truncate" style="color:#8888a8">{fact.sub}</div>
-              {/if}
-
-            {:else if fact.type === 'list'}
-              <!-- LIST card: ranked genre/subgenre list -->
-              <div class="text-xl mb-2 leading-none">{fact.icon ?? '✦'}</div>
-              <div class="text-2xs font-semibold uppercase tracking-wider mb-2" style="color:{accentColor}">{fact.label}</div>
-              <div class="space-y-1.5">
-                {#each (fact.items ?? []).slice(0, 5) as item, idx}
-                  {@const itemPct = fact.items?.[0]?.count > 0 ? Math.round(item.count / fact.items[0].count * 100) : 0}
-                  <div class="text-2xs">
-                    <div class="flex justify-between mb-0.5">
-                      <span class="truncate text-white" style="max-width:75%">{idx + 1}. {item.name}</span>
-                      <span style="color:#5a5a78">{item.count}</span>
-                    </div>
-                    <div class="h-0.5 rounded-full" style="background:#1c1c28">
-                      <div class="h-0.5 rounded-full" style="width:{itemPct}%;background:{accentColor}88"></div>
-                    </div>
-                  </div>
-                {/each}
-              </div>
-              {#if fact.sub}<div class="text-2xs mt-2" style="color:#5a5a78">{fact.sub}</div>{/if}
-
-            {:else}
-              <div class="text-xl mb-2 leading-none">{fact.icon ?? '✦'}</div>
-              <div class="text-2xs font-semibold uppercase tracking-wider mb-1" style="color:#5a5a78">{fact.label}</div>
-              <div class="text-lg font-extrabold leading-tight" style="color:{isAccent ? accentColor : 'white'}">{fact.value ?? fact.text ?? '—'}</div>
-              {#if fact.sub}
-                <div class="text-2xs mt-1" style="color:#5a5a78">{fact.sub}</div>
-              {/if}
-            {/if}
-          </div>
-        {/each}
-      </div>
-    </section>
-  {/if}
-
-  <!-- ── Retrospectiva / Insights ────────────────────────── -->
+  <!-- ── 3. Retrospectiva ─────────────────────────────────── -->
   <SectionBox noPad title="Retrospectiva">
     {#snippet actions()}
       <div class="flex gap-1 p-1 rounded-lg" style="background:#0a0a0f">
@@ -326,20 +264,17 @@
             </div>
           </div>
         {/if}
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-          <!-- Top Artists -->
+          <!-- Top Artistas -->
           <div>
             <div class="flex items-center justify-between mb-3">
               <div class="text-2xs font-semibold uppercase tracking-wider" style="color:#5a5a78">Top Artistas</div>
-              <button
-                onclick={() => { shareTab = 'artists'; showShare = true; }}
-                title="Compartilhar nos Stories"
-                style="background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:8px;
-                       color:#5a5a78;font-size:13px;line-height:1;transition:color .15s"
+              <button onclick={() => { shareTab = 'artists'; showShare = true; }}
+                style="background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:8px;color:#5a5a78;font-size:13px;line-height:1;transition:color .15s"
                 onmouseenter={(e) => e.currentTarget.style.color='#7c6af5'}
-                onmouseleave={(e) => e.currentTarget.style.color='#5a5a78'}
-              >⬆ Story</button>
+                onmouseleave={(e) => e.currentTarget.style.color='#5a5a78'}>⬆ Story</button>
             </div>
             {#each (metrics.topArtists ?? []).slice(0,10) as a, i}
               <div class="list-row flex items-center gap-3 py-2">
@@ -350,7 +285,7 @@
                   <div class="w-7 h-7 rounded shrink-0 flex items-center justify-center text-xs" style="background:#1e1e2e;color:#5a5a78">◈</div>
                 {/if}
                 <div class="flex-1 min-w-0">
-                  <div class="text-sm text-white truncate">{a.artist ?? a.title ?? a.name ?? '?'}</div>
+                  <div class="text-sm text-white truncate">{a.artist ?? '?'}</div>
                   <div class="text-2xs truncate" style="color:#5a5a78">{a.analysisGenre ?? a.genres?.[0] ?? (a.totalMinutes ? a.totalMinutes + ' min' : '')}</div>
                 </div>
                 <span class="text-2xs stat-value" style="color:#5a5a78">{fmt(a.playCount ?? 0)}</span>
@@ -358,18 +293,14 @@
             {/each}
           </div>
 
-          <!-- Top Tracks -->
+          <!-- Top Faixas -->
           <div>
             <div class="flex items-center justify-between mb-3">
               <div class="text-2xs font-semibold uppercase tracking-wider" style="color:#5a5a78">Top Faixas</div>
-              <button
-                onclick={() => { shareTab = 'tracks'; showShare = true; }}
-                title="Compartilhar nos Stories"
-                style="background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:8px;
-                       color:#5a5a78;font-size:13px;line-height:1;transition:color .15s"
+              <button onclick={() => { shareTab = 'tracks'; showShare = true; }}
+                style="background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:8px;color:#5a5a78;font-size:13px;line-height:1;transition:color .15s"
                 onmouseenter={(e) => e.currentTarget.style.color='#7c6af5'}
-                onmouseleave={(e) => e.currentTarget.style.color='#5a5a78'}
-              >⬆ Story</button>
+                onmouseleave={(e) => e.currentTarget.style.color='#5a5a78'}>⬆ Story</button>
             </div>
             {#each (metrics.topTracks ?? []).slice(0,10) as t, i}
               <div class="list-row flex items-center gap-3 py-2">
@@ -380,7 +311,7 @@
                   <div class="w-7 h-7 rounded shrink-0 flex items-center justify-center text-xs" style="background:#1e1e2e;color:#5a5a78">♪</div>
                 {/if}
                 <div class="flex-1 min-w-0">
-                  <div class="text-sm text-white truncate">{t.title ?? t.track ?? '?'}</div>
+                  <div class="text-sm text-white truncate">{t.title ?? '?'}</div>
                   {#if t.artist}<div class="text-2xs truncate" style="color:#5a5a78">{t.artist}</div>{/if}
                 </div>
                 <span class="text-2xs stat-value" style="color:#5a5a78">{fmt(t.playCount ?? 0)}</span>
@@ -388,18 +319,17 @@
             {/each}
           </div>
 
-          <!-- Top Genres (analysis-based when available, fallback to Plex tags) -->
+          <!-- Top Gêneros -->
           {#if metrics.topAnalysisGenres?.length >= 3}
-            {@const genreSource = metrics.topAnalysisGenres}
             <div>
               <div class="flex items-center gap-2 mb-3">
                 <div class="text-2xs font-semibold uppercase tracking-wider" style="color:#5a5a78">Gêneros</div>
                 <span class="text-2xs px-1.5 py-px rounded" style="background:rgba(29,185,84,0.1);color:#1db954;border:1px solid rgba(29,185,84,0.2)">da análise</span>
               </div>
-              {#each genreSource.slice(0,10) as g, i}
+              {#each (metrics.topAnalysisGenres ?? []).slice(0,10) as g, i}
                 <div class="list-row flex items-center gap-3 py-2">
                   <span class="rank-chip {i===0?'top1':i===1?'top2':i===2?'top3':''}">{i+1}</span>
-                  <span class="text-sm flex-1 truncate text-white">{g.genre ?? g.title ?? g.name ?? '?'}</span>
+                  <span class="text-sm flex-1 truncate text-white">{g.genre ?? g.name ?? '?'}</span>
                   <div class="text-right shrink-0">
                     <div class="text-2xs stat-value" style="color:#5a5a78">{fmt(g.playCount ?? 0)} plays</div>
                     {#if g.trackCount}<div class="text-2xs" style="color:#3a3a58">{g.trackCount} faixas</div>{/if}
@@ -416,7 +346,7 @@
               {#each (metrics.topGenres ?? []).slice(0,10) as g, i}
                 <div class="list-row flex items-center gap-3 py-2">
                   <span class="rank-chip {i===0?'top1':i===1?'top2':i===2?'top3':''}">{i+1}</span>
-                  <span class="text-sm flex-1 truncate text-white">{g.genre ?? g.title ?? g.name ?? '?'}</span>
+                  <span class="text-sm flex-1 truncate text-white">{g.genre ?? g.name ?? '?'}</span>
                   <div class="text-right shrink-0">
                     <div class="text-2xs stat-value" style="color:#5a5a78">{fmt(g.playCount ?? 0)} plays</div>
                     {#if g.trackCount}<div class="text-2xs" style="color:#3a3a58">{g.trackCount} faixas</div>{/if}
@@ -433,93 +363,111 @@
     </div>
   </SectionBox>
 
-  <!-- ── Mood ────────────────────────────────────────────── -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-    <SectionBox title="Mood de Hoje">
-      {#if loadingMood}
-        <div class="flex items-center gap-2 py-2"><Spinner size="sm" /></div>
-      {:else if moodDay}
-        <div class="mb-4">
-          <div class="text-base font-bold text-white">{moodLabel(moodDay)}</div>
-          <div class="text-2xs mt-0.5" style="color:#5a5a78">{moodDay.tracksAnalyzed ?? 0} faixas analisadas hoje</div>
-        </div>
-        <div class="space-y-3">
-          <MoodBar label="Energia"       value={+(moodDay.avgEnergy ?? 0).toFixed(1)} />
-          <MoodBar label="Positividade"  value={+(moodDay.avgValence ?? 0).toFixed(1)} />
-          <MoodBar label="Dançabilidade" value={+(moodDay.avgDanceability ?? 0).toFixed(1)} />
-        </div>
-      {:else}
-        <div class="py-4 text-center">
-          <div class="text-xl mb-1">◈</div>
-          <div class="text-sm text-white">Sem dados de hoje</div>
-          <div class="text-2xs mt-1" style="color:#5a5a78">Toque músicas no Plex</div>
-        </div>
-      {/if}
-    </SectionBox>
-
-    <SectionBox title="Mood do Mês">
-      {#if loadingMood}
-        <div class="flex items-center gap-2 py-2"><Spinner size="sm" /></div>
-      {:else if moodMonth}
-        <div class="mb-4">
-          <div class="text-base font-bold text-white">{moodLabel(moodMonth)}</div>
-          <div class="text-2xs mt-0.5" style="color:#5a5a78">{moodMonth.tracksAnalyzed ?? 0} faixas analisadas este mês</div>
-        </div>
-        <div class="space-y-3">
-          <MoodBar label="Energia"       value={+(moodMonth.avgEnergy ?? 0).toFixed(1)} />
-          <MoodBar label="Positividade"  value={+(moodMonth.avgValence ?? 0).toFixed(1)} />
-          <MoodBar label="Dançabilidade" value={+(moodMonth.avgDanceability ?? 0).toFixed(1)} />
-          <MoodBar label="Diversidade"   value={Math.min(10, (moodMonth.topGenres?.length ?? 0) * 2)} />
-        </div>
-      {:else}
-        <div class="py-4 text-center">
-          <div class="text-xl mb-1">⬡</div>
-          <div class="text-sm text-white">Sem dados do mês</div>
-          <div class="text-2xs mt-1" style="color:#5a5a78">Continue ouvindo música</div>
-        </div>
-      {/if}
-    </SectionBox>
-  </div>
-
-  <!-- ── Histórico Recente ────────────────────────────────── -->
-  <SectionBox noPad title="Histórico Recente">
+  <!-- ── 4. Mood ───────────────────────────────────────────── -->
+  <SectionBox noPad title="Mood">
     {#snippet actions()}
-      {#if history.length > 0}
-        <span class="text-2xs" style="color:#5a5a78">Últimas {history.length} reproduções</span>
+      {#if moodMonth?.tracksAnalyzed}
+        <span class="text-2xs" style="color:#5a5a78">{moodMonth.tracksAnalyzed} faixas analisadas</span>
       {/if}
     {/snippet}
 
-    {#if loadingHistory}
+    {#if loadingMood}
       <div class="flex items-center gap-2 px-5 py-6"><Spinner size="sm" /><span class="text-2xs" style="color:#5a5a78">Carregando…</span></div>
-    {:else if history.length === 0}
-      <div class="px-5 py-8 text-center">
-        <div class="text-xl mb-2">♪</div>
-        <div class="text-sm text-white">Nenhum histórico ainda</div>
-        <div class="text-2xs mt-1" style="color:#5a5a78">Toque músicas no Plex para ver aqui</div>
+    {:else if moodMonth?.tracksAnalyzed > 0}
+      <div class="px-5 pb-5 pt-2">
+
+        <!-- Label principal + BPM -->
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <div class="text-xl font-extrabold text-white leading-tight">{moodLabel(moodMonth)}</div>
+            {#if moodMonth.artistOfPeriod}
+              <div class="text-2xs mt-1" style="color:#5a5a78">Artista frequente: <span class="text-white">{moodMonth.artistOfPeriod}</span></div>
+            {/if}
+          </div>
+          {#if moodMonth.avgBpm}
+            <div class="text-right shrink-0">
+              <div class="text-lg font-bold text-white">{moodMonth.avgBpm}</div>
+              <div class="text-2xs" style="color:#5a5a78">BPM médio</div>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Mood tags da análise (topMoods) -->
+        {#if moodMonth.topMoods?.length}
+          <div class="flex flex-wrap gap-1.5 mb-5">
+            {#each moodMonth.topMoods as m}
+              {@const c = moodColor(m)}
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-full capitalize"
+                    style="background:{c}18;color:{c};border:1px solid {c}33">{m}</span>
+            {/each}
+          </div>
+        {/if}
+
+        <!-- Barras métricas + grid de hoje vs mês -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Mês -->
+          <div>
+            <div class="text-2xs font-semibold uppercase tracking-wider mb-3" style="color:#5a5a78">Últimos 30 dias</div>
+            <div class="space-y-3">
+              <MoodBar label="Energia"       value={+(moodMonth.avgEnergy ?? 0).toFixed(1)} />
+              <MoodBar label="Positividade"  value={+(moodMonth.avgValence ?? 0).toFixed(1)} />
+              <MoodBar label="Dançabilidade" value={+(moodMonth.avgDanceability ?? 0).toFixed(1)} />
+              {#if moodMonth.topGenres?.length}
+                <MoodBar label="Diversidade"   value={Math.min(10, (moodMonth.topGenres.length) * 2)} />
+              {/if}
+            </div>
+            {#if moodMonth.topGenres?.length}
+              <div class="mt-3 flex flex-wrap gap-1.5">
+                {#each moodMonth.topGenres.slice(0, 5) as g}
+                  <span class="text-2xs px-2 py-0.5 rounded-full" style="background:rgba(29,185,84,0.1);color:#1db954;border:1px solid rgba(29,185,84,0.15)">{g}</span>
+                {/each}
+              </div>
+            {/if}
+          </div>
+
+          <!-- Hoje -->
+          {#if moodDay?.tracksAnalyzed > 0}
+            <div>
+              <div class="text-2xs font-semibold uppercase tracking-wider mb-3" style="color:#5a5a78">Hoje</div>
+              <div class="text-sm font-bold text-white mb-3">{moodLabel(moodDay)}</div>
+              {#if moodDay.topMoods?.length}
+                <div class="flex flex-wrap gap-1.5 mb-3">
+                  {#each moodDay.topMoods.slice(0, 6) as m}
+                    {@const c = moodColor(m)}
+                    <span class="text-2xs font-medium px-2 py-0.5 rounded-full capitalize"
+                          style="background:{c}18;color:{c};border:1px solid {c}33">{m}</span>
+                  {/each}
+                </div>
+              {/if}
+              <div class="space-y-3">
+                <MoodBar label="Energia"       value={+(moodDay.avgEnergy ?? 0).toFixed(1)} />
+                <MoodBar label="Positividade"  value={+(moodDay.avgValence ?? 0).toFixed(1)} />
+                <MoodBar label="Dançabilidade" value={+(moodDay.avgDanceability ?? 0).toFixed(1)} />
+              </div>
+            </div>
+          {:else}
+            <div class="flex flex-col items-center justify-center py-6" style="color:#3a3a58">
+              <div class="text-xl mb-1">◈</div>
+              <div class="text-2xs">Toque músicas hoje para ver o mood</div>
+            </div>
+          {/if}
+        </div>
       </div>
     {:else}
-      <div class="px-5 pt-1 pb-2">
-        {#each history as track}
-          <TrackRow
-            ratingKey={track.ratingKey}
-            title={track.title}
-            artist={track.artist ?? track.grandparentTitle}
-            album={track.album ?? track.parentTitle}
-            playedAt={track.playedAt ?? track.viewedAt}
-          />
-        {/each}
+      <div class="px-5 py-8 text-center">
+        <div class="text-xl mb-2">⬡</div>
+        <div class="text-sm text-white">Sem dados de mood</div>
+        <div class="text-2xs mt-1" style="color:#5a5a78">Analise mais faixas para ativar esta seção</div>
       </div>
     {/if}
   </SectionBox>
 
-  <!-- ── Descobertas ─────────────────────────────────────── -->
+  <!-- ── 5. Descobertas ───────────────────────────────────── -->
   {#if !loadingDisc && discoveries.length > 0}
     <SectionBox noPad title="Descobertas">
       {#snippet actions()}
         <span class="text-2xs" style="color:#5a5a78">Mais energéticas · ainda não ouvidas</span>
       {/snippet}
-
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 px-5 pt-1 pb-5">
         {#each discoveries as t}
           <div class="rounded-xl p-3 border transition-all duration-150 hover:border-accent/25"
@@ -530,6 +478,11 @@
               {#if t.energy != null}
                 <span class="text-2xs font-semibold px-1.5 py-px rounded"
                       style="background:rgba(124,106,245,0.1);color:#9d8eff">⚡ {(+t.energy).toFixed(0)}</span>
+              {/if}
+              {#if t.mood}
+                {@const mc = moodColor(t.mood)}
+                <span class="text-2xs px-1.5 py-px rounded capitalize"
+                      style="background:{mc}18;color:{mc}">{t.mood}</span>
               {/if}
               {#if t.subgenre}
                 <span class="text-2xs px-1.5 py-px rounded truncate"
@@ -542,11 +495,42 @@
     </SectionBox>
   {/if}
 
-  <!-- ── Mapa de Subgêneros (do cache de análise) ─────────── -->
+  <!-- ── 6. Curiosidades do período (Spotify Wrapped) ───────── -->
+  {#if periodFacts.length > 0}
+    <section>
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h2 class="text-sm font-semibold text-white">Curiosidades</h2>
+          <p class="text-2xs mt-0.5" style="color:#5a5a78">{periodLabel[period]} em números</p>
+        </div>
+        <button
+          onclick={() => { shareTab = 'curiosidades'; showShare = true; }}
+          style="background:none;border:none;cursor:pointer;padding:2px 8px;border-radius:8px;color:#5a5a78;font-size:13px;line-height:1;transition:color .15s"
+          onmouseenter={(e) => e.currentTarget.style.color='#1db954'}
+          onmouseleave={(e) => e.currentTarget.style.color='#5a5a78'}>⬆ Story</button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        {#each periodFacts as f, i}
+          <div class="relative rounded-2xl p-4 border overflow-hidden"
+               style="background:#111118;border-color:{f.color}28">
+            <!-- corner glow -->
+            <div class="absolute top-0 right-0 w-24 h-24 pointer-events-none rounded-full"
+                 style="background:radial-gradient(circle,{f.color}20 0%,transparent 70%);transform:translate(30%,-30%)"></div>
+            <div class="text-xl leading-none mb-2">{f.icon}</div>
+            <div class="text-2xs font-semibold uppercase tracking-wider mb-1" style="color:{f.color}">{f.label}</div>
+            <div class="text-lg font-extrabold text-white leading-tight truncate">{f.value ?? '—'}</div>
+            {#if f.sub}<div class="text-2xs mt-1 truncate" style="color:#5a5a78">{f.sub}</div>{/if}
+          </div>
+        {/each}
+      </div>
+    </section>
+  {/if}
+
+  <!-- ── 7. Mapa de Subgêneros ────────────────────────────── -->
   {#if subgenreDistrib.length >= 3}
     <SectionBox noPad title="Mapa de Subgêneros">
       {#snippet actions()}
-        <span class="text-2xs" style="color:#5a5a78">Distribuição do cache de análise</span>
+        <span class="text-2xs" style="color:#5a5a78">Cache de análise · toda a biblioteca</span>
       {/snippet}
       <div class="px-5 pt-2 pb-5">
         <div class="space-y-2">
@@ -581,7 +565,7 @@
   initTab={shareTab}
   artists={metrics?.topArtists ?? []}
   tracks={metrics?.topTracks ?? []}
-  curiosidades={curiosidades}
+  curiosidades={periodFacts}
   summary={metrics?.summary ?? null}
   period={period}
 />

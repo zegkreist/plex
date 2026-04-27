@@ -13,6 +13,7 @@
 
   // ─── Por Prompt ──────────────────────────────────────────
   let prompt        = $state('');
+  let promptSize    = $state(20);
   let maxPerArtist  = $state(3);
   let discoveryRatio = $state(0.2);
   let useRandom     = $state(false);
@@ -32,6 +33,7 @@
         prompt: prompt.trim(),
         maxPerArtist,
         discoveryRatio,
+        size: promptSize,
         random: useRandom,
       });
       toast.success(`Playlist "${promptResult.title ?? promptResult.name}" criada!`);
@@ -50,8 +52,9 @@
   let genTrack        = $state(false);
   let trackResult     = $state(null);
   let trackError      = $state('');
-  let trackLimit      = $state(30);
+  let trackLimit        = $state(30);
   let trackMaxPerArtist = $state(3);
+  let trackDiscovery    = $state(0.3);
 
   const searchTracks = debounce(async (q) => {
     if (!q.trim() || q.length < 2) { trackResults = []; return; }
@@ -78,10 +81,11 @@
     trackResult = null;
     try {
       trackResult = await api('POST', '/playlists/from-cache-track', {
-        ratingKey:    selectedTrack.ratingKey,
-        title:        selectedTrack.title,
-        size:         trackLimit,
-        maxPerArtist: trackMaxPerArtist,
+        ratingKey:     selectedTrack.ratingKey,
+        title:         selectedTrack.title,
+        size:          trackLimit,
+        maxPerArtist:  trackMaxPerArtist,
+        discoveryRatio: trackDiscovery,
       });
       toast.success(`Playlist "${trackResult.title ?? trackResult.name}" criada!`);
     } catch (e) {
@@ -143,7 +147,15 @@
           ></textarea>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <label for="prompt-size" class="block text-2xs font-medium mb-1.5" style="color:#5a5a78">Nº de músicas</label>
+            <input id="prompt-size" type="number" bind:value={promptSize} min="5" max="200"
+              class="w-full rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none"
+              style="background:#16161f;border:1px solid #1e1e2e"
+              onfocus={e => e.currentTarget.style.borderColor='rgba(124,106,245,0.4)'}
+              onblur={e => e.currentTarget.style.borderColor='#1e1e2e'} />
+          </div>
           <div>
             <label for="max-per-artist" class="block text-2xs font-medium mb-1.5" style="color:#5a5a78">Máx. faixas por artista</label>
             <input id="max-per-artist" type="number" bind:value={maxPerArtist} min="1" max="20"
@@ -263,6 +275,23 @@
               style="background:#16161f;border:1px solid #1e1e2e"
               onfocus={e => e.currentTarget.style.borderColor='rgba(124,106,245,0.4)'}
               onblur={e => e.currentTarget.style.borderColor='#1e1e2e'} />
+          </div>
+          <div class="col-span-2">
+            <label for="track-discovery" class="flex items-center justify-between text-2xs font-medium mb-1.5">
+              <span style="color:#5a5a78">Taxa de descoberta</span>
+              <span class="font-semibold" style="color:#7c6af5">{Math.round(trackDiscovery * 100)}%</span>
+            </label>
+            <input id="track-discovery" type="range" bind:value={trackDiscovery} min="0" max="1" step="0.05"
+              class="w-full accent-[#7c6af5] h-1.5 rounded-full cursor-pointer"
+              style="background:linear-gradient(to right, #7c6af5 {trackDiscovery*100}%, #1e1e2e {trackDiscovery*100}%)" />
+            <div class="flex justify-between text-2xs mt-1" style="color:#3a3a58">
+              <span>0% — só similares</span>
+              <span>50% — mix</span>
+              <span>100% — só novas</span>
+            </div>
+            <p class="text-2xs mt-1.5" style="color:#5a5a78">
+              Mínimo <strong style="color:#7c6af5">{Math.round(trackDiscovery * 100)}%</strong> das faixas virão do pool de músicas menos ouvidas
+            </p>
           </div>
         </div>
 

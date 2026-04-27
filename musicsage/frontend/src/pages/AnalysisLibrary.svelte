@@ -21,7 +21,7 @@
   let errorMsg     = $state('');
 
   onMount(async () => {
-    await Promise.allSettled([loadCacheStats(), loadProgress()]);
+    await Promise.allSettled([loadCacheStats(), loadProgress(), loadArtistSuggestions()]);
   });
 
   async function loadCacheStats() {
@@ -83,7 +83,7 @@
     errorMsg = '';
     try {
       await api('POST', '/audio/batch-analyze', {
-        maxDurationSecs: maxSecs,
+        maxAudioSecs: maxSecs,
         skipExisting,
       });
       toast.info('Análise iniciada…');
@@ -104,8 +104,16 @@
   }
 
   // ─── Reanalisar artista ───────────────────────────────────────────────────
-  let reanalyzeArtist = $state('');
-  let reanalyzeErr    = $state('');
+  let reanalyzeArtist  = $state('');
+  let reanalyzeErr     = $state('');
+  let artistSuggestions = $state([]);
+
+  async function loadArtistSuggestions() {
+    try {
+      const data = await api('GET', '/audio/artists');
+      artistSuggestions = data?.artists ?? [];
+    } catch { /* não crítico */ }
+  }
 
   async function reanalyzeByArtist() {
     if (!reanalyzeArtist.trim()) return;
@@ -229,8 +237,14 @@
         </div>
       {/if}
       <div class="flex gap-2">
+        <datalist id="artist-suggestions">
+          {#each artistSuggestions as name}
+            <option value={name}></option>
+          {/each}
+        </datalist>
         <input
           type="text"
+          list="artist-suggestions"
           bind:value={reanalyzeArtist}
           placeholder="Nome do artista…"
           disabled={running}
