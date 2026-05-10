@@ -2,74 +2,107 @@
  * RecommendationEngine — gera recomendações de músicas/artistas
  * que NÃO estão na biblioteca do usuário.
  *
- * Combina:
- *  - Perfil da biblioteca (topGenres, mood, energia) via MusicAnalyzer
- *  - Histórico de favoritos via HistoryService
- *  - Pergunta ao Ollama por recomendações fora da biblioteca
+ * Estratégia anti-alucinação:
+ *   Quando Last.fm está disponível, o Ollama SELECIONA de uma lista de artistas reais
+ *   em vez de gerar nomes livremente. Isso elimina o risco de bandas fictícias.
+ *   Fallback para geração livre (sem Last.fm) usa instruções restritivas.
+ *
+ * Qualidade do perfil:
+ *   - Histórico ponderado por playCount + recência (90 dias = 1.5×)
+ *   - analysisCache cruzado com ratingKey das faixas mais tocadas
+ *   - buildLibraryProfile recebe artistas ordenados por plays
  */
 import { logger } from "../logger.js";
+
+const NINETY_DAYS_SEC = 90 * 24 * 3600;
+
 export class RecommendationEngine {
   /**
-   * @param {{ allfather, libraryScanner, historyService, analyzer, lastFmService }} config
+   * @param {{ allfather, libraryScanner, historyService, analyzer, lastFmService, analysisCache }} config
    */
   constructor({ allfather, libraryScanner, historyService, analyzer, lastFmService, analysisCache } = {}) {
-    this.allfather = allfather;
+    this.allfather      = allfather;
     this.libraryScanner = libraryScanner;
     this.historyService = historyService;
-    this.analyzer = analyzer;
-    this.lastFmService = lastFmService;
-    this.analysisCache = analysisCache || null;
+    this.analyzer       = analyzer;
+    this.lastFmService  = lastFmService;
+    this.analysisCache  = analysisCache || null;
   }
 
   /**
-   * Retorna recomendações de artistas e músicas fora da biblioteca.
+   * Retorna recomendações de artistas fora da biblioteca.
    * @param {{ limit?: number, genre?: string }} options
-   * @returns {Promise<Array<{artist, genre, description, whyRecommended}>>}
+   * @returns {Promise<Array<{artist, genre, whyRecommended}>>}
    */
   async recommend({ limit = 10, genre = null } = {}) {
     logger.info("RECOMMEND", `recommend() chamado — limit=${limit}${genre ? `, genre=${genre}` : ''}`);
     try {
-      const [favorites, favoriteTracks, profile] = await Promise.all([
+      // 1. Busca paralela de dados Plex
+      const [favorites, recentFull] = await Promise.all([
         this.historyService.getFavoriteArtists(20),
-        this.historyService.getFavoriteTracks(15),
-        this._buildProfile(),
+        this.historyService.getRecentlyPlayedFull(300),
       ]);
 
-      logger.debug("RECOMMEND", `Perfil: topGenres=[${(profile.topGenres||[]).join(", ")}], mood=${profile.dominantMood}, energy=${profile.avgEnergy}`);
-
       const existingArtists = this.libraryScanner.getArtistNames();
-      const favoriteArtistText = favorites.map((f, i) => `${i + 1}. ${f.artist} (${f.playCount}x)`).join("\n");
-      const favoriteTrackText  = favoriteTracks.slice(0, 12).map((t, i) => `${i + 1}. "${t.title}" — ${t.artist} (${t.playCount}x)`).join("\n");
-      const topAnchorArtists   = favorites.slice(0, 3).map((f) => f.artist).join(", ");
+      const existingLower   = new Set(existingArtists.map((a) => a.toLowerCase()));
 
-      const audioProfile = this._buildAudioProfile();
+      // 2. Pool de candidatos reais via Last.fm (paralelo, top 5 artistas favoritos)
+      const topSeeds         = favorites.slice(0, 5).map((f) => f.artist);
+      const lastFmCandidates = await this._poolLastFmCandidates(topSeeds, existingLower);
 
-      const prompt = this._buildRecommendationPrompt({
-        limit,
-        profile,
-        favoriteArtistText,
-        favoriteTrackText,
-        topAnchorArtists,
-        existingArtists: existingArtists.slice(0, 50),
-        genre,
-        audioProfile,
-      });
+      // 3. Perfil de biblioteca ponderado por playCount (chama Ollama)
+      const profile = await this._buildProfile(favorites);
+      logger.debug("RECOMMEND", `Perfil: topGenres=[${(profile.topGenres || []).join(", ")}], mood=${profile.dominantMood}, energy=${profile.avgEnergy}`);
 
-      const t0 = Date.now();
-      const raw = await this.allfather.askForJSON(prompt, { temperature: 0.7, maxTokens: 2000 });
-      logger.debug("OLLAMA", `askForJSON respondeu em ${Date.now() - t0}ms`);
+      // 4. Contexto enriquecido a partir do analysisCache × histórico
+      const topByPlayCount       = [...recentFull].sort((a, b) => b.playCount - a.playCount);
+      const audioProfile         = this._buildAudioProfile(recentFull);
+      const enrichedTrackContext = this._buildEnrichedFavoriteTracksContext(topByPlayCount);
+      const topAnchorArtists     = favorites.slice(0, 3).map((f) => f.artist).join(", ");
+      const favoriteArtistText   = favorites
+        .map((f, i) => `${i + 1}. ${f.artist} (${f.playCount}×)`).join("\n");
+
+      let raw;
+
+      if (lastFmCandidates.length >= limit) {
+        // CAMINHO PRINCIPAL: Ollama seleciona de lista real → sem alucinação
+        logger.debug("RECOMMEND", `Usando ${lastFmCandidates.length} candidatos Last.fm reais como pool`);
+        raw = await this._selectFromRealCandidates({
+          candidates: lastFmCandidates,
+          limit,
+          genre,
+          profile,
+          favoriteArtistText,
+          enrichedTrackContext,
+          audioProfile,
+          topAnchorArtists,
+        });
+      } else {
+        // FALLBACK: geração livre com instruções anti-alucinação
+        logger.debug("RECOMMEND", `Last.fm insuficiente (${lastFmCandidates.length} candidatos) — usando geração livre com grounding`);
+        const favoriteTrackText = topByPlayCount
+          .slice(0, 12)
+          .map((t, i) => `${i + 1}. "${t.title}" — ${t.artist} (${t.playCount}×)`)
+          .join("\n");
+        raw = await this.allfather.askForJSON(
+          this._buildGroundedFreePrompt({
+            limit, profile, favoriteArtistText, favoriteTrackText,
+            enrichedTrackContext, topAnchorArtists,
+            existingArtists: existingArtists.slice(0, 50),
+            genre, audioProfile,
+          }),
+          { temperature: 0.6, maxTokens: 2000 }
+        );
+      }
 
       const items = Array.isArray(raw) ? raw : (raw?.recommendations ?? []);
 
-      // Normaliza: aceita tanto {why} (formato compacto) quanto {whyRecommended} (legado)
-      const normalized = items.map(r => ({
-        artist:          r.artist ?? r.name ?? '',
-        genre:           r.genre  ?? r.g    ?? '',
-        whyRecommended:  r.why    ?? r.whyRecommended ?? '',
+      const normalized = items.map((r) => ({
+        artist:         r.artist ?? r.name ?? "",
+        genre:          r.genre  ?? r.g    ?? "",
+        whyRecommended: r.why    ?? r.whyRecommended ?? "",
       }));
 
-      // Filtra artistas já na biblioteca (case-insensitive)
-      const existingLower = new Set(existingArtists.map((a) => a.toLowerCase()));
       const filtered = normalized.filter(
         (r) => r.artist && !existingLower.has(r.artist.toLowerCase())
       );
@@ -84,28 +117,22 @@ export class RecommendationEngine {
 
   /**
    * Retorna recomendações focadas em artistas.
-   * @param {{ limit?: number, genre?: string }} options
-   * @returns {Promise<Array<{artist, genre, whyRecommended}>>}
    */
   async recommendArtists({ limit = 10, genre = null } = {}) {
-    const recs = await this.recommend({ limit: limit + 10, genre }); // pede extra para compensar filtro
+    const recs = await this.recommend({ limit: limit + 10, genre });
     return recs.slice(0, limit);
   }
 
   /**
    * Retorna artistas semelhantes a um artista dado.
-   * Combina Last.fm (candidatos scored) + Ollama (curadoria contextual).
-   * @param {string} seedArtist — artista pivot
-   * @param {{ limit?: number }} options
-   * @returns {Promise<Array<{artist, genre, whyRecommended, similarity, source}>>}
+   * Combina Last.fm (candidatos reais) + Ollama (curadoria + explicação).
    */
   async similarTo(seedArtist, { limit = 10 } = {}) {
     logger.info("RECOMMEND", `similarTo() chamado — seed="${seedArtist}", limit=${limit}`);
     try {
       const existingArtists = this.libraryScanner.getArtistNames();
-      const existingLower = new Set(existingArtists.map((a) => a.toLowerCase()));
+      const existingLower   = new Set(existingArtists.map((a) => a.toLowerCase()));
 
-      // 1. Last.fm: busca candidatos scored
       const [lastFmCandidates, seedTags] = this.lastFmService
         ? await Promise.all([
             this.lastFmService.getSimilarArtists(seedArtist, 30),
@@ -113,12 +140,10 @@ export class RecommendationEngine {
           ])
         : [[], []];
 
-      // 2. Filtra os que já estão na biblioteca
       const filtered = lastFmCandidates.filter(
         (c) => !existingLower.has(c.artist.toLowerCase())
       );
 
-      // 3. Ollama: curadoria + explicação
       const prompt = this._buildSimilarPrompt({
         seedArtist,
         seedTags,
@@ -127,11 +152,11 @@ export class RecommendationEngine {
         existingArtists: existingArtists.slice(0, 30),
       });
 
-      const t0 = Date.now();
+      const t0  = Date.now();
       const raw = await this.allfather.askForJSON(prompt, { temperature: 0.6, maxTokens: 1500 });
       logger.debug("OLLAMA", `similarTo askForJSON respondeu em ${Date.now() - t0}ms`);
 
-      const items = Array.isArray(raw) ? raw : [];
+      const items  = Array.isArray(raw) ? raw : [];
       const source = filtered.length > 0 ? "lastfm+ollama" : "ollama";
 
       const normalized = items
@@ -153,8 +178,8 @@ export class RecommendationEngine {
   }
 
   _buildSimilarPrompt({ seedArtist, seedTags, candidates, limit, existingArtists }) {
-    const tagsText  = seedTags.length ? seedTags.join(", ") : "unknown";
-    const libList   = existingArtists.join(", ");
+    const tagsText = seedTags.length ? seedTags.join(", ") : "unknown";
+    const libList  = existingArtists.join(", ");
     const candidateSection = candidates.length
       ? `Last.fm similar artists (use as inspiration): ${candidates.map((c) => `${c.artist} (similarity: ${c.similarity.toFixed(2)})`).join(", ")}`
       : `No Last.fm data available — use your knowledge of artists similar to "${seedArtist}".`;
@@ -165,25 +190,21 @@ ${candidateSection}
 LIBRARY (do NOT recommend these): ${libList}
 
 Recommend exactly ${limit} artists similar to "${seedArtist}" that are NOT in the library.
+Only recommend real artists with an established discography — do not invent names.
 Return a JSON array:
 [{"artist":"...", "genre":"...", "why":"one sentence why a fan of ${seedArtist} would enjoy them"}]
 Return ONLY the JSON array.`;
   }
 
   /**
-   * Retorna artistas DENTRO da biblioteca que são similares a um artista dado.
-   * Inverte o filtro do similarTo(): mantém apenas artistas já na coleção.
-   * @param {string} seedArtist
-   * @param {{ limit?: number }} options
-   * @returns {Promise<Array<{artist, genre, whyRecommended, similarity, source, inLibrary}>>}
+   * Retorna artistas DENTRO da biblioteca similares a um artista dado.
    */
   async similarInLibrary(seedArtist, { limit = 10 } = {}) {
     logger.info("RECOMMEND", `similarInLibrary() chamado — seed="${seedArtist}", limit=${limit}`);
     try {
       const existingArtists = this.libraryScanner.getArtistNames();
-      const existingLower = new Set(existingArtists.map((a) => a.toLowerCase()));
+      const existingLower   = new Set(existingArtists.map((a) => a.toLowerCase()));
 
-      // 1. Last.fm: busca candidatos → mantém APENAS os que estão na biblioteca
       const [lastFmCandidates, seedTags] = this.lastFmService
         ? await Promise.all([
             this.lastFmService.getSimilarArtists(seedArtist, 50),
@@ -191,9 +212,7 @@ Return ONLY the JSON array.`;
           ])
         : [[], []];
 
-      const inLibrary = lastFmCandidates.filter((c) => existingLower.has(c.artist.toLowerCase()));
-
-      // 2. Ollama: escolhe da biblioteca com contexto Last.fm
+      const inLibrary  = lastFmCandidates.filter((c) => existingLower.has(c.artist.toLowerCase()));
       const tagsText   = seedTags.length ? seedTags.join(", ") : "unknown";
       const libList    = existingArtists.slice(0, 60).join(", ");
       const lastFmHint = inLibrary.length
@@ -209,7 +228,7 @@ Return a JSON array:
 [{"artist":"...", "genre":"...", "why":"one sentence why a fan of ${seedArtist} would enjoy them"}]
 Return ONLY the JSON array.`;
 
-      const t0 = Date.now();
+      const t0  = Date.now();
       const raw = await this.allfather.askForJSON(prompt, { temperature: 0.6, maxTokens: 1000 });
       logger.debug("OLLAMA", `similarInLibrary askForJSON respondeu em ${Date.now() - t0}ms`);
 
@@ -237,38 +256,300 @@ Return ONLY the JSON array.`;
 
   // ── Internos ─────────────────────────────────────────────────────────────
 
-  _buildAudioProfile() {
+  /**
+   * Busca artistas similares no Last.fm para cada seed em paralelo e agrupa num pool
+   * deduplicado. Artistas referenciados por mais seeds ficam no topo.
+   *
+   * @param {string[]} seedArtists — artistas pivot (top favoritos)
+   * @param {Set<string>} existingLower — nomes da biblioteca em lowercase para filtrar
+   * @returns {Promise<Array<{artist, similarity, seeds}>>}
+   */
+  async _poolLastFmCandidates(seedArtists, existingLower) {
+    if (!this.lastFmService || !seedArtists.length) return [];
+
+    const results = await Promise.all(
+      seedArtists.map((artist) =>
+        this.lastFmService
+          .getSimilarArtists(artist, 25)
+          .catch(() => [])
+          .then((items) => items.map((c) => ({ ...c, seed: artist })))
+      )
+    );
+
+    // Agrupa por artista: mantém maior similarity, acumula seeds
+    const pool = new Map();
+    for (const batch of results) {
+      for (const c of batch) {
+        if (existingLower.has(c.artist.toLowerCase())) continue;
+        const key = c.artist.toLowerCase();
+        if (!pool.has(key)) {
+          pool.set(key, { artist: c.artist, similarity: c.similarity, seeds: [c.seed] });
+        } else {
+          const entry = pool.get(key);
+          entry.seeds.push(c.seed);
+          entry.similarity = Math.max(entry.similarity, c.similarity);
+        }
+      }
+    }
+
+    // Prioriza candidatos referenciados por mais artistas favoritos, depois por similarity
+    return [...pool.values()].sort(
+      (a, b) => b.seeds.length - a.seeds.length || b.similarity - a.similarity
+    );
+  }
+
+  /**
+   * Pede ao Ollama que SELECIONE de uma lista de artistas reais vindos do Last.fm.
+   * O Ollama não gera nomes — apenas escolhe, ranqueia e explica.
+   * Elimina o risco de alucinação de bandas fictícias.
+   */
+  async _selectFromRealCandidates({
+    candidates, limit, genre, profile,
+    favoriteArtistText, enrichedTrackContext, audioProfile, topAnchorArtists,
+  }) {
+    // Envia até 50 candidatos reais para o Ollama escolher
+    const pool = candidates.slice(0, 50);
+
+    const candidateList = pool
+      .map((c, i) => {
+        const seedsStr = c.seeds.length > 1
+          ? `similar to: ${c.seeds.join(", ")}`
+          : `similar to: ${c.seeds[0]}`;
+        return `${i + 1}. ${c.artist} (${seedsStr} — Last.fm match: ${c.similarity.toFixed(2)})`;
+      })
+      .join("\n");
+
+    // Nomes exatos para validação no prompt
+    const candidateNames = pool.map((c) => c.artist);
+
+    const genreClause  = genre ? `Prefer ${genre} genre artists from the list.` : "";
+    const anchorClause = topAnchorArtists
+      ? `Listener's absolute favorites: ${topAnchorArtists}.`
+      : "";
+
+    let enrichedSection = "";
+    if (enrichedTrackContext) {
+      enrichedSection = `
+AUDIO PROFILE OF MOST PLAYED TRACKS (match these sonically when choosing):
+${enrichedTrackContext}
+(★recent = played in last 90 days — prioritize matching those)
+`;
+    }
+
+    let audioSection = "";
+    if (audioProfile) {
+      const parts = [];
+      if (audioProfile.topGenres?.length)  parts.push(`genres: ${audioProfile.topGenres.join(", ")}`);
+      if (audioProfile.topMoods?.length)   parts.push(`moods: ${audioProfile.topMoods.join(", ")}`);
+      if (audioProfile.avgEnergy != null)  parts.push(`avg energy: ${audioProfile.avgEnergy}/10`);
+      if (audioProfile.avgBpm    != null)  parts.push(`avg BPM: ${audioProfile.avgBpm}`);
+      if (parts.length) {
+        audioSection = `\nLISTENER AUDIO PROFILE (weighted by play counts): ${parts.join(" | ")}\n`;
+      }
+    }
+
+    const prompt = `You are a music curator. Select the best matches for this listener from the verified artist list below.
+
+LISTENER'S MOST PLAYED ARTISTS:
+${favoriteArtistText || "(no data)"}
+${enrichedSection}${audioSection}
+${anchorClause}
+
+VERIFIED CANDIDATES — real artists confirmed by Last.fm (select ONLY from this list):
+${candidateList}
+
+${genreClause}
+
+Rules:
+- Select exactly ${limit} artists from the CANDIDATES list
+- Do NOT add any artist whose name does not appear in the list above
+- Prioritize candidates referenced by multiple favorite artists
+- Match the sonic characteristics of the most played tracks when possible
+
+Return a JSON array of exactly ${limit} items using ONLY the exact artist names from the list:
+[{"artist":"<exact name from list>", "genre":"...", "why":"one sentence referencing which of the listener's favorites they sound like and why"}]
+Return ONLY the JSON array.`;
+
+    const t0  = Date.now();
+    const raw = await this.allfather.askForJSON(prompt, { temperature: 0.5, maxTokens: 1500 });
+    logger.debug("OLLAMA", `_selectFromRealCandidates respondeu em ${Date.now() - t0}ms`);
+
+    const items = Array.isArray(raw) ? raw : (raw?.recommendations ?? []);
+
+    // Valida: mantém apenas artistas que estavam na lista real
+    const candidateSet = new Set(candidateNames.map((n) => n.toLowerCase()));
+    const validated    = items.filter((r) => {
+      const name = (r.artist ?? "").toLowerCase();
+      const ok   = candidateSet.has(name);
+      if (!ok) logger.warn("RECOMMEND", `Ollama retornou artista fora do pool: "${r.artist}" — descartado`);
+      return ok;
+    });
+
+    // Se validação descartou muitos, completa com os melhores candidatos do pool
+    if (validated.length < limit) {
+      const usedNames    = new Set(validated.map((r) => r.artist.toLowerCase()));
+      const supplement   = pool
+        .filter((c) => !usedNames.has(c.artist.toLowerCase()))
+        .slice(0, limit - validated.length)
+        .map((c) => ({
+          artist: c.artist,
+          genre:  "",
+          why:    `Similar to ${c.seeds[0]} (Last.fm)`,
+        }));
+      logger.debug("RECOMMEND", `Supplementing ${supplement.length} itens do pool Last.fm após validação`);
+      validated.push(...supplement);
+    }
+
+    return validated;
+  }
+
+  /**
+   * Prompt de geração livre usado como fallback quando Last.fm não está disponível.
+   * Inclui instruções restritivas para minimizar alucinações.
+   */
+  _buildGroundedFreePrompt({
+    limit, profile, favoriteArtistText, favoriteTrackText,
+    enrichedTrackContext, topAnchorArtists, existingArtists, genre, audioProfile,
+  }) {
+    const genreText   = genre ? genre : (profile.topGenres || []).slice(0, 5).join(", ") || "various";
+    const libraryList = existingArtists.join(", ");
+    const genreClause = genre
+      ? `Focus specifically on ${genre} genre artists.`
+      : `Prioritize artists whose style matches: ${genreText}.`;
+    const anchorClause = topAnchorArtists
+      ? `The listener's absolute favorites: ${topAnchorArtists}. Recommendations MUST appeal to fans of these.`
+      : "";
+    const moodClause = profile.dominantMood
+      ? `Library mood: ${profile.dominantMood}, energy: ${profile.avgEnergy || 5}/10.`
+      : "";
+
+    let enrichedSection = "";
+    if (enrichedTrackContext) {
+      enrichedSection = `
+AUDIO PROFILE OF MOST PLAYED TRACKS (highest priority signal):
+${enrichedTrackContext}
+(★recent = played in last 90 days — match these especially)
+`;
+    }
+
+    let audioSection = "";
+    if (audioProfile) {
+      const parts = [];
+      if (audioProfile.avgEnergy        != null) parts.push(`• Weighted avg energy: ${audioProfile.avgEnergy}/10`);
+      if (audioProfile.avgValence       != null) parts.push(`• Weighted avg valence: ${audioProfile.avgValence}/10`);
+      if (audioProfile.avgDanceability  != null) parts.push(`• Weighted avg danceability: ${audioProfile.avgDanceability}/10`);
+      if (audioProfile.avgBpm           != null) parts.push(`• Weighted avg BPM: ${audioProfile.avgBpm}`);
+      if (audioProfile.topGenres?.length)        parts.push(`• Top genres (by plays): ${audioProfile.topGenres.join(", ")}`);
+      if (audioProfile.topSubgenres?.length)     parts.push(`• Top subgenres: ${audioProfile.topSubgenres.join(", ")}`);
+      if (audioProfile.topMoods?.length)         parts.push(`• Top moods (by plays): ${audioProfile.topMoods.join(", ")}`);
+      if (audioProfile.topEras?.length)          parts.push(`• Dominant eras: ${audioProfile.topEras.join(", ")}`);
+      if (parts.length) audioSection = `\nWEIGHTED AUDIO PROFILE (${audioProfile.totalTracks} tracks, weighted by plays):\n${parts.join("\n")}\n`;
+    }
+
+    return `You are a music recommendation expert.
+
+The listener's MOST PLAYED ARTISTS (ordered by play count):
+${favoriteArtistText || "(no data)"}
+
+The listener's MOST PLAYED TRACKS:
+${favoriteTrackText || "(no data)"}
+${enrichedSection}${audioSection}
+${anchorClause}
+${moodClause}
+${genreClause}
+
+Recommend exactly ${limit} NEW artists that match the listener's sonic profile above.
+
+STRICT RULES — read carefully:
+1. Only recommend artists that ACTUALLY EXIST with a real, released discography.
+2. Do NOT invent artist names or combine words to sound like a band name.
+3. Only include artists you are confident about — if uncertain, skip them.
+4. Prefer well-documented artists: multiple studio albums, verifiable Wikipedia/Discogs presence.
+5. Do NOT recommend any of these (already in library): ${libraryList}
+
+Return a JSON array of exactly ${limit} items:
+[{"artist":"...", "genre":"...", "why":"one sentence referencing specific tracks or characteristics from the listener's profile"}]
+Return ONLY the JSON array.`;
+  }
+
+  /**
+   * Constrói o perfil da biblioteca usando artistas ponderados por playCount.
+   */
+  async _buildProfile(favorites = []) {
+    if (favorites.length > 0) {
+      const artistsWithGenres = this.libraryScanner.getArtistsWithGenres();
+      const genreMap = new Map(artistsWithGenres.map((a) => [a.name.toLowerCase(), a.genres || []]));
+
+      const enriched = favorites.slice(0, 30).map((f) => ({
+        name:      f.artist,
+        genres:    genreMap.get(f.artist.toLowerCase()) || [],
+        playCount: f.playCount,
+      }));
+
+      if (enriched.length < 40) {
+        const favNames = new Set(enriched.map((a) => a.name.toLowerCase()));
+        const rest     = artistsWithGenres
+          .filter((a) => !favNames.has(a.name.toLowerCase()))
+          .slice(0, 40 - enriched.length)
+          .map((a) => ({ name: a.name, genres: a.genres || [], playCount: 0 }));
+        enriched.push(...rest);
+      }
+
+      return this.analyzer.buildLibraryProfile(enriched);
+    }
+
+    const artists = this.libraryScanner.getArtistsWithGenres().slice(0, 50);
+    return this.analyzer.buildLibraryProfile(artists);
+  }
+
+  /**
+   * Perfil de áudio ponderado por playCount + recência (90 dias = 1.5×).
+   */
+  _buildAudioProfile(recentFull = []) {
     if (!this.analysisCache) return null;
     const entries = this.analysisCache.getAll();
     if (!entries?.length) return null;
 
+    const nowSec       = Date.now() / 1000;
+    const recentCutoff = nowSec - NINETY_DAYS_SEC;
+
+    const playMap = new Map(
+      (recentFull || []).map((t) => [
+        String(t.ratingKey),
+        { playCount: t.playCount || 1, isRecent: (t.playedAt || 0) >= recentCutoff },
+      ])
+    );
+
     const numerics = ["energy", "valence", "danceability", "acousticness", "bpm"];
     const sums     = Object.fromEntries(numerics.map((k) => [k, 0]));
-    const counts   = Object.fromEntries(numerics.map((k) => [k, 0]));
+    const wts      = Object.fromEntries(numerics.map((k) => [k, 0]));
     const genreFreq = {}, subgenreFreq = {}, moodFreq = {}, eraFreq = {};
 
     for (const e of entries) {
       const a = e.analysis;
       if (!a) continue;
+      const hist   = playMap.get(String(e.ratingKey));
+      const weight = hist ? hist.playCount * (hist.isRecent ? 1.5 : 1.0) : 1;
       for (const k of numerics) {
-        if (typeof a[k] === "number") { sums[k] += a[k]; counts[k]++; }
+        if (typeof a[k] === "number") { sums[k] += a[k] * weight; wts[k] += weight; }
       }
-      if (a.genre)    genreFreq[a.genre]       = (genreFreq[a.genre]       || 0) + 1;
-      if (a.subgenre) subgenreFreq[a.subgenre] = (subgenreFreq[a.subgenre] || 0) + 1;
-      if (a.mood)     moodFreq[a.mood]         = (moodFreq[a.mood]         || 0) + 1;
-      if (a.era)      eraFreq[a.era]           = (eraFreq[a.era]           || 0) + 1;
+      if (a.genre)    genreFreq[a.genre]       = (genreFreq[a.genre]       || 0) + weight;
+      if (a.subgenre) subgenreFreq[a.subgenre] = (subgenreFreq[a.subgenre] || 0) + weight;
+      if (a.mood)     moodFreq[a.mood]         = (moodFreq[a.mood]         || 0) + weight;
+      if (a.era)      eraFreq[a.era]           = (eraFreq[a.era]           || 0) + weight;
     }
 
-    const topN = (freq, n = 5) => Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k]) => k);
-    const avg  = (k) => counts[k] ? +(sums[k] / counts[k]).toFixed(1) : null;
+    const topN = (freq, n = 5) =>
+      Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k]) => k);
+    const wavg = (k) => (wts[k] ? +(sums[k] / wts[k]).toFixed(1) : null);
 
     return {
       totalTracks:     entries.length,
-      avgEnergy:       avg("energy"),
-      avgValence:      avg("valence"),
-      avgDanceability: avg("danceability"),
-      avgAcousticness: avg("acousticness"),
-      avgBpm:          counts.bpm ? +(sums.bpm / counts.bpm).toFixed(0) : null,
+      avgEnergy:       wavg("energy"),
+      avgValence:      wavg("valence"),
+      avgDanceability: wavg("danceability"),
+      avgAcousticness: wavg("acousticness"),
+      avgBpm:          wts.bpm ? +(sums.bpm / wts.bpm).toFixed(0) : null,
       topGenres:       topN(genreFreq),
       topSubgenres:    topN(subgenreFreq),
       topMoods:        topN(moodFreq),
@@ -276,62 +557,35 @@ Return ONLY the JSON array.`;
     };
   }
 
-  async _buildProfile() {
-    const artists = this.libraryScanner.getArtistsWithGenres().slice(0, 50);
-    return this.analyzer.buildLibraryProfile(artists);
-  }
+  /**
+   * Cruza as faixas mais tocadas com o analysisCache para produzir contexto sonoro real.
+   * Marca com ★recent faixas tocadas nos últimos 90 dias.
+   */
+  _buildEnrichedFavoriteTracksContext(topByPlayCount, limit = 12) {
+    if (!this.analysisCache || !topByPlayCount?.length) return null;
 
-  _buildRecommendationPrompt({ limit, profile, favoriteArtistText, favoriteTrackText, topAnchorArtists, existingArtists, genre, audioProfile }) {
-    const genreText    = genre ? genre : (profile.topGenres || []).slice(0, 5).join(", ") || "various";
-    const libraryList  = existingArtists.join(", ");
-    const genreClause  = genre
-      ? `Focus specifically on ${genre} genre artists.`
-      : `Prioritize artists whose style matches the genres: ${genreText}.`;
-    const anchorClause = topAnchorArtists
-      ? `The listener's absolute favorites are: ${topAnchorArtists}. Recommendations MUST appeal to fans of these artists.`
-      : "";
-    const moodClause   = profile.dominantMood
-      ? `Overall library mood: ${profile.dominantMood}, energy level: ${profile.avgEnergy || 5}/10.`
-      : "";
+    const nowSec       = Date.now() / 1000;
+    const recentCutoff = nowSec - NINETY_DAYS_SEC;
 
-    let audioSection = "";
-    if (audioProfile) {
-      const parts = [];
-      if (audioProfile.avgEnergy        != null) parts.push(`• Energia média: ${audioProfile.avgEnergy}/10`);
-      if (audioProfile.avgValence       != null) parts.push(`• Valência (positividade) média: ${audioProfile.avgValence}/10`);
-      if (audioProfile.avgDanceability  != null) parts.push(`• Dançabilidade média: ${audioProfile.avgDanceability}/10`);
-      if (audioProfile.avgBpm           != null) parts.push(`• BPM médio: ${audioProfile.avgBpm}`);
-      if (audioProfile.topGenres?.length)        parts.push(`• Top géneros: ${audioProfile.topGenres.join(", ")}`);
-      if (audioProfile.topSubgenres?.length)     parts.push(`• Top subgéneros: ${audioProfile.topSubgenres.join(", ")}`);
-      if (audioProfile.topMoods?.length)         parts.push(`• Top humores: ${audioProfile.topMoods.join(", ")}`);
-      if (audioProfile.topEras?.length)          parts.push(`• Eras predominantes: ${audioProfile.topEras.join(", ")}`);
-      if (parts.length) {
-        audioSection = `\nANÁLISE DE ÁUDIO DA BIBLIOTECA (${audioProfile.totalTracks} faixas analisadas — use para refinar recomendações):\n${parts.join("\n")}\n`;
-      }
-    }
+    const enriched = topByPlayCount
+      .slice(0, Math.min(limit * 3, 60))
+      .map((track) => ({ ...track, analysis: this.analysisCache.getAnalysis(track.ratingKey) }))
+      .filter((t) => t.analysis)
+      .slice(0, limit);
 
-    return `You are a music recommendation expert.
+    if (!enriched.length) return null;
 
-The listener's MOST PLAYED ARTISTS (primary signal — use this as the main basis):
-${favoriteArtistText || "(no data)"}
-
-The listener's MOST PLAYED TRACKS (use to understand style and taste):
-${favoriteTrackText || "(no data)"}
-${audioSection}
-${anchorClause}
-${moodClause}
-${genreClause}
-
-Based primarily on the most played artists and tracks above, recommend exactly ${limit} NEW artists that:
-- Sound similar to or are frequently enjoyed alongside the top played artists
-- Are NOT already in the listener's library
-- Each recommendation should feel like a natural next step from the actual listening data
-
-LIBRARY — do NOT recommend any of these: ${libraryList}
-
-Return a JSON array of exactly ${limit} items:
-[{"artist":"...", "genre":"...", "why":"one sentence specifically referencing which of the listener's favorites this is similar to"}]
-
-Return ONLY the JSON array.`;
+    return enriched
+      .map((t, i) => {
+        const a          = t.analysis;
+        const isRecent   = (t.playedAt || 0) >= recentCutoff;
+        const genreStr   = [a.genre, a.subgenre].filter(Boolean).join("/");
+        const tags       = a.emotionalTags?.slice(0, 3).join(", ");
+        const recentMark = isRecent ? " ★recent" : "";
+        const bpmStr     = a.bpm ? `, BPM~${a.bpm}` : "";
+        const tagsStr    = tags ? ` [${tags}]` : "";
+        return `${i + 1}. "${t.title}" — ${t.artist} (${t.playCount}×${recentMark}): ${genreStr}, energy=${a.energy}, mood=${a.mood}${bpmStr}, timbre="${a.timbre}"${tagsStr}`;
+      })
+      .join("\n");
   }
 }

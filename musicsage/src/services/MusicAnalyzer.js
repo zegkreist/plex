@@ -57,7 +57,9 @@ Return a JSON object with these exact fields:
 
   /**
    * Constrói um perfil agregado da biblioteca.
-   * @param {Array<{name: string, genres: string[]}>} artists
+   * Aceita artists com playCount opcional — quando presente, instrui o Ollama a ponderar
+   * muito mais os artistas mais ouvidos (que refletem gosto real vs. mera posse).
+   * @param {Array<{name: string, genres: string[], playCount?: number}>} artists
    * @returns {Promise<{topGenres[], dominantMood, avgEnergy, characteristics[]}>}
    */
   async buildLibraryProfile(artists = []) {
@@ -66,21 +68,33 @@ Return a JSON object with these exact fields:
     if (!artists.length) return FALLBACK;
 
     try {
+      const hasPlayCounts = artists.some((a) => (a.playCount || 0) > 0);
+
       const artistSummary = artists
-        .slice(0, 40) // limita para não explodir o prompt
-        .map((a) => `${a.name} [${(a.genres || []).join(", ")}]`)
+        .slice(0, 40)
+        .map((a) => {
+          const genres   = (a.genres || []).join(", ") || "unknown";
+          const playStr  = hasPlayCounts && a.playCount > 0 ? ` — ${a.playCount} plays` : "";
+          return `${a.name} [${genres}]${playStr}`;
+        })
         .join("\n");
 
+      const weightingNote = hasPlayCounts
+        ? "Artists with more plays represent actual listening preferences — weight them MUCH more heavily than low or zero-play artists when determining taste."
+        : "";
+
       const prompt = `Analyze this music library and create a listener taste profile.
-Artists in the library (format: Name [genres]):
+Artists (format: Name [genres]${hasPlayCounts ? " — N plays" : ""}):
 ${artistSummary}
+
+${weightingNote}
 
 Return a JSON object with these exact fields:
 {
-  "topGenres": ["array of top genres, most common first"],
-  "dominantMood": "overall mood of the library",
-  "avgEnergy": <number 1-10>,
-  "characteristics": ["key characteristics of this listener's taste"]
+  "topGenres": ["top genres ordered by how much the listener actually plays them, not just owns"],
+  "dominantMood": "overall mood of the most-played music",
+  "avgEnergy": <number 1-10, weighted toward most-played artists>,
+  "characteristics": ["3-5 key characteristics of this listener's actual taste based on play counts"]
 }`;
 
       const result = await this.allfather.askForJSON(prompt, { temperature: 0.3, maxTokens: 600 });
