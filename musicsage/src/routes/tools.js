@@ -232,8 +232,9 @@ export function toolsRouter(router) {
       const ts = await getTorrentSearch();
       const results = await withSearchTimeout(ts.searchMusic(artist.trim(), album?.trim() || null));
 
+      const limit = Math.min(parseInt(req.body?.limit) || 100, 200);
       res.json(
-        results.slice(0, 15).map((r) => ({
+        results.slice(0, limit).map((r) => ({
           title:    r.title    || "",
           size:     r.size     || "–",
           seeds:    typeof r.seeds === "number" ? r.seeds : 0,
@@ -259,8 +260,9 @@ export function toolsRouter(router) {
       logger.info("SERVER", `Stormbringer search movie: "${title}" ${year || ""}`);
       const ts = await getTorrentSearch();
       const results = await withSearchTimeout(ts.searchMovies(title.trim(), year ? parseInt(year) : null));
+      const limit = Math.min(parseInt(req.body?.limit) || 100, 200);
       res.json(
-        results.slice(0, 15).map((r) => ({
+        results.slice(0, limit).map((r) => ({
           title:    r.title    || "",
           size:     r.size     || "–",
           seeds:    typeof r.seeds === "number" ? r.seeds : 0,
@@ -288,8 +290,9 @@ export function toolsRouter(router) {
       logger.info("SERVER", `Stormbringer search series: "${title}" S${s ?? '?'}E${e ?? '?'}`);
       const ts = await getTorrentSearch();
       const results = await withSearchTimeout(ts.searchSeries(title.trim(), s, e));
+      const limit = Math.min(parseInt(req.body?.limit) || 100, 200);
       res.json(
-        results.slice(0, 15).map((r) => ({
+        results.slice(0, limit).map((r) => ({
           title:    r.title    || "",
           size:     r.size     || "–",
           seeds:    typeof r.seeds === "number" ? r.seeds : 0,

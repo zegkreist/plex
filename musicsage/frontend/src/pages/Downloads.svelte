@@ -53,6 +53,8 @@
   let sbLoading     = $state(false);
   let sbError       = $state('');
   let sbSort        = $state({ col: 'seeders', dir: 'desc' });
+  let sbPage        = $state(0);
+  let sbPageSize    = $state(25);
 
   const sbSorted = $derived(() => {
     const dir = sbSort.dir === 'asc' ? 1 : -1;
@@ -71,18 +73,33 @@
     });
   });
 
+  const sbTotalPages  = $derived(() => Math.max(1, Math.ceil(sbSorted().length / sbPageSize)));
+  const sbPagedResults = $derived(() => {
+    const all   = sbSorted();
+    const start = sbPage * sbPageSize;
+    return all.slice(start, start + sbPageSize);
+  });
+
   // query genérica para filme/série
   let sbQuery       = $state('');
 
+  function sbSetSort(col) {
+    sbSort = sbSort.col === col
+      ? { col, dir: sbSort.dir === 'asc' ? 'desc' : 'asc' }
+      : { col, dir: col === 'title' ? 'asc' : 'desc' };
+    sbPage = 0;
+  }
+
   function sbClearTypeFields() {
     sbYear = ''; sbSeason = ''; sbEpisode = ''; sbMusicAlbum = '';
-    sbResults = []; sbError = '';
+    sbResults = []; sbError = ''; sbPage = 0;
   }
 
   async function sbSearch() {
     sbLoading = true;
     sbError   = '';
     sbResults = [];
+    sbPage    = 0;
     try {
       let body, path;
       if (sbType === 'music') {
@@ -561,20 +578,62 @@
         {#if sbLoading}
           <div class="flex items-center gap-2 py-4"><Spinner size="sm" /><span class="text-2xs" style="color:#5a5a78">Buscando…</span></div>
         {:else if sbResults.length > 0}
-          <div class="overflow-x-auto rounded-xl border" style="border-color:#1a1a28;max-height:420px;overflow-y:auto">
+          <!-- Barra superior: contagem + controles de página -->
+          <div class="flex items-center justify-between gap-3 flex-wrap mb-2">
+            <span class="text-2xs" style="color:#5a5a78">
+              {sbResults.length} resultado{sbResults.length !== 1 ? 's' : ''}
+              {#if sbTotalPages() > 1}
+                · página {sbPage + 1} de {sbTotalPages()}
+              {/if}
+            </span>
+            <div class="flex items-center gap-2">
+              <span class="text-2xs" style="color:#5a5a78">Mostrar</span>
+              <select
+                bind:value={sbPageSize}
+                onchange={() => sbPage = 0}
+                class="rounded-lg px-2 py-1 text-2xs text-white focus:outline-none"
+                style="background:#16161f;border:1px solid #1e1e2e"
+              >
+                {#each [25, 50, 100] as n}
+                  <option value={n}>{n}</option>
+                {/each}
+              </select>
+              <span class="text-2xs" style="color:#5a5a78">por página</span>
+            </div>
+          </div>
+
+          <!-- Tabela de resultados -->
+          <div class="overflow-x-auto rounded-xl border" style="border-color:#1a1a28">
             <table class="w-full text-sm">
               <thead style="position:sticky;top:0;background:#111118;z-index:1">
                 <tr class="border-b" style="border-color:#1a1a28">
-                  <th class="text-left py-2.5 px-3 text-2xs font-semibold uppercase tracking-wider cursor-pointer select-none" style="color:#5a5a78" onclick={() => { sbSort = sbSort.col === 'title' ? { col: 'title', dir: sbSort.dir === 'asc' ? 'desc' : 'asc' } : { col: 'title', dir: 'asc' }; }}>Nome {sbSort.col === 'title' ? (sbSort.dir === 'asc' ? '↑' : '↓') : ''}</th>
-                  <th class="text-left py-2.5 px-3 text-2xs font-semibold uppercase tracking-wider cursor-pointer select-none" style="color:#5a5a78" onclick={() => { sbSort = sbSort.col === 'size' ? { col: 'size', dir: sbSort.dir === 'asc' ? 'desc' : 'asc' } : { col: 'size', dir: 'desc' }; }}>Tamanho {sbSort.col === 'size' ? (sbSort.dir === 'asc' ? '↑' : '↓') : ''}</th>
-                  <th class="text-left py-2.5 px-3 text-2xs font-semibold uppercase tracking-wider cursor-pointer select-none" style="color:#5a5a78" onclick={() => { sbSort = sbSort.col === 'seeders' ? { col: 'seeders', dir: sbSort.dir === 'asc' ? 'desc' : 'asc' } : { col: 'seeders', dir: 'desc' }; }}>Seeds {sbSort.col === 'seeders' ? (sbSort.dir === 'asc' ? '↑' : '↓') : ''}</th>
+                  <th
+                    class="text-left py-2.5 px-3 text-2xs font-semibold uppercase tracking-wider cursor-pointer select-none"
+                    style="color:#5a5a78"
+                    onclick={() => sbSetSort('title')}
+                  >Nome {sbSort.col === 'title' ? (sbSort.dir === 'asc' ? '↑' : '↓') : ''}</th>
+                  <th
+                    class="text-left py-2.5 px-3 text-2xs font-semibold uppercase tracking-wider cursor-pointer select-none"
+                    style="color:#5a5a78"
+                    onclick={() => sbSetSort('size')}
+                  >Tamanho {sbSort.col === 'size' ? (sbSort.dir === 'asc' ? '↑' : '↓') : ''}</th>
+                  <th
+                    class="text-left py-2.5 px-3 text-2xs font-semibold uppercase tracking-wider cursor-pointer select-none"
+                    style="color:#5a5a78"
+                    onclick={() => sbSetSort('seeders')}
+                  >Seeds {sbSort.col === 'seeders' ? (sbSort.dir === 'asc' ? '↑' : '↓') : ''}</th>
                   <th class="py-2.5 px-3"></th>
                 </tr>
               </thead>
               <tbody>
-                {#each sbSorted() as r}
+                {#each sbPagedResults() as r}
                   <tr class="list-row">
-                    <td class="py-2.5 px-3 text-white max-w-xs truncate">{r.title ?? r.name ?? '?'}</td>
+                    <td class="py-2.5 px-3 text-white" style="max-width:18rem">
+                      <div class="truncate" title={r.title ?? r.name ?? ''}>{r.title ?? r.name ?? '?'}</div>
+                      {#if r.provider && r.provider !== '–'}
+                        <div class="text-2xs mt-0.5 truncate" style="color:#3d3d58">{r.provider}</div>
+                      {/if}
+                    </td>
                     <td class="py-2.5 px-3 whitespace-nowrap text-2xs" style="color:#5a5a78">{r.size || '?'}</td>
                     <td class="py-2.5 px-3 text-2xs font-semibold" style="color:#1db954">{r.seeders ?? r.seeds ?? '?'}</td>
                     <td class="py-2.5 px-3">
@@ -585,7 +644,59 @@
               </tbody>
             </table>
           </div>
-        {:else if sbQuery}
+
+          <!-- Controles de navegação de página -->
+          {#if sbTotalPages() > 1}
+            <div class="flex items-center justify-center gap-2 pt-1">
+              <button
+                class="px-3 py-1.5 rounded-lg text-2xs font-medium transition-all"
+                style={sbPage === 0
+                  ? 'color:#2e2e4a;cursor:default'
+                  : 'background:#16161f;border:1px solid #1e1e2e;color:#8888a8'}
+                disabled={sbPage === 0}
+                onclick={() => sbPage = 0}
+              >«</button>
+              <button
+                class="px-3 py-1.5 rounded-lg text-2xs font-medium transition-all"
+                style={sbPage === 0
+                  ? 'color:#2e2e4a;cursor:default'
+                  : 'background:#16161f;border:1px solid #1e1e2e;color:#8888a8'}
+                disabled={sbPage === 0}
+                onclick={() => sbPage--}
+              >‹ Anterior</button>
+
+              <!-- Páginas numeradas (janela de 5 ao redor da atual) -->
+              {#each Array.from({ length: sbTotalPages() }, (_, i) => i)
+                  .filter(i => Math.abs(i - sbPage) <= 2) as p}
+                <button
+                  class="w-8 h-8 rounded-lg text-2xs font-semibold transition-all"
+                  style={p === sbPage
+                    ? 'background:rgba(124,106,245,0.18);border:1px solid rgba(124,106,245,0.3);color:#9d8eff'
+                    : 'background:#16161f;border:1px solid #1e1e2e;color:#5a5a78'}
+                  onclick={() => sbPage = p}
+                >{p + 1}</button>
+              {/each}
+
+              <button
+                class="px-3 py-1.5 rounded-lg text-2xs font-medium transition-all"
+                style={sbPage >= sbTotalPages() - 1
+                  ? 'color:#2e2e4a;cursor:default'
+                  : 'background:#16161f;border:1px solid #1e1e2e;color:#8888a8'}
+                disabled={sbPage >= sbTotalPages() - 1}
+                onclick={() => sbPage++}
+              >Próxima ›</button>
+              <button
+                class="px-3 py-1.5 rounded-lg text-2xs font-medium transition-all"
+                style={sbPage >= sbTotalPages() - 1
+                  ? 'color:#2e2e4a;cursor:default'
+                  : 'background:#16161f;border:1px solid #1e1e2e;color:#8888a8'}
+                disabled={sbPage >= sbTotalPages() - 1}
+                onclick={() => sbPage = sbTotalPages() - 1}
+              >»</button>
+            </div>
+          {/if}
+
+        {:else if sbQuery || sbArtist}
           <div class="py-6 text-center text-sm" style="color:#5a5a78">Nenhum resultado</div>
         {/if}
       </div>
