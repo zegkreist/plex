@@ -254,6 +254,142 @@ Return ONLY the JSON array.`;
     }
   }
 
+  /**
+   * Gera recomendações a partir de um prompt em linguagem natural.
+   *
+   * Fluxo anti-alucinação:
+   *   1. LLM recebe contexto do perfil + pedido do usuário → gera lista de candidatos
+   *   2. Cada candidato é verificado no Last.fm (artist.getInfo)
+   *   3. Artistas não encontrados no Last.fm são descartados com warning
+   *   4. Artistas já na biblioteca são filtrados
+   *
+   * @param {string} userPrompt — pedido em linguagem natural
+   * @param {{ limit?: number }} options
+   * @returns {Promise<Array<{artist, genre, whyRecommended}>>}
+   */
+  async recommendByPrompt(userPrompt, { limit = 10 } = {}) {
+    logger.info("RECOMMEND", `recommendByPrompt() — prompt="${userPrompt.slice(0, 80)}"`);
+    try {
+      const [favorites, recentFull] = await Promise.all([
+        this.historyService.getFavoriteArtists(20),
+        this.historyService.getRecentlyPlayedFull(300),
+      ]);
+
+      const existingArtists = this.libraryScanner.getArtistNames();
+      const existingLower   = new Set(existingArtists.map((a) => a.toLowerCase()));
+
+      const topByPlayCount     = [...recentFull].sort((a, b) => b.playCount - a.playCount);
+      const audioProfile       = this._buildAudioProfile(recentFull);
+      const enrichedContext    = this._buildEnrichedFavoriteTracksContext(topByPlayCount);
+      const favoriteArtistText = favorites
+        .slice(0, 12)
+        .map((f, i) => `${i + 1}. ${f.artist} (${f.playCount}×)`)
+        .join("\n");
+
+      // Pede 3× o limite para ter buffer após validação Last.fm
+      const candidateCount = Math.min(limit * 3, 30);
+      const prompt = this._buildPromptRecommendationPrompt({
+        userPrompt,
+        candidateCount,
+        favoriteArtistText,
+        audioProfile,
+        enrichedContext,
+        existingArtists: existingArtists.slice(0, 60),
+      });
+
+      const raw   = await this.allfather.askForJSON(prompt, { temperature: 0.65, maxTokens: 2000 });
+      const items = Array.isArray(raw) ? raw : (raw?.recommendations ?? raw?.artists ?? []);
+      logger.debug("RECOMMEND", `recommendByPrompt: LLM retornou ${items.length} candidatos`);
+
+      // Validação Last.fm em lotes de 5 (paralela dentro do lote, sequencial entre lotes)
+      const validated = [];
+      for (let i = 0; i < items.length; i += 5) {
+        if (validated.length >= limit * 1.5) break;
+        const batch  = items.slice(i, i + 5);
+        const checks = await Promise.all(
+          batch.map(async (item) => {
+            const name = (item.artist ?? item.name ?? "").trim();
+            if (!name || existingLower.has(name.toLowerCase())) return null;
+            const exists = this.lastFmService
+              ? await this.lastFmService.verifyArtistExists(name)
+              : true;
+            if (!exists) {
+              logger.warn("RECOMMEND", `recommendByPrompt: "${name}" não encontrado no Last.fm — descartado`);
+              return null;
+            }
+            return item;
+          })
+        );
+        for (const c of checks) if (c) validated.push(c);
+      }
+
+      const normalized = validated
+        .filter((r) => {
+          const name = (r.artist ?? r.name ?? "").toLowerCase();
+          return name && !existingLower.has(name);
+        })
+        .map((r) => ({
+          artist:         r.artist ?? r.name ?? "",
+          genre:          r.genre  ?? "",
+          whyRecommended: r.why    ?? r.whyRecommended ?? "",
+        }));
+
+      logger.info("RECOMMEND", `recommendByPrompt: ${normalized.length} validados de ${items.length} gerados`);
+      return normalized.slice(0, limit);
+    } catch (err) {
+      logger.error("RECOMMEND", `Erro em recommendByPrompt: ${err.message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Prompt afiado para recomendações por pedido livre.
+   * O LLM gera candidatos; Last.fm depois valida a existência real de cada um.
+   */
+  _buildPromptRecommendationPrompt({
+    userPrompt, candidateCount, favoriteArtistText, audioProfile, enrichedContext, existingArtists,
+  }) {
+    const libraryList = existingArtists.join(", ");
+
+    let audioSection = "";
+    if (audioProfile) {
+      const parts = [];
+      if (audioProfile.topGenres?.length)  parts.push(`genres: ${audioProfile.topGenres.join(", ")}`);
+      if (audioProfile.topMoods?.length)   parts.push(`moods: ${audioProfile.topMoods.join(", ")}`);
+      if (audioProfile.avgEnergy  != null) parts.push(`avg energy: ${audioProfile.avgEnergy}/10`);
+      if (audioProfile.avgBpm     != null) parts.push(`avg BPM: ${audioProfile.avgBpm}`);
+      if (parts.length) audioSection = `\nLISTENER AUDIO PROFILE: ${parts.join(" | ")}\n`;
+    }
+
+    let enrichedSection = "";
+    if (enrichedContext) {
+      enrichedSection = `\nMOST PLAYED TRACKS (use as sonic reference):\n${enrichedContext}\n`;
+    }
+
+    return `You are a music expert with encyclopedic knowledge of real, verified artists across all genres and eras.
+
+LISTENER'S FAVORITE ARTISTS (ordered by play count):
+${favoriteArtistText || "(no listening data yet)"}
+${audioSection}${enrichedSection}
+THE LISTENER'S REQUEST: "${userPrompt}"
+
+YOUR TASK: Suggest exactly ${candidateCount} artists that best answer this specific request.
+Use the listener's profile as contextual background — their taste informs the style, but the request takes priority.
+
+ANTI-HALLUCINATION RULES — MANDATORY, no exceptions:
+1. ONLY suggest artists that ACTUALLY EXIST with a real, released discography.
+2. Every suggested artist must be findable on Last.fm, Spotify, or Wikipedia right now.
+3. Do NOT invent artist names, combine words to sound like a band name, or use genre descriptors as names.
+4. Do NOT suggest artists already in the listener's library: ${libraryList}
+5. If you're uncertain whether an artist is real, EXCLUDE them — err on the side of fewer, real results.
+6. Prefer artists with multiple studio albums, but verified niche/underground acts are acceptable.
+7. If you can only find ${Math.ceil(candidateCount * 0.6)} artists that truly match, return only those.
+
+Return a JSON array:
+[{"artist": "Exact name as on Last.fm/Spotify", "genre": "Primary genre", "why": "One sentence explaining how this artist answers the listener's specific request, referencing their existing taste"}]
+Return ONLY the JSON array, no preamble.`;
+  }
+
   // ── Internos ─────────────────────────────────────────────────────────────
 
   /**

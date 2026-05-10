@@ -50,5 +50,17 @@ export function recommendationsRouter(router, { recommendationEngine }) {
     }
   });
 
+  router.post("/recommendations/by-prompt", async (req, res) => {
+    const prompt = req.body?.prompt?.trim();
+    const limit  = Math.min(parseInt(req.body?.limit, 10) || 10, 20);
+    if (!prompt) return res.status(400).json({ error: 'Parâmetro "prompt" obrigatório' });
+    try {
+      const recs = await recommendationEngine.recommendByPrompt(prompt, { limit });
+      res.json(recs);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   return router;
 }

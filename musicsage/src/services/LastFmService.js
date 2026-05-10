@@ -54,6 +54,32 @@ export class LastFmService {
   }
 
   /**
+   * Verifica se um artista existe na base Last.fm.
+   * Usa artist.getInfo sem autocorrect para não aceitar variações inventadas.
+   * Erro 6 = "Artist not found" — retorna false. Fail-open: se Last.fm estiver fora retorna true.
+   * @param {string} artistName
+   * @returns {Promise<boolean>}
+   */
+  async verifyArtistExists(artistName) {
+    if (!this._available) return true;
+    try {
+      const res = await this.axios.get(this._base, {
+        params: {
+          method:      "artist.getInfo",
+          artist:      artistName,
+          autocorrect: 0,
+          api_key:     this.apiKey,
+          format:      "json",
+        },
+        timeout: 5000,
+      });
+      return !res.data?.error; // error 6 = Artist not found
+    } catch {
+      return true; // Last.fm fora → não descarta o artista
+    }
+  }
+
+  /**
    * Retorna tags (gêneros) de um artista.
    * @param {string} artist
    * @returns {Promise<string[]>}
