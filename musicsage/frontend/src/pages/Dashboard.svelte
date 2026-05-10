@@ -28,6 +28,7 @@
   let loadingMood     = $state(true);
   let loadingHistory  = $state(true);
   let loadingDisc     = $state(true);
+  let _userEffectRan  = false;  // skip first $effect run (onMount already loads)
 
   // Compartilhar Stories
   let showShare  = $state(false);
@@ -102,10 +103,11 @@
 
   async function loadMood() {
     loadingMood = true;
+    const userParam = $selectedUserId ? `&userId=${$selectedUserId}` : '';
     try {
       [moodDay, moodMonth] = await Promise.all([
-        api('GET', '/library/mood?period=day'),
-        api('GET', '/library/mood?period=month'),
+        api('GET', `/library/mood?period=day${userParam}`),
+        api('GET', `/library/mood?period=month${userParam}`),
       ]);
     } catch (e) { toast.error(`Mood: ${e.message}`); }
     finally { loadingMood = false; }
@@ -124,9 +126,13 @@
   async function loadDiscoveries() {
     loadingDisc = true;
     try {
-      const cache = await api('GET', '/audio/analysis-cache?limit=500');
+      const userParam = $selectedUserId ? `&userId=${$selectedUserId}` : '';
+      const [cache, recentData] = await Promise.all([
+        api('GET', '/audio/analysis-cache?limit=500'),
+        api('GET', `/library/recently-played?limit=500${userParam}`),
+      ]);
       const tracksArr = Object.values(cache?.tracks ?? {});
-      const played = new Set((history ?? []).map(t => t.ratingKey));
+      const played = new Set((recentData?.tracks ?? []).map(t => t.ratingKey));
 
       // Build subgenre distribution from full cache (all analyzed tracks)
       const sgMap = {};
@@ -162,6 +168,14 @@
 
   // ─── Reactivity ──────────────────────────────────────────
   $effect(() => { if (period || $selectedUserId !== undefined) { metrics = null; loadMetrics(); } });
+
+  // Re-carrega mood e descobertas ao trocar de usuário (skip na montagem — onMount já carrega)
+  $effect(() => {
+    void $selectedUserId;
+    if (!_userEffectRan) { _userEffectRan = true; return; }
+    loadMood();
+    loadDiscoveries();
+  });
 
   // ─── Helpers ─────────────────────────────────────────────
   function moodLabel(m) {

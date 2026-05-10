@@ -56,11 +56,12 @@ export function libraryRouter(router, { libraryScanner, historyService, metricsS
     }
   });
 
-  router.get("/library/history", async (_req, res) => {
+  router.get("/library/history", async (req, res) => {
+    const userId = req.query.userId ? parseInt(req.query.userId, 10) || null : null;
     try {
       const [artists, tracks] = await Promise.all([
-        historyService.getFavoriteArtists(10),
-        historyService.getFavoriteTracks(10),
+        historyService.getFavoriteArtists(10, userId),
+        historyService.getFavoriteTracks(10, userId),
       ]);
       res.json({ artists, tracks });
     } catch (err) {
@@ -117,9 +118,10 @@ export function libraryRouter(router, { libraryScanner, historyService, metricsS
    */
   router.get("/library/recently-played", async (req, res) => {
     if (!historyService) return res.status(503).json({ error: "HistoryService indisponível" });
-    const limit = Math.max(1, Math.min(200, parseInt(req.query.limit) || 50));
+    const limit  = Math.max(1, Math.min(200, parseInt(req.query.limit) || 50));
+    const userId = req.query.userId ? parseInt(req.query.userId, 10) || null : null;
     try {
-      const tracks = await historyService.getRecentlyPlayedFull(limit);
+      const tracks = await historyService.getRecentlyPlayedFull(limit, userId);
       res.json({ tracks });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -137,6 +139,7 @@ export function libraryRouter(router, { libraryScanner, historyService, metricsS
 
     const allowed = ["day", "month"];
     const period  = allowed.includes(req.query.period) ? req.query.period : "day";
+    const userId  = req.query.userId ? parseInt(req.query.userId, 10) || null : null;
 
     // Limiar de tempo: agora − período
     const nowTs  = Math.floor(Date.now() / 1000);
@@ -145,7 +148,7 @@ export function libraryRouter(router, { libraryScanner, historyService, metricsS
       : nowTs - 86400 * 30;   // últimos 30 dias
 
     try {
-      const played  = await historyService.getPlayedSince(fromTs, 500);
+      const played  = await historyService.getPlayedSince(fromTs, 500, userId);
       if (!played.length) {
         return res.json({ period, tracksAnalyzed: 0, moodLabel: "Sem dados", topMoods: [], topGenres: [], avgEnergy: null, avgValence: null, avgDanceability: null, avgBpm: null, artistOfPeriod: null });
       }

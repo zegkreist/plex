@@ -68,15 +68,14 @@ export class HistoryService {
    * @param {number} limit
    * @returns {Promise<Array<{ratingKey,title,artist,album,playedAt,playCount,duration}>>}
    */
-  async getRecentlyPlayedFull(limit = 500) {
+  async getRecentlyPlayedFull(limit = 500, userId = null) {
     try {
       await this._findMusicSection();
+      const params = { type: 10, sort: "lastViewedAt:desc", limit };
+      if (userId) params.accountID = userId;
       const res = await this.axios.get(
         `${this.plexUrl}/library/sections/${this._musicKey}/all`,
-        {
-          headers: this._headers,
-          params: { type: 10, sort: "lastViewedAt:desc", limit },
-        }
+        { headers: this._headers, params }
       );
       const items = res.data?.MediaContainer?.Metadata || [];
       return items
@@ -103,8 +102,8 @@ export class HistoryService {
    * @param {number} limit
    * @returns {Promise<Array>}
    */
-  async getPlayedSince(fromTs, limit = 500) {
-    const all = await this.getRecentlyPlayedFull(limit);
+  async getPlayedSince(fromTs, limit = 500, userId = null) {
+    const all = await this.getRecentlyPlayedFull(limit, userId);
     return all.filter((t) => t.playedAt >= fromTs);
   }
 
@@ -113,15 +112,14 @@ export class HistoryService {
    * @param {number} limit — máximo de artistas (padrão 20)
    * @returns {Promise<Array<{artist, playCount}>>}
    */
-  async getFavoriteArtists(limit = 20) {
+  async getFavoriteArtists(limit = 20, userId = null) {
     try {
       await this._findMusicSection();
+      const params = { type: 8, sort: "viewCount:desc", limit };
+      if (userId) params.accountID = userId;
       const res = await this.axios.get(
         `${this.plexUrl}/library/sections/${this._musicKey}/all`,
-        {
-          headers: this._headers,
-          params: { type: 8, sort: "viewCount:desc", limit },
-        }
+        { headers: this._headers, params }
       );
       const items = res.data?.MediaContainer?.Metadata || [];
       return items
@@ -138,15 +136,14 @@ export class HistoryService {
    * @param {number} limit — máximo de faixas (padrão 20)
    * @returns {Promise<Array<{title, artist, album, playCount}>>}
    */
-  async getFavoriteTracks(limit = 20) {
+  async getFavoriteTracks(limit = 20, userId = null) {
     try {
       await this._findMusicSection();
+      const params = { type: 10, sort: "viewCount:desc", limit };
+      if (userId) params.accountID = userId;
       const res = await this.axios.get(
         `${this.plexUrl}/library/sections/${this._musicKey}/all`,
-        {
-          headers: this._headers,
-          params: { type: 10, sort: "viewCount:desc", limit },
-        }
+        { headers: this._headers, params }
       );
       const items = res.data?.MediaContainer?.Metadata || [];
       return items
