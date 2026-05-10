@@ -141,6 +141,37 @@ volumes:
 
 ---
 
+## Motor de recomendações
+
+### Como funciona
+
+O `RecommendationEngine` combina três fontes de dados para gerar recomendações precisas e sem alucinações:
+
+**1. Pool de candidatos reais (Last.fm)**
+Quando `LASTFM_API_KEY` está configurado, o sistema busca artistas similares aos 5 favoritos do usuário em paralelo via Last.fm. O Ollama recebe a lista real e apenas *seleciona e explica* — não gera nomes livremente. Artistas inventados pelo LLM são descartados automaticamente.
+
+Sem Last.fm, o sistema usa geração livre com instruções restritivas ("só artistas com discografia verificável").
+
+**2. Perfil ponderado por escuta real**
+- Artistas e faixas mais tocados têm peso proporcional ao `playCount` no perfil enviado ao LLM
+- Faixas ouvidas nos últimos 90 dias recebem peso 1.5× (sinal de mood atual)
+- O perfil reflete o que o usuário *realmente ouve*, não o que tem na biblioteca
+
+**3. Análise sonora das faixas mais tocadas**
+As faixas mais tocadas são cruzadas com o `analysis-cache` pelo `ratingKey`. O prompt do LLM recebe os atributos sonoros reais de cada faixa:
+```
+1. "Black Dog" — Led Zeppelin (47× ★recent): Hard Rock/Blues Rock, energy=9, mood=aggressive, BPM~148, timbre="distorted electric guitar" [rebellious, intense, driving]
+```
+Isso permite recomendações baseadas em som real, não apenas em nome de artista.
+
+### Importância do Last.fm
+
+`LASTFM_API_KEY` é **fortemente recomendado** — sem ele, o sistema recorre a geração livre de nomes pelo LLM, que pode sugerir artistas que não existem. Com Last.fm, todas as recomendações vêm de artistas verificados.
+
+Obtenha sua chave gratuita em: https://www.last.fm/api/account/create
+
+---
+
 ## Agents embarcados
 
 Todos os agents estão **dentro da imagem** — não é necessário montar volumes extras para eles.

@@ -71,18 +71,18 @@ Webserver Express.js de recomendações musicais com **frontend SPA** integrado.
 - Escaneia a biblioteca Plex via API → artistas, álbuns, faixas
 - Analisa perfil musical com AllFather (Ollama) → gênero, mood, energia, timbre
 - Lê histórico de plays do Plex (viewCount) para entender gostos do usuário
-- **Recomenda artistas** fora da biblioteca que combinam com o perfil analisado
+- **Recomenda artistas** fora da biblioteca usando Last.fm como pool real (anti-alucinação) + Ollama para curadoria
 - Busca **artistas semelhantes** via Last.fm + re-rank por Ollama
 - **Constrói playlists** da biblioteca por critérios (mood, gênero, energia) ou via **prompt em linguagem natural**
 - **Sincroniza playlists bidireccionalmente com o Plex** (rename, update faixas, delete)
-- **Frontend SPA dark-theme** acessível em `http://localhost:3002`
+- **Frontend SPA dark-theme** responsivo (desktop + mobile) acessível em `http://localhost:3002`
 
-**Seções do frontend (redesenhadas — design system Spotify/Vercel):**
+**Seções do frontend (design system Spotify/Vercel — responsivo mobile):**
 | Seção | Função |
 |---|---|
 | Dashboard | Hero stats grid (artistas/álbuns/faixas/playlists), curiosidades cards, retrospectiva com thumbnails + play counts + horas, seletor de usuário Plex, mood do dia/mês |
 | Recomendações | Cards com `whyRecommended` como descrição, gênero como badge, busca de artistas similares (Last.fm + Ollama), botões ∿ TideCaller / ↯ Stormbringer |
-| Playlists | Layout 2 painéis (lista / detalhe), faixas editáveis, sync com Plex |
+| Playlists | Desktop: layout 2 painéis (lista / detalhe). **Mobile: navegação empilhada** — lista em tela cheia → detalhe com botão ← Voltar. Faixas editáveis com botão sempre visível no touch. Sync com Plex. |
 | Nova Playlist | 2 tabs: "✨ Por Prompt" e "🎵 Por Música" (Radio) usando analysis-cache |
 | Clusters | Toggle 2D/3D, visualização vetorial da biblioteca |
 | Análise de Áudio | Progress bar, badges inline, análise em batch |
@@ -173,6 +173,17 @@ DELETE /api/audio/analysis-cache                   → limpa o cache de análise
 **Arquitetura:** 8 serviços por DI — `LibraryScanner`, `HistoryService`, `MusicAnalyzer`, `AnalysisCacheService`, `RecommendationEngine`, `PlaylistBuilder`, `PlexService`, `LastFmService`. **82 testes** (unit + integração).
 
 **Analysis cache** (`mediasage/analysis-cache.json`): armazena perfil completo de cada faixa analisada. Cada entrada inclui: `genre`, `subgenre`, `mood`, `energy`, `valence`, `danceability`, `acousticness`, `complexity`, `bpm`, `key`, `tempo`, `rhythmPattern`, `timbre`, `dynamics`, `texture`, `vocalStyle`, `productionStyle`, `era`, `characteristics[]`, `instruments[]`, `emotionalTags[]`. O `PlaylistBuilder` envia esses perfis em lotes de 50 para o LLM (torneio de seleção) com pré-filtro de similaridade (70% gênero/mood/energia + 30% aleatório).
+
+**Motor de recomendações — arquitetura anti-alucinação:**
+- **Caminho principal (Last.fm disponível):** busca artistas similares aos top-5 favoritos em paralelo via Last.fm → pool de candidatos reais → Ollama apenas *seleciona e explica* da lista (sem gerar nomes livremente). Output validado: artistas não presentes no pool são descartados com warning.
+- **Fallback (sem Last.fm):** geração livre com prompt restritivo ("só artistas com discografia real, se incerto não inclua").
+- **Perfil ponderado por playCount + recência:** artistas/faixas mais ouvidos têm peso proporcional; faixas tocadas nos últimos 90 dias recebem multiplicador 1.5×. O `buildLibraryProfile()` recebe os artistas ordenados por plays, não em ordem arbitrária da biblioteca.
+- **Cross-reference `ratingKey` × analysisCache:** as faixas mais tocadas são cruzadas com o cache de análise para incluir no prompt os atributos sonoros reais (genre, subgenre, energy, mood, BPM, timbre, emotionalTags). Faixas recentes marcadas com ★recent no prompt.
+
+**Mobile — tela de Playlists:**
+- Desktop mantém layout 2 painéis (sidebar 240px + painel de detalhe).
+- Mobile usa navegação empilhada: lista em tela cheia → toque numa playlist → detalhe em tela cheia com botão `‹ Playlists`. Header da página oculto no modo detalhe para liberar espaço vertical. Auto-seleção da primeira playlist desativada no mobile.
+- `TrackRow`: botão de remover faixa sempre visível em touch (`opacity-100` via store `isMobile`) — sem depender de hover.
 
 ### SeriesCurator (`@plex-agents/seriescurator`)
 Organiza e renomeia séries de TV em `tv/`.

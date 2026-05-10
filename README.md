@@ -133,7 +133,10 @@ services:
       # (arquivo ServerConfig.json dentro da pasta de config do Jackett/FlareSolverr)
 
       # ── Extras ─────────────────────────────────────────────────────────────
-      # Last.fm: enriquece metadados (bio de artistas, tags, similares)
+      # Last.fm: FORTEMENTE RECOMENDADO — sem isso, recomendações usam geração livre
+      # de nomes pelo LLM e podem incluir artistas fictícios. Com Last.fm, o sistema
+      # usa um pool de artistas reais verificados como base. Chave gratuita em:
+      # https://www.last.fm/api/account/create
       - LASTFM_API_KEY=
 
     volumes:
@@ -210,7 +213,7 @@ services:
 
 | Variável | Descrição |
 |---|---|
-| `LASTFM_API_KEY` | API Key do Last.fm — enriquece bio de artistas e tags. Opcional. |
+| `LASTFM_API_KEY` | API Key do Last.fm — **fortemente recomendado**. Usado como pool de artistas reais para recomendações (evita alucinações do LLM). Também enriquece tags e artistas similares. Gratuito em last.fm/api. |
 | `MUSICSAGE_PORT` | Porta HTTP do Sage (default: `3002`) |
 
 ---
