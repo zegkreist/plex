@@ -1,5 +1,6 @@
 <script>
   import { relTime } from '$lib/utils.js';
+  import { isMobile } from '$lib/stores/device.js';
 
   let {
     ratingKey = '',
@@ -39,7 +40,7 @@
   {/if}
 
   {#if actions}
-    <div class="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+    <div class="shrink-0 transition-opacity flex gap-1 {$isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}">
       {@render actions?.()}
     </div>
   {/if}
