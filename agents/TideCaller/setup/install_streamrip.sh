@@ -42,9 +42,12 @@ if ! "$VENV/bin/python3" -m pip --version &>/dev/null; then
 fi
 
 echo ""
-echo "📦 Instalando streamrip e tidalapi..."
+echo "📦 Instalando streamrip (branch dev) e tidalapi..."
 "$VENV/bin/python3" -m pip install --upgrade pip --quiet
-"$VENV/bin/python3" -m pip install streamrip tidalapi --quiet
+# Branch dev: fix para lyrics 401 (issue #959) e qualidade LOSSLESS garantida
+"$VENV/bin/python3" -m pip install \
+    "git+https://github.com/nathom/streamrip.git@dev" \
+    tidalapi --quiet
 
 echo ""
 echo "==================================="

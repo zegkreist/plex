@@ -6,13 +6,136 @@
  *   - Perfil agregado da biblioteca
  *   - Padrões de escuta com base no histórico
  */
+// Tags do Last.fm completamente irrelevantes (meta-tags pessoais)
+const META_TAG_RE = /^(seen live|favorites?|loved?|best|all|under \d+|spotify)$/i;
+
+// Tags que indicam era/década (usadas para preencher `era`, não gênero)
+const ERA_TAG_RE = /^(\d{2}|\d{4})s$/i;
+
+// Palavras que descrevem humor/emoção — enriquecem `emotionalTags`
+const MOOD_WORDS = new Set([
+  "melancholic", "melancholy", "dark", "sad", "happy", "upbeat", "energetic",
+  "aggressive", "relaxing", "calm", "peaceful", "emotional", "romantic", "epic",
+  "euphoric", "nostalgic", "dreamy", "atmospheric", "intense", "chill", "mellow",
+  "haunting", "groovy", "psychedelic", "hypnotic", "rebellious", "sensual",
+  "introspective", "trippy", "ethereal", "powerful", "raw", "bittersweet",
+  "soulful", "angry", "joyful", "melancholy", "heavy", "feel-good",
+]);
+
+// Tags que descrevem instrumentação/voz — enriquecem `characteristics`
+const DESCRIPTOR_WORDS = new Set([
+  "instrumental", "acoustic", "electric", "orchestral", "vocal",
+  "female vocalists", "male vocalists", "a cappella",
+]);
+
+function _isMetaTag(tag) {
+  return !tag || tag.length < 3 || META_TAG_RE.test(tag.trim());
+}
+
+function _isEraTag(tag) {
+  return ERA_TAG_RE.test(tag.trim());
+}
+
+/** Normaliza "80s" → "1980s", "10s" → "2010s", "2000s" → "2000s" */
+function _normalizeEra(tag) {
+  const m = tag.trim().match(/^(\d{2}|\d{4})s$/i);
+  if (!m) return null;
+  const n = parseInt(m[1]);
+  if (n >= 1900) return `${n}s`; // já é 4 dígitos
+  return n >= 20 ? `19${String(n).padStart(2, "0")}s` : `20${String(n).padStart(2, "0")}s`;
+}
+
+function _isMoodTag(tag) {
+  return MOOD_WORDS.has(tag.toLowerCase().trim());
+}
+
+function _isDescriptorTag(tag) {
+  const t = tag.toLowerCase().trim();
+  return [...DESCRIPTOR_WORDS].some(d => t.includes(d));
+}
+
+/**
+ * Classifica uma tag do Last.fm em categorias mutuamente exclusivas.
+ * @returns {"meta"|"era"|"mood"|"descriptor"|"genre"}
+ */
+function _classifyTag(tag) {
+  if (_isMetaTag(tag))      return "meta";
+  if (_isEraTag(tag))       return "era";
+  if (_isMoodTag(tag))      return "mood";
+  if (_isDescriptorTag(tag)) return "descriptor";
+  return "genre";
+}
+
+/**
+ * Mescla tags do Last.fm nos campos corretos da análise.
+ * Prioridade: trackTags > artistTags (faixa é mais específica que artista).
+ *
+ * Campos afetados:
+ *   genre       — 1ª tag de gênero (Last.fm > Ollama)
+ *   subgenre    — 2ª tag de gênero (Last.fm > Ollama)
+ *   era         — 1ª tag de era, se analysis.era === "unknown"
+ *   emotionalTags — tags de humor do Last.fm + as do Ollama (deduplicadas)
+ *   characteristics — descritores do Last.fm + extras de gênero (deduplicados)
+ *   lastFm      — raw: { trackTags, artistTags, allClean } para referência futura
+ */
+function _applyLastFmTags(analysis, trackTags = [], artistTags = []) {
+  // Deduplica mantendo ordem (track tem prioridade)
+  const seen = new Set();
+  const merged = [...trackTags, ...artistTags].filter(t => {
+    const key = t.toLowerCase().trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  const byKind = { genre: [], era: [], mood: [], descriptor: [] };
+  for (const tag of merged) {
+    const kind = _classifyTag(tag);
+    if (kind !== "meta") byKind[kind]?.push(tag);
+  }
+  const allClean = [...byKind.genre, ...byKind.era, ...byKind.mood, ...byKind.descriptor];
+
+  // ── genre / subgenre ────────────────────────────────────────────────────
+  if (byKind.genre.length > 0) {
+    analysis.genre = byKind.genre[0];
+    if (byKind.genre.length > 1 &&
+        byKind.genre[1].toLowerCase() !== byKind.genre[0].toLowerCase()) {
+      analysis.subgenre = byKind.genre[1];
+    }
+  }
+
+  // ── era (só preenche se Ollama não soube) ───────────────────────────────
+  if (byKind.era.length > 0 && (!analysis.era || analysis.era === "unknown")) {
+    analysis.era = _normalizeEra(byKind.era[0]) ?? analysis.era;
+  }
+
+  // ── emotionalTags (union das tags de humor Last.fm + Ollama) ────────────
+  const existingEmotional = new Set((analysis.emotionalTags || []).map(t => t.toLowerCase()));
+  const newMood = byKind.mood.filter(t => !existingEmotional.has(t.toLowerCase()));
+  analysis.emotionalTags = [...(analysis.emotionalTags || []), ...newMood];
+
+  // ── characteristics (descritores + gêneros extras) ──────────────────────
+  const existingChars = new Set((analysis.characteristics || []).map(t => t.toLowerCase()));
+  const extraGenres = byKind.genre.slice(2);  // 3ª tag de gênero em diante
+  const extras = [...byKind.descriptor, ...extraGenres]
+    .filter(t => !existingChars.has(t.toLowerCase()));
+  analysis.characteristics = [...(analysis.characteristics || []), ...extras];
+
+  // ── raw Last.fm — preservado no cache para uso futuro ───────────────────
+  analysis.lastFm = { trackTags, artistTags, allClean };
+
+  return analysis;
+}
+
 export class MusicAnalyzer {
   /**
-   * @param {{ allfather: object }} config
-   *   allfather — instância AllFather (injetada para facilitar testes)
+   * @param {{ allfather: object, lastFmService?: object }} config
+   *   allfather      — instância AllFather (injetada para facilitar testes)
+   *   lastFmService  — instância LastFmService (opcional); se presente, enriquece genre/subgenre
    */
-  constructor({ allfather } = {}) {
-    this.allfather = allfather;
+  constructor({ allfather, lastFmService = null } = {}) {
+    this.allfather     = allfather;
+    this.lastFmService = lastFmService;
   }
 
   /**
@@ -243,16 +366,36 @@ Return a JSON object with EXACTLY these fields (no extras, no omissions):
       const maxAudioSecs = options.maxAudioSecs ?? 30;
       // Escala o timeout: overhead fixo de 60s + 2s por segundo de áudio (para inferência)
       const inferenceTimeout = Math.max(120_000, (maxAudioSecs * 2 + 60) * 1000);
-      const result = await this.allfather.askForJSONWithAudio(prompt, localPath, {
-        temperature:   0.3,
-        maxAudioSecs,
-        timeout:       inferenceTimeout,
-      });
+
+      // Dispara Ollama + Last.fm (trackTags + artistTags) em paralelo — sem latência extra
+      const lfm = this.lastFmService;
+      const [result, trackTags, artistTags] = await Promise.all([
+        this.allfather.askForJSONWithAudio(prompt, localPath, {
+          temperature: 0.3,
+          maxAudioSecs,
+          timeout:     inferenceTimeout,
+        }),
+        lfm && meta.artist && meta.title
+          ? lfm.getTrackTags(meta.artist, meta.title).catch(() => [])
+          : Promise.resolve([]),
+        lfm && meta.artist
+          ? lfm.getArtistTags(meta.artist, 10).catch(() => [])
+          : Promise.resolve([]),
+      ]);
+
       if (!result || typeof result !== "object") {
         console.error(`[MusicAnalyzer] Resposta inválida (não-objeto) para "${localPath}":`, result);
         return FALLBACK;
       }
-      return { ...FALLBACK, ...result };
+
+      const merged = { ...FALLBACK, ...result };
+
+      // Aplica e persiste todas as tags Last.fm no objeto de análise
+      if (trackTags.length || artistTags.length) {
+        _applyLastFmTags(merged, trackTags, artistTags);
+      }
+
+      return merged;
     } catch (err) {
       console.error(`[MusicAnalyzer] Falha na análise de áudio "${localPath}": ${err.message}`);
       return FALLBACK;

@@ -51,8 +51,10 @@ RUN cd /agents/Stormbringer && \
 FROM node:20-slim AS prod
 
 # 1. Sistema: ffmpeg, bash, Python (lento, estável)
+# git é necessário para instalar streamrip pelo branch dev via pip
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ffmpeg \
+        git \
         python3 \
         python3-pip \
         python3-venv \
@@ -60,23 +62,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-dev \
         libffi-dev \
         libssl-dev \
-        cargo \
         curl \
     && pip3 install --no-cache-dir --break-system-packages \
         tidalapi \
-        streamrip \
-    && sed -i 's/except TypeError as e:/except Exception as e:/' \
-        $(python3 -c "import site; print(site.getsitepackages()[0])")/streamrip/client/tidal.py \
-    && apt-get remove -y gcc python3-dev libffi-dev libssl-dev cargo \
+        "git+https://github.com/nathom/streamrip.git@dev" \
+    && apt-get remove -y gcc python3-dev libffi-dev libssl-dev \
     && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/* /root/.cache/pip /root/.cargo
+    && rm -rf /var/lib/apt/lists/* /root/.cache/pip
 
 # 2. Venv do TideCaller (lento, estável — não depende de nenhum source copiado)
+# Instala streamrip do branch dev — contém fix para issue #959 (lyrics 401 abortava download)
 RUN python3 -m venv /agents/TideCaller/.venv_tidal \
-    && /agents/TideCaller/.venv_tidal/bin/pip install --no-cache-dir tidalapi streamrip
-# Patch: lyrics 401 não deve abortar o download (streamrip issue #959).
-RUN sed -i 's/except TypeError as e:/except Exception as e:/' \
-    /agents/TideCaller/.venv_tidal/lib/python3.*/site-packages/streamrip/client/tidal.py
+    && /agents/TideCaller/.venv_tidal/bin/pip install --no-cache-dir \
+        tidalapi \
+        "git+https://github.com/nathom/streamrip.git@dev"
 
 # 3. Agents estáveis (mudam raramente)
 COPY --from=agents-builder /agents/AllFather    /agents/AllFather

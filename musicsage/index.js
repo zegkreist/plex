@@ -42,8 +42,8 @@ const allfather = new AllFather({
 
 const libraryScanner = new LibraryScanner({ axios, plexUrl: PLEX_URL, plexToken: PLEX_TOKEN });
 const historyService = new HistoryService({ axios, plexUrl: PLEX_URL, plexToken: PLEX_TOKEN });
-const analyzer = new MusicAnalyzer({ allfather });
 const lastFmService = new LastFmService({ axios, apiKey: process.env.LASTFM_API_KEY });
+const analyzer = new MusicAnalyzer({ allfather, lastFmService });
 const analysisCache   = new AnalysisCacheService();
 const metricsService = new MetricsService({ axios, plexUrl: PLEX_URL, plexToken: PLEX_TOKEN, analysisCache });
 

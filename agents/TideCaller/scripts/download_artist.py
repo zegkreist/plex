@@ -155,21 +155,70 @@ def pick_multi(options: list, prompt: str = "Escolha") -> list[int]:
 
 
 # ── Download via streamrip (venv) ───────────────────────────────────────────
-def download_url(url: str) -> bool:
-    """Baixa uma URL do Tidal via streamrip do venv."""
+AUDIO_EXTS = {'.flac', '.mp3', '.m4a', '.ogg', '.opus', '.wav', '.aiff', '.aac'}
+
+
+def _download_dir() -> Path:
+    """Lê a pasta de download do config.toml."""
+    try:
+        content = CONFIG_TOML.read_text(encoding="utf-8")
+        m = re.search(r'^folder\s*=\s*"([^"]+)"', content, re.MULTILINE)
+        if m:
+            return Path(m.group(1))
+    except Exception:
+        pass
+    return Path("/downloads/tidecaller")
+
+
+def _find_album_folder(album) -> Path | None:
+    """Procura a pasta criada para o álbum na pasta de downloads."""
+    base = _download_dir()
+    if not base.exists():
+        return None
+    title_lower = album.name.lower()
+    for d in base.iterdir():
+        if d.is_dir() and title_lower in d.name.lower():
+            return d
+    return None
+
+
+def _has_audio(folder: Path) -> bool:
+    return any(
+        f.suffix.lower() in AUDIO_EXTS
+        for f in folder.rglob("*")
+        if f.is_file()
+    )
+
+
+def download_url(url: str, album=None) -> bool:
+    """Baixa uma URL do Tidal via streamrip do venv e verifica arquivos de áudio."""
     import os
-    # Localiza o binário rip no .venv_tidal deste agente
     rip_bin = AGENT_DIR / ".venv_tidal" / "bin" / "rip"
     env = {
         **os.environ,
         "XDG_CONFIG_HOME": str(AGENT_DIR / "config" / ".config"),
     }
     result = subprocess.run(
-        [str(rip_bin), "url", url],
+        [str(rip_bin), "-q", "3", "url", url],
         cwd=str(AGENT_DIR),
         env=env,
     )
-    return result.returncode == 0
+    if result.returncode != 0:
+        return False
+
+    # streamrip às vezes retorna 0 mesmo sem baixar áudio (apenas cover.jpg).
+    # Verificar se há arquivos de áudio na pasta do álbum.
+    if album is not None:
+        folder = _find_album_folder(album)
+        if folder is None:
+            print(yellow("  ⚠️  Pasta do álbum não encontrada após download."))
+            return False
+        if not _has_audio(folder):
+            print(yellow(f"  ⚠️  Nenhum arquivo de áudio em: {folder.name}"))
+            print(yellow("      (apenas cover.jpg? Token expirado ou faixa indisponível)"))
+            return False
+
+    return True
 
 
 def album_label(album) -> str:
@@ -268,7 +317,7 @@ def main():
         label = album_label(album)
         print(f"[{i}/{len(selected)}] {bold(label)}")
         print(f"  {C}{url}{NC}")
-        if download_url(url):
+        if download_url(url, album):
             print(green(f"  ✅ Concluído\n"))
             ok += 1
         else:

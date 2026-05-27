@@ -80,11 +80,12 @@ export class LastFmService {
   }
 
   /**
-   * Retorna tags (gêneros) de um artista.
+   * Retorna tags (gêneros/descritores) de um artista.
    * @param {string} artist
+   * @param {number} limit
    * @returns {Promise<string[]>}
    */
-  async getArtistTags(artist) {
+  async getArtistTags(artist, limit = 10) {
     if (!this._available) return [];
     try {
       const res = await this.axios.get(this._base, {
@@ -98,7 +99,35 @@ export class LastFmService {
         timeout: 8000,
       });
       const tags = res.data?.toptags?.tag || [];
-      return tags.slice(0, 5).map((t) => t.name);
+      return tags.slice(0, limit).map((t) => t.name);
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Retorna tags específicas de uma faixa (mais precisas que as do artista).
+   * @param {string} artist
+   * @param {string} track
+   * @param {number} limit
+   * @returns {Promise<string[]>}
+   */
+  async getTrackTags(artist, track, limit = 10) {
+    if (!this._available) return [];
+    try {
+      const res = await this.axios.get(this._base, {
+        params: {
+          method:  "track.getTopTags",
+          artist,
+          track,
+          autocorrect: 1,
+          api_key: this.apiKey,
+          format:  "json",
+        },
+        timeout: 8000,
+      });
+      const tags = res.data?.toptags?.tag || [];
+      return tags.slice(0, limit).map((t) => t.name);
     } catch {
       return [];
     }

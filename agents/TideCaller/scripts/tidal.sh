@@ -252,29 +252,32 @@ tidal_search_track() {
 # Download e conversão para MP3
 tidal_album_mp3() {
     local url="$1"
-    local quality="${2:-1}"  # Qualidade 1 para MP3 320kbps
-    
+    local quality="${2:-1}"  # Qualidade 1 = AAC 320kbps (lossy intencional)
+
     if [ -z "$url" ]; then
         echo -e "${RED}❌ Erro: URL é obrigatória${NC}"
         return 1
     fi
-    
+
     echo -e "${BLUE}🎵 Baixando e convertendo para MP3...${NC}"
+    echo -e "${YELLOW}⚠️  Atenção: MP3 é lossy. Use tidal_album para lossless FLAC.${NC}"
     rip_cmd -q "$quality" -c MP3 url "$url"
 }
 
-# Download e conversão para FLAC
+# Download em FLAC Master (24-bit) — não aplica conversão, usa qualidade nativa
 tidal_album_flac() {
     local url="$1"
-    local quality="${2:-2}"  # Qualidade 2 para FLAC CD
-    
+    local quality="${2:-3}"  # Qualidade 3 = Master 24-bit FLAC (não quality 2 = CD)
+
     if [ -z "$url" ]; then
         echo -e "${RED}❌ Erro: URL é obrigatória${NC}"
         return 1
     fi
-    
-    echo -e "${BLUE}🎵 Baixando em FLAC...${NC}"
-    rip_cmd -q "$quality" -c FLAC url "$url"
+
+    echo -e "${BLUE}🎵 Baixando em FLAC Master (24-bit)...${NC}"
+    echo -e "${CYAN}Qualidade:${NC} $quality (3=Master 24-bit, 2=HiFi 16-bit)"
+    # Sem -c: não força conversão, o arquivo chega no formato nativo do Tidal
+    rip_cmd -q "$quality" url "$url"
 }
 
 # ============================================
@@ -301,12 +304,14 @@ tidal_quality_info() {
     echo -e "${YELLOW}    Níveis de Qualidade - Tidal${NC}"
     echo -e "${CYAN}═══════════════════════════════════════════${NC}"
     echo ""
-    echo -e "${GREEN}0${NC} - 256 kbps AAC (Normal)"
+    echo -e "${GREEN}0${NC} - 96 kbps AAC  (Low)"
     echo -e "${GREEN}1${NC} - 320 kbps AAC (High)"
-    echo -e "${GREEN}2${NC} - 16 bit, 44.1 kHz FLAC (HiFi - qualidade CD)"
-    echo -e "${GREEN}3${NC} - 24 bit, 44.1 kHz FLAC (MQA - Master Quality)"
+    echo -e "${GREEN}2${NC} - 16 bit, 44.1 kHz FLAC (HiFi - qualidade CD)    → requer HiFi"
+    echo -e "${GREEN}3${NC} - 24 bit FLAC / MQA (Master Quality)              → requer HiFi Plus"
     echo ""
-    echo -e "${YELLOW}Nota:${NC} Você precisa de assinatura Tidal HiFi para qualidades 2 e 3"
+    echo -e "${YELLOW}Padrão configurado:${NC} quality=3 (Master)"
+    echo -e "${YELLOW}Nota:${NC} Se a faixa não estiver disponível em Master, o streamrip"
+    echo -e "       faz fallback silencioso para a qualidade inferior disponível."
     echo ""
 }
 

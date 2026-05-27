@@ -23,11 +23,12 @@
   let loadingSim  = $state(false);
 
   // ─── Autocomplete de artista ──────────────────────────────
-  let suggestions    = $state([]);
-  let showSugg       = $state(false);
-  let activeSugg     = $state(-1);
-  let _suggTimer     = null;
-  let _inputEl       = null;
+  let suggestions = $state([]);
+  let showSugg    = $state(false);
+  let activeSugg  = $state(-1);
+  let _suggTimer  = null;
+  let _inputEl    = $state(null);
+  let _dropStyle  = $state('');
 
   onMount(loadRecs);
   onDestroy(() => clearTimeout(_suggTimer));
@@ -99,26 +100,22 @@
   }
 
   // ── Autocomplete de artista ──────────────────────────────────
+  function _updateDropPos() {
+    if (!_inputEl) return;
+    const r = _inputEl.getBoundingClientRect();
+    // position:fixed escapa qualquer overflow:hidden pai
+    _dropStyle = `position:fixed;left:${Math.round(r.left)}px;top:${Math.round(r.bottom) + 4}px;width:${Math.round(r.width)}px;z-index:9999`;
+  }
+
   async function fetchSuggestions(q) {
     if (q.length < 2) { suggestions = []; showSugg = false; return; }
     try {
-      const data   = await api('GET', `/library/tracks?q=${encodeURIComponent(q)}&limit=40`);
-      const tracks = data?.tracks ?? [];
-      const seen   = new Set();
-      const qLower = q.toLowerCase();
-      suggestions = tracks
-        .map(t => t.artist)
-        .filter(a => {
-          if (!a) return false;
-          const al = a.toLowerCase();
-          if (!al.includes(qLower)) return false;
-          if (seen.has(al)) return false;
-          seen.add(al);
-          return true;
-        })
-        .slice(0, 8);
-      showSugg   = suggestions.length > 0;
-      activeSugg = -1;
+      // Usa endpoint dedicado de artistas — retorna todos os artistas da biblioteca que contenham q
+      const data = await api('GET', `/library/artists?q=${encodeURIComponent(q)}&limit=10`);
+      suggestions = (data?.artists ?? []).map(a => a.name);
+      showSugg    = suggestions.length > 0;
+      activeSugg  = -1;
+      _updateDropPos();
     } catch { suggestions = []; }
   }
 
@@ -152,13 +149,14 @@
     }
   }
 
-  // Delay para deixar o click na sugestão disparar antes do blur fechar o dropdown
+  // Delay para deixar o mousedown da sugestão registrar antes do blur fechar o dropdown
   function onArtistBlur() {
     setTimeout(() => { showSugg = false; activeSugg = -1; }, 150);
   }
 
   function onArtistFocus(e) {
     e.currentTarget.style.borderColor = 'rgba(124,106,245,0.4)';
+    _updateDropPos();
     if (suggestions.length > 0) showSugg = true;
   }
 </script>
@@ -348,36 +346,34 @@
 
       <!-- Input + autocomplete -->
       <div class="flex gap-2 mb-4">
-        <div class="relative flex-1">
-          <input
-            type="text"
-            value={artistQuery}
-            placeholder="Nome do artista…"
-            class="w-full rounded-lg px-3 py-2 text-sm text-white transition-colors
-                   placeholder:text-[#5a5a78] focus:outline-none"
-            style="background:#16161f;border:1px solid #1e1e2e"
-            oninput={onArtistInput}
-            onfocus={onArtistFocus}
-            onblur={e => { e.currentTarget.style.borderColor='#1e1e2e'; onArtistBlur(); }}
-            onkeydown={onArtistKeydown}
-          />
+        <input
+          bind:this={_inputEl}
+          type="text"
+          value={artistQuery}
+          placeholder="Nome do artista…"
+          class="flex-1 rounded-lg px-3 py-2 text-sm text-white transition-colors
+                 placeholder:text-[#5a5a78] focus:outline-none"
+          style="background:#16161f;border:1px solid #1e1e2e"
+          oninput={onArtistInput}
+          onfocus={onArtistFocus}
+          onblur={e => { e.currentTarget.style.borderColor='#1e1e2e'; onArtistBlur(); }}
+          onkeydown={onArtistKeydown}
+        />
 
-          <!-- Dropdown de sugestões -->
-          {#if showSugg && suggestions.length > 0}
-            <div class="absolute left-0 right-0 top-full mt-1 rounded-xl border overflow-hidden z-20"
-                 style="background:#16161f;border-color:#1e1e2e;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
-              {#each suggestions as s, idx}
-                <button
-                  class="w-full text-left px-3 py-2 text-sm transition-colors"
-                  style={idx === activeSugg
-                    ? 'background:rgba(124,106,245,0.18);color:#e0e0f0'
-                    : 'color:#c0c0d8;background:transparent'}
-                  onmousedown={(e) => { e.preventDefault(); selectSuggestion(s); }}
-                >{s}</button>
-              {/each}
-            </div>
-          {/if}
-        </div>
+        <!-- Dropdown com position:fixed — escapa qualquer overflow:hidden pai -->
+        {#if showSugg && suggestions.length > 0}
+          <div style="{_dropStyle};background:#16161f;border:1px solid #2a2a3a;border-radius:0.75rem;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,0.7)">
+            {#each suggestions as s, idx}
+              <button
+                class="w-full text-left px-3 py-2.5 text-sm transition-colors"
+                style={idx === activeSugg
+                  ? 'background:rgba(124,106,245,0.2);color:#e0e0f0'
+                  : 'color:#b0b0c8;background:transparent'}
+                onmousedown={(e) => { e.preventDefault(); selectSuggestion(s); }}
+              >{s}</button>
+            {/each}
+          </div>
+        {/if}
 
         <label class="flex items-center gap-1.5 cursor-pointer text-2xs shrink-0" style="color:#5a5a78">
           <input type="checkbox" bind:checked={inLibOnly} class="accent-[#7c6af5] w-3 h-3" />

@@ -18,6 +18,23 @@ export function libraryRouter(router, { libraryScanner, historyService, metricsS
   });
 
   /**
+   * GET /api/library/artists?q=QUERY&limit=N
+   * Busca artistas na biblioteca por nome — para autocomplete.
+   * Response: { artists: [{ name, genres }] }
+   */
+  router.get("/library/artists", (req, res) => {
+    const q     = (req.query.q || "").toLowerCase().trim();
+    const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
+    const all   = libraryScanner.getArtistsWithGenres();
+    const filtered = q
+      ? all.filter(a => a.name.toLowerCase().includes(q))
+      : all;
+    res.json({
+      artists: filtered.slice(0, limit).map(a => ({ name: a.name, genres: a.genres ?? [] })),
+    });
+  });
+
+  /**
    * GET /api/library/tracks?q=QUERY&limit=N
    * Retorna lista resumida de faixas filtradas para uso em autocomplete.
    * Response: { tracks: [{ ratingKey, title, artist, album, filePath }] }
